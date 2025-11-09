@@ -10,7 +10,22 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_09_124837) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_09_130444) do
+  create_table "factions", force: :cascade do |t|
+    t.string "color"
+    t.datetime "created_at", null: false
+    t.boolean "good"
+    t.string "name"
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "games", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "played_at"
+    t.integer "seconds"
+    t.datetime "updated_at", null: false
+  end
+
   create_table "players", force: :cascade do |t|
     t.string "battlenet_name"
     t.integer "battlenet_number"

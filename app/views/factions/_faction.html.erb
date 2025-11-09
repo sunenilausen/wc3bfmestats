@@ -1,0 +1,14 @@
+<div id="<%= dom_id faction %>" class="w-full sm:w-auto my-5 space-y-5">
+  <div>
+    <strong class="block font-medium mb-1">Name:</strong>
+    <%= faction.name %>
+  </div>
+  <div>
+    <strong class="block font-medium mb-1">Good:</strong>
+    <%= faction.good? ? "Yes" : "No" %>
+  </div>
+  <div>
+    <strong class="block font-medium mb-1">Color:</strong>
+    <%= faction.color %>
+  </div>
+</div>

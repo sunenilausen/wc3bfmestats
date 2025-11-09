@@ -30,41 +30,12 @@ class MatchesController < ApplicationController
       @match.appearances.build(appearance_attrs.permit(:id, :hero_kills, :player_id, :unit_kills, :faction_id))
     end
 
-    if params[:quickimport_json].present?
-      # Handle quick import JSON here
-      # Expected format:
-      # [
-      #   { "Player": "Snaps", "Hero Kills": 2, "Unit Kills": 83 },
-      #   ...
-      # ]
-      begin
-        appearances_data = JSON.parse(params[:quickimport_json])
-        appearances_data.each_with_index do |data, i|
-          player_nickname = data["Player"]
-          hero_kills = data["Hero Kills"]
-          unit_kills = data["Unit Kills"]
 
-          unless player_nickname.nil? || player_nickname.strip.empty?
-            player_nickname = player_nickname.split("#").first.strip unless player_nickname.split("#").first.strip.empty?
-            player = Player.find_by(nickname: player_nickname)
-            player ||= Player.create(nickname: player_nickname, elo_rating: 1500)
-          end
-
-          @match.appearances[i].tap do |appearance|
-            appearance.player = player unless player.nil?
-            appearance.hero_kills = hero_kills
-            appearance.unit_kills = unit_kills
-          end
-        end
-      rescue JSON::ParserError => e
-        # Handle JSON parsing error (e.g., log it, notify user) if needed
-      end
-    end
-
-    calculate_and_update_elo_ratings(@match)
+    update_match
 
     respond_to do |format|
       if @match.save
+        calculate_and_update_elo_ratings(@match)
         format.html { redirect_to @match, notice: "Match was successfully created." }
         format.json { render :show, status: :created, location: @match }
       else
@@ -76,8 +47,19 @@ class MatchesController < ApplicationController
 
   # PATCH/PUT /matches/1 or /matches/1.json
   def update
+    @match.seconds = ChronicDuration.parse(params[:match][:seconds]) if params[:match][:seconds].present?
+
+    params[:match][:appearances_attributes].each_value do |appearance_attrs|
+      appearance = @match.appearances.find { |a| a.id == appearance_attrs[:id].to_i }
+      if appearance
+        appearance.assign_attributes(appearance_attrs.permit(:hero_kills, :player_id, :unit_kills, :faction_id))
+      end
+    end
+
+    update_match
+
     respond_to do |format|
-      if @match.update(match_params)
+      if @match.save
         format.html { redirect_to @match, notice: "Match was successfully updated.", status: :see_other }
         format.json { render :show, status: :ok, location: @match }
       else
@@ -106,6 +88,39 @@ class MatchesController < ApplicationController
     # Only allow a list of trusted parameters through.
     def match_params
       params.expect(match: [ :played_at, :seconds, :good_victory, appearances_attributes: [ :id, :hero_kills, :player_id, :unit_kills ] ])
+    end
+
+    def update_match
+      if params[:quickimport_json].present?
+        # Handle quick import JSON here
+        # Expected format:
+        # [
+        #   { "Player": "Snaps", "Hero Kills": 2, "Unit Kills": 83 },
+        #   ...
+        # ]
+        begin
+          appearances_data = JSON.parse(params[:quickimport_json])
+          appearances_data.each_with_index do |data, i|
+            player_nickname = data["Player"]
+            hero_kills = data["Hero Kills"]
+            unit_kills = data["Unit Kills"]
+
+            unless player_nickname.nil? || player_nickname.strip.empty?
+              player_nickname = player_nickname.split("#").first.strip unless player_nickname.split("#").first.strip.empty?
+              player = Player.find_by(nickname: player_nickname)
+              player ||= Player.create(nickname: player_nickname, elo_rating: 1500)
+            end
+
+            @match.appearances[i].tap do |appearance|
+              appearance.player = player unless player.nil?
+              appearance.hero_kills = hero_kills
+              appearance.unit_kills = unit_kills
+            end
+          end
+        rescue JSON::ParserError => e
+          # Handle JSON parsing error (e.g., log it, notify user) if needed
+        end
+      end
     end
 
     def calculate_and_update_elo_ratings(match)

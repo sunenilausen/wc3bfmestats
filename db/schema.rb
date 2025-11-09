@@ -10,7 +10,18 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_09_114932) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_09_124837) do
+  create_table "players", force: :cascade do |t|
+    t.string "battlenet_name"
+    t.integer "battlenet_number"
+    t.string "battletag"
+    t.datetime "created_at", null: false
+    t.float "elo_rating"
+    t.string "nickname"
+    t.string "region"
+    t.datetime "updated_at", null: false
+  end
+
   create_table "users", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "email", default: "", null: false

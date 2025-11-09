@@ -1,4 +1,3 @@
-
 <%= simple_form_for(@match) do |f| %>
   <%= f.error_notification %>
   <%= f.error_notification message: f.object.errors[:base].to_sentence if f.object.errors[:base].present? %>
@@ -6,6 +5,18 @@
   <div class="form-inputs">
     <%= f.input :played_at %>
     <%= f.input :seconds %>
+    <%= f.input :good_victory %>
+
+    <% 10.times do |i| %>
+      <%= f.simple_fields_for :appearances, @match.appearances[i] || @match.appearances.build, child_index: i do |af| %>
+      <div class="nested-fields">
+        <p> <%= @match.appearances[i]&.faction&.name %> </p>
+        <%= af.input :player_id, collection: Player.all, label: "Player" %>
+        <%= af.input :unit_kills %>
+        <%= af.input :hero_kills %>
+      </div>
+      <% end %>
+    <% end %>
   </div>
 
   <div class="form-actions">

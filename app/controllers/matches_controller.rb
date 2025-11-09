@@ -13,6 +13,7 @@ class MatchesController < ApplicationController
   # GET /matches/new
   def new
     @match = Match.new
+    (1..9).each { |i| @match.appearances.build(faction_id: i) }
   end
 
   # GET /matches/1/edit
@@ -65,6 +66,6 @@ class MatchesController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def match_params
-      params.expect(match: [ :played_at, :seconds ])
+      params.expect(match: [ :played_at, :seconds, :good_victory ], appearances_attributes: [ :hero_kills, :player_id, :unit_kills ])
     end
 end

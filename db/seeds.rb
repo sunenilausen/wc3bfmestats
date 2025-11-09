@@ -17,7 +17,7 @@ Faction.find_or_create_by!(name: "Fangorn", color: "yellow", good: true)
 Faction.find_or_create_by!(name: "Isengard", color: "green", good: false)
 Faction.find_or_create_by!(name: "Easterlings", color: "gray", good: false)
 Faction.find_or_create_by!(name: "Harad", color: "lightblue", good: false)
-Faction.find_or_create_by!(name: "Nazgul", color: "darkgreen", good: false)
+Faction.find_or_create_by!(name: "Minas Morgul", color: "darkgreen", good: false)
 Faction.find_or_create_by!(name: "Mordor", color: "brown", good: false)
 
 Player.find_or_create_by!(nickname: "KaptajnSnaps", battletag: "KaptajnSnaps#1987", region: "eu", elo_rating_seed: 1500.0, elo_rating: 1500.0, battlenet_number: "1987", battlenet_name: "KaptajnSnaps")

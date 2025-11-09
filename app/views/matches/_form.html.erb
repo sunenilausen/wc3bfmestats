@@ -50,6 +50,36 @@
       </tbody>
     </table>
   </div>
+
+  <div class="my-4 p-4 bg-gray-50 border border-gray-200 rounded">
+    <h3 class="font-semibold text-gray-700 mb-2">Quickimport Instructions</h3>
+    <p class="text-gray-600 mb-2">Paste JSON in the following format:</p>
+    <pre class="bg-gray-100 text-xs rounded p-3 overflow-x-auto border border-gray-200">
+[
+  { "Player": "Snaps", "Faction": "Gondor", "Hero Kills": 2, "Unit Kills": 83 },
+  { "Player": "Rada", "Faction": "Rohan", "Hero Kills": 4, "Unit Kills": 132 },
+  { "Player": "", "Faction": "Dol Amroth", "Hero Kills": 2, "Unit Kills": 58 },
+  { "Player": "", "Faction": "Fellowship", "Hero Kills": 4, "Unit Kills": 106 },
+  { "Player": "", "Faction": "Fangorn", "Hero Kills": 0, "Unit Kills": 161 },
+  { "Player": "", "Faction": "Isenguard", "Hero Kills": 0, "Unit Kills": 38 },
+  { "Player": "", "Faction": "Easterlings", "Hero Kills": 3, "Unit Kills": 170 },
+  { "Player": "", "Faction": "Harad", "Hero Kills": 1, "Unit Kills": 48 },
+  { "Player": "", "Faction": "Minas Morgul", "Hero Kills": 2, "Unit Kills": 21 },
+  { "Player": "", "Faction": "Mordor", "Hero Kills": 4, "Unit Kills": 112 }
+]
+    </pre>
+    <p class="text-gray-600">ChatGPT image instructions:</p>
+    <ul class="list-disc list-inside text-gray-600">
+      <li>Use the scoreboard image.</li>
+      <li>Extract the player names, factions, hero kills, and unit kills from the image.</li>
+      <li>Output the extracted data in the provided JSON format, matching the example above.</li>
+    </ul>
+  </div>
+
+  <div class="my-6">
+    <%= text_area_tag "quickimport_json", nil, placeholder: "Paste JSON here", rows: 2, class: "form-control w-full" %>
+  </div>
+
   <div class="form-actions mt-4">
     <%= f.button :submit, class: "bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" %>
   </div>

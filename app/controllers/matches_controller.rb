@@ -28,7 +28,35 @@ class MatchesController < ApplicationController
       @match.appearances.build(appearance_attrs.permit(:id, :hero_kills, :player_id, :unit_kills, :faction_id))
     end
 
-    calculate_elo_ratings(@match)
+    if params[:quickimport_json].present?
+      # Handle quick import JSON here
+      # Expected format:
+      # [
+      #   { "Player": "Snaps", "Faction": "Gondor", "Hero Kills": 2, "Unit Kills": 83 },
+      #   ...
+      # ]
+      begin
+        appearances_data = JSON.parse(params[:quickimport_json])
+        appearances_data.each do |data|
+          player_nickname = data["Player"]
+          faction_name = data["Faction"]
+          hero_kills = data["Hero Kills"]
+          unit_kills = data["Unit Kills"]
+
+          player = Player.find_by(nickname: player_nickname)
+          player ||= Player.create(nickname: player_nickname, elo_rating: 1500)
+          @match.appearances.select { |it| it.faction_id == Faction.find_by(name: faction_name).id }.each do |appearance|
+            appearance.player = player
+            appearance.hero_kills = hero_kills
+            appearance.unit_kills = unit_kills
+          end
+        end
+      rescue JSON::ParserError => e
+        # Handle JSON parsing error (e.g., log it, notify user) if needed
+      end
+    end
+
+    calculate_and_update_elo_ratings(@match)
 
     respond_to do |format|
       if @match.save
@@ -75,10 +103,10 @@ class MatchesController < ApplicationController
       params.expect(match: [ :played_at, :seconds, :good_victory, appearances_attributes: [ :id, :hero_kills, :player_id, :unit_kills ] ])
     end
 
-    def calculate_elo_ratings(match)
+    def calculate_and_update_elo_ratings(match)
       k_factor = 32
 
-      match.appearances.each do |appearance|
+      rating_changes = match.appearances.map do |appearance|
         player = appearance.player
         next unless player.elo_rating
 
@@ -88,12 +116,17 @@ class MatchesController < ApplicationController
         elo_change = (k_factor * (actual_score - expected_score)).round
         appearance.elo_rating_change = elo_change
         appearance.elo_rating = player.elo_rating
-        player.update(elo_rating: player.elo_rating + elo_change)
+        elo_change
+      end
+
+      match.appearances.each_with_index do |appearance, index|
+        new_elo = appearance.player.elo_rating + rating_changes[index]
+        appearance.player.update(elo_rating: new_elo)
       end
     end
 
     def opponent_average_elo(match, appearance)
-      opponent_appearances = match.appearances.reject { |a| a.faction == appearance.faction }
+      opponent_appearances = match.appearances.reject { |a| a.faction.good == appearance.faction.good }
       total_elo = opponent_appearances.sum { |a| a.player.elo_rating.to_i }
       (total_elo.to_f / opponent_appearances.size)
     end

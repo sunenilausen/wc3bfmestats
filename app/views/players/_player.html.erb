@@ -23,4 +23,44 @@
     <strong class="block font-medium mb-1">Battlenet number:</strong>
     <%= player.battlenet_number %>
   </div>
+
+  <h2 class="text-2xl font-bold mb-3">Stats</h2>
+
+  <% most_played = player.appearances.group(:faction).order('count_id DESC').limit(3).count(:id) %>
+  <% if most_played.any? %>
+    <div>
+      <strong class="block font-medium mb-1">Most Played Factions:</strong>
+      <ul class="list-disc ml-5">
+        <% most_played.each do |faction, count| %>
+          <li><%= faction.name %> (<%= count %> matches)</li>
+        <% end %>
+      </ul>
+    </div>
+  <% else %>
+    <div>No appearances recorded.</div>
+  <% end %>
+
+  <div>
+    <strong class="block font-medium mb-1">Average Unit Kills:</strong>
+    <%= number_with_precision(player.appearances.average(:unit_kills) || 0, precision: 2) %>
+  </div>
+
+  <div>
+    <strong class="block font-medium mb-1">Average Hero Kills:</strong>
+    <%= number_with_precision(player.appearances.average(:hero_kills) || 0, precision: 2) %>
+  </div>
+
+  <h2 class="text-2xl font-bold mb-3">Appearances</h2>
+  <% last_appearances = player.appearances.order(created_at: :desc) %>
+  <% if last_appearances.any? %>
+    <ul class="list-disc ml-5">
+      <% last_appearances.each do |appearance| %>
+        <li>
+          <%= link_to "Match ##{appearance.match.id} (#{appearance.match.created_at.strftime('%Y-%m-%d')})", match_path(appearance.match), class: "text-blue-600 hover:underline" %>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <div>No appearances found.</div>
+  <% end %>
 </div>

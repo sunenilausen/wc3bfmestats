@@ -46,8 +46,23 @@
   </div>
 
   <div>
+    <strong class="block font-medium mb-1">Average Unit Kills per Minute:</strong>
+    <% avg_kills = player.appearances.average(:unit_kills) || 0 %>
+    <% avg_duration = player.matches.average(:seconds) || 0 %>
+    <% kills_per_min = avg_duration > 0 ? (avg_kills / (avg_duration / 60.0)) : 0 %>
+    <%= number_with_precision(kills_per_min, precision: 2) %>
+  </div>
+
+  <div>
     <strong class="block font-medium mb-1">Average Hero Kills:</strong>
     <%= number_with_precision(player.appearances.average(:hero_kills) || 0, precision: 2) %>
+  </div>
+
+  <div>
+    <strong class="block font-medium mb-1">Average Hero Kills per Minute:</strong>
+    <% avg_hero_kills = player.appearances.average(:hero_kills) || 0 %>
+    <% hero_kills_per_min = avg_duration > 0 ? (avg_hero_kills / (avg_duration / 60.0)) : 0 %>
+    <%= number_with_precision(hero_kills_per_min, precision: 2) %>
   </div>
 
   <h2 class="text-2xl font-bold mb-3">Appearances</h2>

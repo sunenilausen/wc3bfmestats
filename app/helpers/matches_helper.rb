@@ -19,4 +19,18 @@ module MatchesHelper
     total_elo = appearances.to_a.sum { |appearance| appearance.elo_rating.to_i }
     (total_elo.to_f / appearances.size).round
   end
+
+  def per_minute_unit_kills(appearances)
+    total_seconds = appearances.first.match.seconds.to_f
+    return 0 if total_seconds.zero?
+
+    (sum_unit_kills(appearances) * 60 / total_seconds).round(2)
+  end
+
+  def per_minute_hero_kills(appearances)
+    total_seconds = appearances.first.match.seconds.to_f
+    return 0 if total_seconds.zero?
+
+    (sum_hero_kills(appearances) * 60 / total_seconds).round(2)
+  end
 end

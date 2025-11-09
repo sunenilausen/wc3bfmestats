@@ -1,0 +1,38 @@
+<table class="mb-4">
+    <tbody>
+        <tr>
+            <th class="px-2 py-1 text-left" style="width: 180px;">Player</th>
+            <th class="px-2 py-1 text-left">Unit Kills</th>
+            <th class="px-2 py-1 text-left">Hero Kills</th>
+            <th class="px-2 py-1 text-left">Elo rating</th>
+            <th class="px-2 py-1 text-left">Elo rating change</th>
+            <th class="px-2 py-1 text-left">Live elo rating</th>
+        </tr>
+        <% appearances.each do |appearance| %>
+          <%= render partial: "matches/appearance_row", locals: { appearance: appearance } %>
+        <% end %>
+        <tr class="font-bold bg-gray-100">
+            <td class="px-2 py-1">Total</td>
+            <td class="px-2 py-1">
+                <%= sum_unit_kills(appearances) %>
+            </td>
+            <td class="px-2 py-1">
+                <%= sum_hero_kills(appearances) %>
+            </td>
+            <td class="px-2 py-1">
+            </td>
+        </tr>
+        <tr class="font-bold bg-gray-100">
+            <td class="px-2 py-1">Average</td>
+            <td class="px-2 py-1">
+                <%= avg_unit_kills(appearances) %>
+            </td>
+            <td class="px-2 py-1">
+                <%= avg_hero_kills(appearances) %>
+            </td>
+            <td class="px-2 py-1">
+                <%= avg_elo_rating(appearances) %>
+            </td>
+        </tr>
+    </tbody>
+</table>

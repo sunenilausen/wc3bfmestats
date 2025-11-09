@@ -11,11 +11,10 @@
   <div>
     <strong class="block font-medium mb-1">Appearances:</strong>
     <ul class="list-disc pl-5">
-      <% match.appearances.each do |appearance| %>
-        <li>
-          <%= render partial: "matches/appearance", locals: { appearance: appearance } %>
-        </li>
-      <% end %>
+      <li class="font-semibold mb-2">Forces of Middle Earth (<%= match.good_victory ? "Victory" : "Defeat" %>) </li>
+      <%= render partial: "matches/team_table", locals: { appearances: match.appearances[0..4] } %>
+      <li class="font-semibold mb-2">Forces of Sauron (<%= match.good_victory ? "Defeat" : "Victory" %>) </li>
+      <%= render partial: "matches/team_table", locals: { appearances: match.appearances[5..9] } %>
     </ul>
   </div>
 </div>

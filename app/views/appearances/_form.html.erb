@@ -1,11 +1,14 @@
 
-<%= simple_form_for(@game) do |f| %>
+<%= simple_form_for(@appearance) do |f| %>
   <%= f.error_notification %>
   <%= f.error_notification message: f.object.errors[:base].to_sentence if f.object.errors[:base].present? %>
 
   <div class="form-inputs">
-    <%= f.input :played_at %>
-    <%= f.input :seconds %>
+    <%= f.association :player %>
+    <%= f.association :faction %>
+    <%= f.association :match %>
+    <%= f.input :unit_kills %>
+    <%= f.input :hero_kills %>
   </div>
 
   <div class="form-actions">

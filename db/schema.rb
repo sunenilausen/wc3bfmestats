@@ -10,7 +10,20 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_09_130444) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_09_132041) do
+  create_table "appearances", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "faction_id", null: false
+    t.integer "hero_kills"
+    t.integer "match_id", null: false
+    t.integer "player_id", null: false
+    t.integer "unit_kills"
+    t.datetime "updated_at", null: false
+    t.index ["faction_id"], name: "index_appearances_on_faction_id"
+    t.index ["match_id"], name: "index_appearances_on_match_id"
+    t.index ["player_id"], name: "index_appearances_on_player_id"
+  end
+
   create_table "factions", force: :cascade do |t|
     t.string "color"
     t.datetime "created_at", null: false
@@ -19,7 +32,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_09_130444) do
     t.datetime "updated_at", null: false
   end
 
-  create_table "games", force: :cascade do |t|
+  create_table "matches", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "played_at"
     t.integer "seconds"
@@ -49,4 +62,8 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_09_130444) do
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
+
+  add_foreign_key "appearances", "factions"
+  add_foreign_key "appearances", "matches"
+  add_foreign_key "appearances", "players"
 end

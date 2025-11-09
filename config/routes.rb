@@ -1,5 +1,6 @@
 Rails.application.routes.draw do
-  resources :games
+  resources :appearances
+  resources :matches
   resources :factions
   resources :players
   devise_for :users

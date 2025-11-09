@@ -4,4 +4,6 @@ class Faction < ApplicationRecord
 
   validates :name, presence: true, uniqueness: true
   validates :color, presence: true, inclusion: { in: COLORS }
+
+  has_many :appearances
 end

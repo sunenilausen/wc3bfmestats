@@ -1,0 +1,15 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  player: one
+  faction: one
+  match: one
+  unit_kills: 1
+  hero_kills: 1
+
+two:
+  player: two
+  faction: two
+  match: two
+  unit_kills: 1
+  hero_kills: 1

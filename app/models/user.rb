@@ -4,7 +4,7 @@ class User < ApplicationRecord
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :validatable
 
-  ROLES = %w[admin user].freeze
+  ROLES = %w[admin uploader].freeze
 
   validates :role, inclusion: { in: ROLES }
 
@@ -12,7 +12,7 @@ class User < ApplicationRecord
     self.role == "admin"
   end
 
-  def user?
-    self.role == "user"
+  def uploader?
+    self.role == "uploader"
   end
 end

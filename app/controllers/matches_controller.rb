@@ -24,6 +24,10 @@ class MatchesController < ApplicationController
   def create
     @match = Match.new(match_params)
 
+    params[:match][:appearances_attributes].each_value do |appearance_attrs|
+      @match.appearances.build(appearance_attrs.permit(:id, :hero_kills, :player_id, :unit_kills, :faction_id))
+    end
+
     respond_to do |format|
       if @match.save
         format.html { redirect_to @match, notice: "Match was successfully created." }
@@ -66,6 +70,6 @@ class MatchesController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def match_params
-      params.expect(match: [ :played_at, :seconds, :good_victory ], appearances_attributes: [ :hero_kills, :player_id, :unit_kills ])
+      params.expect(match: [ :played_at, :seconds, :good_victory, appearances_attributes: [ :id, :hero_kills, :player_id, :unit_kills ] ])
     end
 end

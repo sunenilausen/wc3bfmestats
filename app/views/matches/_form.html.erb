@@ -7,11 +7,12 @@
     <%= f.input :seconds %>
     <%= f.input :good_victory %>
 
-    <% 10.times do |i| %>
-      <%= f.simple_fields_for :appearances, @match.appearances[i] || @match.appearances.build, child_index: i do |af| %>
+    <% @match.appearances.each do |appearance| %>
+      <%= f.simple_fields_for :appearances, appearance || appearance.build do |af| %>
       <div class="nested-fields">
-        <p> <%= @match.appearances[i]&.faction&.name %> </p>
-        <%= af.input :player_id, collection: Player.all, label: "Player" %>
+        <p> <%= appearance.faction.name %> </p>
+        <%= af.input :faction_id, as: :hidden, input_html: { value: appearance.faction_id } %>
+        <%= af.input :player_id, collection: Player.all, label_method: :nickname, label: "Player", selected: Player.all[@match.appearances.index(appearance)]&.id %>
         <%= af.input :unit_kills %>
         <%= af.input :hero_kills %>
       </div>

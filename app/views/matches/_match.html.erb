@@ -7,4 +7,15 @@
     <strong class="block font-medium mb-1">Seconds:</strong>
     <%= match.seconds %>
   </div>
+
+  <div>
+    <strong class="block font-medium mb-1">Appearances:</strong>
+    <ul class="list-disc pl-5">
+      <% match.appearances.each do |appearance| %>
+        <li>
+          <%= render partial: "matches/appearance", locals: { appearance: appearance } %>
+        </li>
+      <% end %>
+    </ul>
+  </div>
 </div>

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_09_134056) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_09_135500) do
   create_table "appearances", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.integer "faction_id", null: false
@@ -46,6 +46,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_09_134056) do
     t.string "battletag"
     t.datetime "created_at", null: false
     t.float "elo_rating"
+    t.float "elo_rating_seed"
     t.string "nickname"
     t.string "region"
     t.datetime "updated_at", null: false

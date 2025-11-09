@@ -3,16 +3,15 @@
   <%= f.error_notification message: f.object.errors[:base].to_sentence if f.object.errors[:base].present? %>
 
   <div class="form-inputs">
-    <div class="mb-4">
-      <%= f.input :played_at, as: :string, input_html: { type: "datetime-local", class: "form-control", value: (@match.played_at || Time.current).strftime("%Y-%m-%dT%H:%M") }, label: "Played At" %>
+    <div class="mb-2">
+      <%= f.input :played_at, as: :string, input_html: { type: "datetime-local", class: "form-control py-1 text-sm h-8", value: (@match.played_at || Time.current).strftime("%Y-%m-%dT%H:%M") }, label: "Played At", wrapper_html: { class: "flex items-center" }, label_html: { class: "mr-2 min-w-[80px] text-sm" } %>
     </div>
-    <%
-=begin%>
- <div class="mb-4">
-      <%= f.input :seconds, as: :integer, label: "Duration (seconds)", input_html: { class: "form-control w-32", min: 0, placeholder: "e.g. 360" }, hint: "Enter the match duration in seconds" %>
+
+    <div class="mb-2">
+      <%= f.input :seconds, as: :string, label: "Duration", input_html: { class: "form-control w-24 py-1 text-sm h-8 placeholder-gray-400 italic", min: 0, placeholder: "e.g. 1:20" }, wrapper_html: { class: "flex items-center" }, label_html: { class: "mr-2 min-w-[80px] text-sm" } %>
+      <div class="text-xs text-gray-500 mt-0.5 ml-1">Format: h:mm:ss (hours optional)</div>
     </div>
-<%
-=end%>
+
     <div class="flex items-center mb-4">
       <%= f.input :good_victory, as: :boolean, label: "Good Victory?", inline_label: true, input_html: { class: "form-checkbox h-5 w-5 text-blue-600" }, wrapper_html: { class: "flex items-center" } %>
     </div>

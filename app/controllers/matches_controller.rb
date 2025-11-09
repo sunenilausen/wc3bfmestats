@@ -24,6 +24,8 @@ class MatchesController < ApplicationController
   def create
     @match = Match.new(match_params)
 
+    @match.seconds = ChronicDuration.parse(params[:match][:seconds]) if params[:match][:seconds].present?
+
     params[:match][:appearances_attributes].each_value do |appearance_attrs|
       @match.appearances.build(appearance_attrs.permit(:id, :hero_kills, :player_id, :unit_kills, :faction_id))
     end

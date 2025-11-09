@@ -32,21 +32,24 @@ class MatchesController < ApplicationController
       # Handle quick import JSON here
       # Expected format:
       # [
-      #   { "Player": "Snaps", "Faction": "Gondor", "Hero Kills": 2, "Unit Kills": 83 },
+      #   { "Player": "Snaps", "Hero Kills": 2, "Unit Kills": 83 },
       #   ...
       # ]
       begin
         appearances_data = JSON.parse(params[:quickimport_json])
-        appearances_data.each do |data|
+        appearances_data.each_with_index do |data, i|
           player_nickname = data["Player"]
-          faction_name = data["Faction"]
           hero_kills = data["Hero Kills"]
           unit_kills = data["Unit Kills"]
 
-          player = Player.find_by(nickname: player_nickname)
-          player ||= Player.create(nickname: player_nickname, elo_rating: 1500)
-          @match.appearances.select { |it| it.faction_id == Faction.find_by(name: faction_name).id }.each do |appearance|
-            appearance.player = player
+          unless player_nickname.nil? || player_nickname.strip.empty?
+            player_nickname = player_nickname.split("#").first.strip unless player_nickname.split("#").first.strip.empty?
+            player = Player.find_by(nickname: player_nickname)
+            player ||= Player.create(nickname: player_nickname, elo_rating: 1500)
+          end
+
+          @match.appearances[i].tap do |appearance|
+            appearance.player = player unless player.nil?
             appearance.hero_kills = hero_kills
             appearance.unit_kills = unit_kills
           end

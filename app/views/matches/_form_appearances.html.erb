@@ -1,0 +1,41 @@
+<% appearances.each do |appearance| %>
+    <%= f.simple_fields_for :appearances, appearance || appearance.build do |af| %>
+        <tr class="nested-fields" data-team="<%= team_number %>">
+            <td class="px-4 py-2 whitespace-nowrap">
+                <span style="display: inline-block; width: 16px; height: 16px; background-color: <%= appearance.faction.color %>; border: 1px solid #000; vertical-align: middle; margin-right: 6px;"></span>
+                <span><%= appearance.faction.name %></span>
+            </td>
+            <td class="px-4 py-2 whitespace-nowrap">
+                <%= af.input :faction_id, as: :hidden, input_html: { value: appearance.faction_id } %>
+                <select name="match[appearances_attributes][<%= @match.appearances.index(appearance) %>][player_id]"
+                                class="form-control"
+                                data-average-elo-target="playerSelect"
+                                data-action="change->average-elo#calculateAverageElo">
+                    <% Player.all.each do |player| %>
+                        <option
+                            value="<%= player.id %>" <%= "selected" if player.id == appearance.player_id %>
+                            data-elo="<%= player.elo_rating.round %>"
+                        >
+                            <%= "#{player.nickname} - #{player.elo_rating.round}" %>
+                        </option>
+                    <% end %>
+                </select>
+                <input type="hidden" name="match[appearances_attributes][<%= @match.appearances.index(appearance) %>][id]" value="<%= appearance.id %>">
+            </td>
+            <td class="px-4 py-2 whitespace-nowrap">
+                <%= af.input :unit_kills, label: false, input_html: { class: "form-control", type: "text", inputmode: "numeric", pattern: "[0-9]*" } %>
+            </td>
+            <td class="px-4 py-2 whitespace-nowrap">
+                <%= af.input :hero_kills, label: false, input_html: { class: "form-control", type: "text", inputmode: "numeric", pattern: "[0-9]*" } %>
+            </td>
+        </tr>
+    <% end %>
+<% end %>
+<tr class="average-elo-row" data-controller="average-elo" data-team="<%= team_number %>">
+    <td class="px-4 py-2 font-bold" colspan="1">Average Elo</td>
+    <td class="px-4 py-2" colspan="3">
+        <span data-average-elo-target="value">
+            <%= appearances.any? ? (appearances.map { |a| a.player&.elo_rating.to_i }.sum / appearances.size) : 0 %>
+        </span>
+    </td>
+</tr>

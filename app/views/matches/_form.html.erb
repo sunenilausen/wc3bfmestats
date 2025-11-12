@@ -25,27 +25,17 @@
           <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hero Kills</th>
         </tr>
       </thead>
-      <tbody class="bg-white divide-y divide-gray-200">
-        <% @match.appearances.each do |appearance| %>
-          <%= f.simple_fields_for :appearances, appearance || appearance.build do |af| %>
-            <tr class="nested-fields">
-              <td class="px-4 py-2 whitespace-nowrap">
-                <span style="display: inline-block; width: 16px; height: 16px; background-color: <%= appearance.faction.color %>; border: 1px solid #000; vertical-align: middle; margin-right: 6px;"></span>
-                <span><%= appearance.faction.name %></span>
-              </td>
-              <td class="px-4 py-2 whitespace-nowrap">
-                <%= af.input :faction_id, as: :hidden, input_html: { value: appearance.faction_id } %>
-                <%= af.input :player_id, collection: Player.all, label_method: :nickname, label: false, selected: Player.all[@match.appearances.index(appearance)]&.id, input_html: { class: "form-control" } %>
-              </td>
-              <td class="px-4 py-2 whitespace-nowrap">
-                <%= af.input :unit_kills, label: false, input_html: { class: "form-control", type: "text", inputmode: "numeric", pattern: "[0-9]*" } %>
-              </td>
-              <td class="px-4 py-2 whitespace-nowrap">
-                <%= af.input :hero_kills, label: false, input_html: { class: "form-control", type: "text", inputmode: "numeric", pattern: "[0-9]*" } %>
-              </td>
-            </tr>
-          <% end %>
-        <% end %>
+      <tbody class="bg-white divide-y divide-gray-200" data-controller="average-elo">
+        <tr class="bg-gray-100">
+          <td colspan="5" class="px-4 py-2 text-left text-sm text-gray-500 font-medium">Forces of Middle Earth</td>
+        </tr>
+        <%= render partial: "matches/form_appearances", locals: { f: f, appearances: @match.appearances[0..4], team_number: 1 } %>
+      </tbody>
+      <tbody class="bg-white divide-y divide-gray-200" data-controller="average-elo">
+        <tr class="bg-gray-100">
+          <td colspan="5" class="px-4 py-2 text-left text-sm text-gray-500 font-medium">Forces of Sauron</td>
+        </tr>
+        <%= render partial: "matches/form_appearances", locals: { f: f, appearances: @match.appearances[5..9], team_number: 2 } %>
       </tbody>
     </table>
   </div>

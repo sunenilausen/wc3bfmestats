@@ -10,12 +10,12 @@
     <%= appearance.hero_kills %>
   </td>
   <td class="px-2 py-1">
-    <%= appearance.elo_rating.round %>
+    <%= appearance.elo_rating&.round %>
   </td>
   <td class="px-2 py-1">
-    <%= appearance.elo_rating_change.round %>
+    <%= appearance.elo_rating_change&.round %>
   </td>
   <td class="px-2 py-1">
-    <%= appearance.player.elo_rating.round %>
+    <%= appearance.player.elo_rating&.round %>
   </td>
 </tr>

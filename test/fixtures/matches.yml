@@ -2,8 +2,10 @@
 
 one:
   played_at: 2025-11-09 14:04:44
-  seconds: 1
+  seconds: 1800
+  good_victory: true
 
 two:
   played_at: 2025-11-09 14:04:44
-  seconds: 1
+  seconds: 2400
+  good_victory: false

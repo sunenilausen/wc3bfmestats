@@ -2,7 +2,7 @@ require "test_helper"
 
 class FactionsControllerTest < ActionDispatch::IntegrationTest
   setup do
-    @faction = factions(:one)
+    @faction = factions(:gondor)
   end
 
   test "should get index" do
@@ -17,7 +17,7 @@ class FactionsControllerTest < ActionDispatch::IntegrationTest
 
   test "should create faction" do
     assert_difference("Faction.count") do
-      post factions_url, params: { faction: { color: @faction.color, good: @faction.good, name: @faction.name } }
+      post factions_url, params: { faction: { color: @faction.color, good: @faction.good, name: "New Faction" } }
     end
 
     assert_redirected_to faction_url(Faction.last)
@@ -39,8 +39,9 @@ class FactionsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "should destroy faction" do
+    unused_faction = factions(:unused)
     assert_difference("Faction.count", -1) do
-      delete faction_url(@faction)
+      delete faction_url(unused_faction)
     end
 
     assert_redirected_to factions_url

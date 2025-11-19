@@ -1,11 +1,56 @@
 # Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
-one:
-  name: MyString
-  good: false
-  color: MyString
+gondor:
+  name: Gondor
+  color: red
+  good: true
 
-two:
-  name: MyString
+rohan:
+  name: Rohan
+  color: blue
+  good: true
+
+dol_amroth:
+  name: Dol Amroth
+  color: teal
+  good: true
+
+fellowship:
+  name: Fellowship
+  color: purple
+  good: true
+
+fangorn:
+  name: Fangorn
+  color: yellow
+  good: true
+
+isengard:
+  name: Isengard
+  color: green
   good: false
-  color: MyString
+
+easterlings:
+  name: Easterlings
+  color: gray
+  good: false
+
+harad:
+  name: Harad
+  color: lightblue
+  good: false
+
+minas_morgul:
+  name: Minas Morgul
+  color: darkgreen
+  good: false
+
+mordor:
+  name: Mordor
+  color: brown
+  good: false
+
+unused:
+  name: Unused Faction
+  color: pink
+  good: true

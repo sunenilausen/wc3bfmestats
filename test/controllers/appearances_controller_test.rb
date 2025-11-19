@@ -2,7 +2,7 @@ require "test_helper"
 
 class AppearancesControllerTest < ActionDispatch::IntegrationTest
   setup do
-    @appearance = appearances(:one)
+    @appearance = appearances(:gondor_one)
   end
 
   test "should get index" do

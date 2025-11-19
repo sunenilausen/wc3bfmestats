@@ -1,17 +1,103 @@
 # Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
+# Good team players
 one:
-  battletag: MyString
-  nickname: MyString
-  battlenet_name: MyString
-  elo_rating: 1.5
-  region: MyString
-  battlenet_number: 1
+  battletag: Player1#1234
+  nickname: Player1
+  battlenet_name: Player1
+  elo_rating: 1500
+  elo_rating_seed: 1500
+  region: eu
+  battlenet_number: 1234
 
 two:
-  battletag: MyString
-  nickname: MyString
-  battlenet_name: MyString
-  elo_rating: 1.5
-  region: MyString
-  battlenet_number: 1
+  battletag: Player2#5678
+  nickname: Player2
+  battlenet_name: Player2
+  elo_rating: 1500
+  elo_rating_seed: 1500
+  region: eu
+  battlenet_number: 5678
+
+three:
+  battletag: Player3#9012
+  nickname: Player3
+  battlenet_name: Player3
+  elo_rating: 1500
+  elo_rating_seed: 1500
+  region: eu
+  battlenet_number: 9012
+
+four:
+  battletag: Player4#3456
+  nickname: Player4
+  battlenet_name: Player4
+  elo_rating: 1500
+  elo_rating_seed: 1500
+  region: eu
+  battlenet_number: 3456
+
+five:
+  battletag: Player5#1111
+  nickname: Player5
+  battlenet_name: Player5
+  elo_rating: 1550
+  elo_rating_seed: 1550
+  region: eu
+  battlenet_number: 1111
+
+# Evil team players
+six:
+  battletag: Player6#2222
+  nickname: Player6
+  battlenet_name: Player6
+  elo_rating: 1450
+  elo_rating_seed: 1450
+  region: eu
+  battlenet_number: 2222
+
+seven:
+  battletag: Player7#3333
+  nickname: Player7
+  battlenet_name: Player7
+  elo_rating: 1520
+  elo_rating_seed: 1520
+  region: eu
+  battlenet_number: 3333
+
+eight:
+  battletag: Player8#4444
+  nickname: Player8
+  battlenet_name: Player8
+  elo_rating: 1480
+  elo_rating_seed: 1480
+  region: eu
+  battlenet_number: 4444
+
+nine:
+  battletag: Player9#5555
+  nickname: Player9
+  battlenet_name: Player9
+  elo_rating: 1510
+  elo_rating_seed: 1510
+  region: eu
+  battlenet_number: 5555
+
+ten:
+  battletag: Player10#6666
+  nickname: Player10
+  battlenet_name: Player10
+  elo_rating: 1490
+  elo_rating_seed: 1490
+  region: eu
+  battlenet_number: 6666
+
+# Unused player for delete tests
+unused:
+  battletag: UnusedPlayer#7890
+  nickname: UnusedPlayer
+  battlenet_name: UnusedPlayer
+  elo_rating: 1500
+  elo_rating_seed: 1500
+  region: eu
+  battlenet_number: 7890

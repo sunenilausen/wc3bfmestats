@@ -1,0 +1,2 @@
+module Wc3statsReplaysHelper
+end

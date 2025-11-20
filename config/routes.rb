@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  resources :wc3stats_replays
   resources :appearances
   resources :matches
   resources :factions

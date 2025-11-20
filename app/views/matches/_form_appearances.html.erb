@@ -11,9 +11,9 @@
                                 class="form-control"
                                 data-average-elo-target="playerSelect"
                                 data-action="change->average-elo#calculateAverageElo">
-                    <% Player.all.each do |player| %>
+                    <% Player.all.each_with_index do |player, index| %>
                         <option
-                            value="<%= player.id %>" <%= "selected" if player.id == appearance.player_id %>
+                            value="<%= player.id %>" <%= "selected" if (player.id == appearance.player_id || index == @match.appearances.index(appearance)) %>
                             data-elo="<%= player.elo_rating.round %>"
                         >
                             <%= "#{player.nickname} - #{player.elo_rating.round}" %>

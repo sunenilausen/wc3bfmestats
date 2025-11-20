@@ -1,0 +1,798 @@
+{
+    "status": "OK",
+    "code": 200,
+    "queryTime": 0.0042,
+    "body": {
+        "hash": "42207b6da2a84f819b284ecd39d0f965",
+        "name": "LOTR BFME",
+        "map": "BFME",
+        "variant": null,
+        "flags": 76,
+        "file": "/data/replays/2025/11/18/42207b6da2a84f819b284ecd39d0f965.w3g",
+        "size": 2722457,
+        "length": 2650,
+        "playedOn": 1763508294,
+        "ladder": "Public",
+        "season": "Season 1",
+        "keys": [
+            {
+                "name": "Drathenar#11807",
+                "key": {
+                    "map": "BFME",
+                    "ladder": "Public",
+                    "season": "Season 1",
+                    "round": "Global",
+                    "mode": "Global"
+                }
+            },
+            {
+                "name": "Necro#2196",
+                "key": {
+                    "map": "BFME",
+                    "ladder": "Public",
+                    "season": "Season 1",
+                    "round": "Global",
+                    "mode": "Global"
+                }
+            },
+            {
+                "name": "Zuma#11985",
+                "key": {
+                    "map": "BFME",
+                    "ladder": "Public",
+                    "season": "Season 1",
+                    "round": "Global",
+                    "mode": "Global"
+                }
+            },
+            {
+                "name": "Ligoulas#2247",
+                "key": {
+                    "map": "BFME",
+                    "ladder": "Public",
+                    "season": "Season 1",
+                    "round": "Global",
+                    "mode": "Global"
+                }
+            },
+            {
+                "name": "Ele#2569",
+                "key": {
+                    "map": "BFME",
+                    "ladder": "Public",
+                    "season": "Season 1",
+                    "round": "Global",
+                    "mode": "Global"
+                }
+            },
+            {
+                "name": "Keso#2483",
+                "key": {
+                    "map": "BFME",
+                    "ladder": "Public",
+                    "season": "Season 1",
+                    "round": "Global",
+                    "mode": "Global"
+                }
+            },
+            {
+                "name": "Radagast#21273",
+                "key": {
+                    "map": "BFME",
+                    "ladder": "Public",
+                    "season": "Season 1",
+                    "round": "Global",
+                    "mode": "Global"
+                }
+            },
+            {
+                "name": "Sorc#21891",
+                "key": {
+                    "map": "BFME",
+                    "ladder": "Public",
+                    "season": "Season 1",
+                    "round": "Global",
+                    "mode": "Global"
+                }
+            },
+            {
+                "name": "Finrod#11997",
+                "key": {
+                    "map": "BFME",
+                    "ladder": "Public",
+                    "season": "Season 1",
+                    "round": "Global",
+                    "mode": "Global"
+                }
+            },
+            {
+                "name": "KaptajnSnaps#1987",
+                "key": {
+                    "map": "BFME",
+                    "ladder": "Public",
+                    "season": "Season 1",
+                    "round": "Global",
+                    "mode": "Global"
+                }
+            }
+        ],
+        "processed": true,
+        "uploads": [
+            {
+                "saver": "Necro#2196",
+                "file": "/data/replays/2025/11/18/42207b6da2a84f819b284ecd39d0f965.w3g",
+                "size": 2722457,
+                "timestamp": 1763508294
+            }
+        ],
+        "data": {
+            "header": {
+                "intro":"Warcraft III recorded game",
+                "headerSize": 68,
+                "compressedSize": 2722457,
+                "headerVersion": 1,
+                "uncompressedSize": 6957847,
+                "numBlocks": 850,
+                "identification": "PX3W",
+                "majorVersion": 10100,
+                "buildVersion": 6116,
+                "flags": 32768,
+                "length": 2650,
+                "checksum": "3513b13a"
+            },
+            "game": {
+                "name": "LOTR BFME",
+                "speed": 2,
+                "visibility": 3,
+                "observers": 0,
+                "teamsTogether": true,
+                "lockedTeams": true,
+                "fullShare": false,
+                "randomHero": false,
+                "randomRaces": false,
+                "checksum": "77543b66",
+                "path": "Maps/Download/BFME4.5e.w3x",
+                "map": "BFME4.5e.w3x",
+                "host": "Keso#2483",
+                "sha1": "eedd625c42f7e8741033c4306a5dcfa3304e488a",
+                "numSlots": 22,
+                "type": 1,
+                "isLocal": null,
+                "private": 32,
+                "recordId": 25,
+                "recordLength": 205,
+                "slotRecords": 22,
+                "players": [
+                    {
+                        "type": 0,
+                        "id": 2,
+                        "name": "Drathenar#11807",
+                        "partial": null,
+                        "race": 1,
+                        "isHost": true,
+                        "isWinner": true,
+                        "isObserver": false,
+                        "slot": 0,
+                        "order": 0,
+                        "colour": 0,
+                        "handicap": 100,
+                        "leftAt": 2650,
+                        "stayPercent": 100,
+                        "team": 0,
+                        "apm": 106,
+                        "activity": [
+                            62
+                        ],
+                        "flags": [
+                            "winner"
+                        ],
+                        "variables": {
+                            "unitKills": 255,
+                            "heroKills": 2,
+                            "creepsKilled": 8,
+                            "teamHeal": 2360,
+                            "selfHeal": 4337,
+                            "heroHeal": 6247,
+                            "unitHeal": 450,
+                            "overHeal": null,
+                            "castlesRazed": null,
+                            "unitsRecruited": null,
+                            "unitsSpawned": null,
+                            "spawnIdletime": null,
+                            "xpGained": null,
+                            "averageGatheringTime": null,
+                            "recivedWood": null,
+                            "gatheredWood": null
+                        }
+                    },
+                    {
+                        "type": 22,
+                        "id": 5,
+                        "name": "Necro#2196",
+                        "partial": null,
+                        "race": 1,
+                        "isHost": false,
+                        "isWinner": true,
+                        "isObserver": false,
+                        "slot": 1,
+                        "order": 1,
+                        "colour": 1,
+                        "handicap": 100,
+                        "leftAt": 2650,
+                        "stayPercent": 100,
+                        "team": 0,
+                        "apm": 67,
+                        "activity": [
+                            27
+                        ],
+                        "flags": [
+                            "winner"
+                        ],
+                        "variables": {
+                            "unitKills": 215,
+                            "heroKills": 1,
+                            "creepsKilled": 0,
+                            "teamHeal": 139,
+                            "selfHeal": 2400,
+                            "heroHeal": 300,
+                            "unitHeal": 2239,
+                            "overHeal": null,
+                            "castlesRazed": null,
+                            "unitsRecruited": null,
+                            "unitsSpawned": null,
+                            "spawnIdletime": null,
+                            "xpGained": null,
+                            "averageGatheringTime": null,
+                            "recivedWood": null,
+                            "gatheredWood": null
+                        }
+                    },
+                    {
+                        "type": 22,
+                        "id": 3,
+                        "name": "Zuma#11985",
+                        "partial": null,
+                        "race": 1,
+                        "isHost": false,
+                        "isWinner": true,
+                        "isObserver": false,
+                        "slot": 2,
+                        "order": 2,
+                        "colour": 2,
+                        "handicap": 100,
+                        "leftAt": 2650,
+                        "stayPercent": 100,
+                        "team": 0,
+                        "apm": 231,
+                        "activity": [
+                            96
+                        ],
+                        "flags": [
+                            "winner"
+                        ],
+                        "variables": {
+                            "unitKills": 164,
+                            "heroKills": 3,
+                            "creepsKilled": 11,
+                            "teamHeal": 798,
+                            "selfHeal": 1257,
+                            "heroHeal": 1857,
+                            "unitHeal": 198,
+                            "overHeal": null,
+                            "castlesRazed": null,
+                            "unitsRecruited": null,
+                            "unitsSpawned": null,
+                            "spawnIdletime": null,
+                            "xpGained": null,
+                            "averageGatheringTime": null,
+                            "recivedWood": null,
+                            "gatheredWood": null
+                        }
+                    },
+                    {
+                        "type": 22,
+                        "id": 4,
+                        "name": "Ligoulas#2247",
+                        "partial": null,
+                        "race": 1,
+                        "isHost": false,
+                        "isWinner": true,
+                        "isObserver": false,
+                        "slot": 3,
+                        "order": 3,
+                        "colour": 3,
+                        "handicap": 100,
+                        "leftAt": 2650,
+                        "stayPercent": 100,
+                        "team": 0,
+                        "apm": 134,
+                        "activity": [
+                            75
+                        ],
+                        "flags": [
+                            "winner"
+                        ],
+                        "variables": {
+                            "unitKills": 200,
+                            "heroKills": 7,
+                            "creepsKilled": 0,
+                            "teamHeal": 5584,
+                            "selfHeal": 16525,
+                            "heroHeal": 20327,
+                            "unitHeal": 1782,
+                            "overHeal": null,
+                            "castlesRazed": null,
+                            "unitsRecruited": null,
+                            "unitsSpawned": null,
+                            "spawnIdletime": null,
+                            "xpGained": null,
+                            "averageGatheringTime": null,
+                            "recivedWood": null,
+                            "gatheredWood": null
+                        }
+                    },
+                    {
+                        "type": 22,
+                        "id": 9,
+                        "name": "Ele#2569",
+                        "partial": null,
+                        "race": 4,
+                        "isHost": false,
+                        "isWinner": true,
+                        "isObserver": false,
+                        "slot": 4,
+                        "order": 4,
+                        "colour": 4,
+                        "handicap": 100,
+                        "leftAt": 2650,
+                        "stayPercent": 100,
+                        "team": 0,
+                        "apm": 208,
+                        "activity": [
+                            135
+                        ],
+                        "flags": [
+                            "winner"
+                        ],
+                        "variables": {
+                            "unitKills": 426,
+                            "heroKills": 13,
+                            "creepsKilled": null,
+                            "teamHeal": 2372,
+                            "selfHeal": 6052,
+                            "heroHeal": 8124,
+                            "unitHeal": 300,
+                            "overHeal": null,
+                            "castlesRazed": null,
+                            "unitsRecruited": null,
+                            "unitsSpawned": null,
+                            "spawnIdletime": null,
+                            "xpGained": null,
+                            "averageGatheringTime": null,
+                            "recivedWood": null,
+                            "gatheredWood": null
+                        }
+                    },
+                    {
+                        "type": 22,
+                        "id": 1,
+                        "name": "Keso#2483",
+                        "partial": null,
+                        "race": 2,
+                        "isHost": false,
+                        "isWinner": false,
+                        "isObserver": false,
+                        "slot": 5,
+                        "order": 5,
+                        "colour": 6,
+                        "handicap": 100,
+                        "leftAt": 2650,
+                        "stayPercent": 100,
+                        "team": 1,
+                        "apm": 133,
+                        "activity": [
+                            97
+                        ],
+                        "flags": [
+                            "loser"
+                        ],
+                        "variables": {
+                            "unitKills": 223,
+                            "heroKills": 2,
+                            "creepsKilled": 35,
+                            "teamHeal": 1100,
+                            "selfHeal": 6507,
+                            "heroHeal": 6807,
+                            "unitHeal": 800,
+                            "overHeal": null,
+                            "castlesRazed": null,
+                            "unitsRecruited": null,
+                            "unitsSpawned": null,
+                            "spawnIdletime": null,
+                            "xpGained": null,
+                            "averageGatheringTime": null,
+                            "recivedWood": null,
+                            "gatheredWood": null
+                        }
+                    },
+                    {
+                        "type": 22,
+                        "id": 6,
+                        "name": "Radagast#21273",
+                        "partial": null,
+                        "race": 1,
+                        "isHost": false,
+                        "isWinner": false,
+                        "isObserver": false,
+                        "slot": 6,
+                        "order": 6,
+                        "colour": 8,
+                        "handicap": 100,
+                        "leftAt": 2650,
+                        "stayPercent": 100,
+                        "team": 1,
+                        "apm": 155,
+                        "activity": [
+                            68
+                        ],
+                        "flags": [
+                            "loser"
+                        ],
+                        "variables": {
+                            "unitKills": 182,
+                            "heroKills": 0,
+                            "creepsKilled": 10,
+                            "teamHeal": 0,
+                            "selfHeal": 0,
+                            "heroHeal": 0,
+                            "unitHeal": 0,
+                            "overHeal": null,
+                            "castlesRazed": null,
+                            "unitsRecruited": null,
+                            "unitsSpawned": null,
+                            "spawnIdletime": null,
+                            "xpGained": null,
+                            "averageGatheringTime": null,
+                            "recivedWood": null,
+                            "gatheredWood": null
+                        }
+                    },
+                    {
+                        "type": 22,
+                        "id": 11,
+                        "name": "Sorc#21891",
+                        "partial": null,
+                        "race": 1,
+                        "isHost": false,
+                        "isWinner": false,
+                        "isObserver": false,
+                        "slot": 7,
+                        "order": 7,
+                        "colour": 9,
+                        "handicap": 100,
+                        "leftAt": 2650,
+                        "stayPercent": 100,
+                        "team": 1,
+                        "apm": 228,
+                        "activity": [
+                            111
+                        ],
+                        "flags": [
+                            "loser"
+                        ],
+                        "variables": {
+                            "unitKills": 174,
+                            "heroKills": 5,
+                            "creepsKilled": null,
+                            "teamHeal": 2097,
+                            "selfHeal": 1666,
+                            "heroHeal": 3763,
+                            "unitHeal": 0,
+                            "overHeal": null,
+                            "castlesRazed": null,
+                            "unitsRecruited": null,
+                            "unitsSpawned": null,
+                            "spawnIdletime": null,
+                            "xpGained": null,
+                            "averageGatheringTime": null,
+                            "recivedWood": null,
+                            "gatheredWood": null
+                        }
+                    },
+                    {
+                        "type": 22,
+                        "id": 10,
+                        "name": "Finrod#11997",
+                        "partial": null,
+                        "race": 8,
+                        "isHost": false,
+                        "isWinner": false,
+                        "isObserver": false,
+                        "slot": 8,
+                        "order": 8,
+                        "colour": 10,
+                        "handicap": 100,
+                        "leftAt": 2650,
+                        "stayPercent": 100,
+                        "team": 1,
+                        "apm": 84,
+                        "activity": [
+                            54
+                        ],
+                        "flags": [
+                            "loser"
+                        ],
+                        "variables": {
+                            "unitKills": 279,
+                            "heroKills": 6,
+                            "creepsKilled": null,
+                            "teamHeal": 1012,
+                            "selfHeal": 9737,
+                            "heroHeal": 10749,
+                            "unitHeal": 0,
+                            "overHeal": null,
+                            "castlesRazed": null,
+                            "unitsRecruited": null,
+                            "unitsSpawned": null,
+                            "spawnIdletime": null,
+                            "xpGained": null,
+                            "averageGatheringTime": null,
+                            "recivedWood": null,
+                            "gatheredWood": null
+                        }
+                    },
+                    {
+                        "type": 22,
+                        "id": 13,
+                        "name": "KaptajnSnaps#1987",
+                        "partial": null,
+                        "race": 2,
+                        "isHost": false,
+                        "isWinner": false,
+                        "isObserver": false,
+                        "slot": 9,
+                        "order": 9,
+                        "colour": 11,
+                        "handicap": 100,
+                        "leftAt": 2650,
+                        "stayPercent": 100,
+                        "team": 1,
+                        "apm": 180,
+                        "activity": [
+                            94
+                        ],
+                        "flags": [
+                            "loser"
+                        ],
+                        "variables": {
+                            "unitKills": null,
+                            "heroKills": 0,
+                            "creepsKilled": 1,
+                            "teamHeal": 2461,
+                            "selfHeal": 6527,
+                            "heroHeal": 7505,
+                            "unitHeal": 1483,
+                            "overHeal": null,
+                            "castlesRazed": null,
+                            "unitsRecruited": null,
+                            "unitsSpawned": null,
+                            "spawnIdletime": null,
+                            "xpGained": null,
+                            "averageGatheringTime": null,
+                            "recivedWood": null,
+                            "gatheredWood": null
+                        }
+                    },
+                    {
+                        "type": 22,
+                        "id": 12,
+                        "name": "YÃ¶nRaivo#2926",
+                        "partial": null,
+                        "race": 1,
+                        "isHost": false,
+                        "isWinner": null,
+                        "isObserver": false,
+                        "slot": 10,
+                        "order": 10,
+                        "colour": 12,
+                        "handicap": 100,
+                        "leftAt": 248,
+                        "stayPercent": 9.36,
+                        "team": 2,
+                        "apm": 34,
+                        "activity": [
+                            26
+                        ],
+                        "flags": [],
+                        "variables": {
+                            "unitKills": null,
+                            "heroKills": null,
+                            "creepsKilled": null,
+                            "teamHeal": null,
+                            "selfHeal": null,
+                            "heroHeal": null,
+                            "unitHeal": null,
+                            "overHeal": null,
+                            "castlesRazed": null,
+                            "unitsRecruited": null,
+                            "unitsSpawned": null,
+                            "spawnIdletime": null,
+                            "xpGained": null,
+                            "averageGatheringTime": null,
+                            "recivedWood": null,
+                            "gatheredWood": null
+                        }
+                    },
+                    {
+                        "type": 22,
+                        "id": 7,
+                        "name": "Faithfull#2462",
+                        "partial": null,
+                        "race": 2,
+                        "isHost": false,
+                        "isWinner": null,
+                        "isObserver": false,
+                        "slot": 11,
+                        "order": 11,
+                        "colour": 13,
+                        "handicap": 100,
+                        "leftAt": 2650,
+                        "stayPercent": 100,
+                        "team": 2,
+                        "apm": 23,
+                        "activity": [
+                            36
+                        ],
+                        "flags": [],
+                        "variables": {
+                            "unitKills": null,
+                            "heroKills": null,
+                            "creepsKilled": null,
+                            "teamHeal": null,
+                            "selfHeal": null,
+                            "heroHeal": null,
+                            "unitHeal": null,
+                            "overHeal": null,
+                            "castlesRazed": null,
+                            "unitsRecruited": null,
+                            "unitsSpawned": null,
+                            "spawnIdletime": null,
+                            "xpGained": null,
+                            "averageGatheringTime": null,
+                            "recivedWood": null,
+                            "gatheredWood": null
+                        }
+                    },
+                    {
+                        "type": 22,
+                        "id": 14,
+                        "name": "BroManBillbo#2829",
+                        "partial": null,
+                        "race": 8,
+                        "isHost": false,
+                        "isWinner": null,
+                        "isObserver": false,
+                        "slot": 12,
+                        "order": 12,
+                        "colour": 14,
+                        "handicap": 100,
+                        "leftAt": 1720,
+                        "stayPercent": 64.91,
+                        "team": 2,
+                        "apm": 5,
+                        "activity": [
+                            1
+                        ],
+                        "flags": [],
+                        "variables": {
+                            "unitKills": null,
+                            "heroKills": null,
+                            "creepsKilled": null,
+                            "teamHeal": null,
+                            "selfHeal": null,
+                            "heroHeal": null,
+                            "unitHeal": null,
+                            "overHeal": null,
+                            "castlesRazed": null,
+                            "unitsRecruited": null,
+                            "unitsSpawned": null,
+                            "spawnIdletime": null,
+                            "xpGained": null,
+                            "averageGatheringTime": null,
+                            "recivedWood": null,
+                            "gatheredWood": null
+                        }
+                    },
+                    {
+                        "type": 22,
+                        "id": 8,
+                        "name": "adad26#2594",
+                        "partial": null,
+                        "race": 4,
+                        "isHost": false,
+                        "isWinner": null,
+                        "isObserver": false,
+                        "slot": 13,
+                        "order": 13,
+                        "colour": 15,
+                        "handicap": 100,
+                        "leftAt": 2650,
+                        "stayPercent": 100,
+                        "team": 2,
+                        "apm": 14,
+                        "activity": [
+                            1
+                        ],
+                        "flags": [],
+                        "variables": {
+                            "unitKills": null,
+                            "heroKills": null,
+                            "creepsKilled": null,
+                            "teamHeal": null,
+                            "selfHeal": null,
+                            "heroHeal": null,
+                            "unitHeal": null,
+                            "overHeal": null,
+                            "castlesRazed": null,
+                            "unitsRecruited": null,
+                            "unitsSpawned": null,
+                            "spawnIdletime": null,
+                            "xpGained": null,
+                            "averageGatheringTime": null,
+                            "recivedWood": null,
+                            "gatheredWood": null
+                        }
+                    }
+                ],
+                "randomSeed": 1157850772,
+                "selectMode": 3,
+                "startSpots": 22,
+                "events": [
+                    {
+                        "id": 107,
+                        "intro": "MMD.Dat",
+                        "header": "val:30",
+                        "message": "Event baseDestroyed Dunland",
+                        "type": "event",
+                        "eventName": "baseDestroyed",
+                        "event": {
+                            "id": 107,
+                            "intro": "MMD.Dat",
+                            "header": "val:11",
+                            "message": "DefEvent baseDestroyed 1 base {0}",
+                            "type": "defEvent",
+                            "eventName": "baseDestroyed",
+                            "numParams": "1",
+                            "params": [
+                                "base"
+                            ],
+                            "format": "{0}"
+                        },
+                        "time": 118,
+                        "args": [
+                            "Dunland"
+                        ]
+                    }
+                ],
+                "variables": [],
+                "saver": 5,
+                "hasW3MMD": true
+            },
+            "chatlog": [
+                {
+                    "playerId": 8,
+                    "length": 47,
+                    "flags": 32,
+                    "mode": 0,
+                    "message": "\"why does nothing zuma say appIy reaIity\"",
+                    "time": 62
+                }
+            ]
+        },
+        "downloads": 0,
+        "isVoid": false,
+        "overridable": true,
+        "partial": true,
+        "id": 720046
+    }
+}

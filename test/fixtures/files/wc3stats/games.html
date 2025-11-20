@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en" class=" pamiyzj idc0_350">
+
+<head>
+      <meta name="viewport" content="width=device-width,initial-scale=.01">
+      <script async="" src="https://www.googletagmanager.com/gtag/js?id=UA-145814893-1"></script>
+      <script>window.dataLayer = window.dataLayer || [];
+            function gtag() { dataLayer.push(arguments); }
+            gtag('js', new Date());
+            gtag('config', 'UA-145814893-1');</script>
+      <link href="/css/chunk-4b7d0bd1.1ee18229.css" rel="prefetch">
+      <link href="/js/chunk-43557139.a70b9c39.js" rel="prefetch">
+      <link href="/js/chunk-4b7d0bd1.f15ab637.js" rel="prefetch">
+      <link href="/css/chunk-vendors.391ed6f9.css" rel="preload" as="style">
+      <link href="/css/index.e8d36ef0.css" rel="preload" as="style">
+      <link href="/js/chunk-vendors.9291e3f4.js" rel="preload" as="script">
+      <link href="/js/index.db64be36.js" rel="preload" as="script">
+      <link href="/css/chunk-vendors.391ed6f9.css" rel="stylesheet">
+      <link href="/css/index.e8d36ef0.css" rel="stylesheet">
+      <style type="text/css">
+            .resize-observer[data-v-8859cc6c] {
+                  position: absolute;
+                  top: 0;
+                  left: 0;
+                  z-index: -1;
+                  width: 100%;
+                  height: 100%;
+                  border: none;
+                  background-color: transparent;
+                  pointer-events: none;
+                  display: block;
+                  overflow: hidden;
+                  opacity: 0
+            }
+
+            .resize-observer[data-v-8859cc6c] object {
+                  display: block;
+                  position: absolute;
+                  top: 0;
+                  left: 0;
+                  height: 100%;
+                  width: 100%;
+                  overflow: hidden;
+                  pointer-events: none;
+                  z-index: -1
+            }
+      </style>
+      <style type="text/css">
+            .vue-modal-resizer {
+                  display: block;
+                  overflow: hidden;
+                  position: absolute;
+                  width: 12px;
+                  height: 12px;
+                  right: 0;
+                  bottom: 0;
+                  z-index: 9999999;
+                  background: transparent;
+                  cursor: se-resize;
+            }
+
+            .vue-modal-resizer::after {
+                  display: block;
+                  position: absolute;
+                  content: '';
+                  background: transparent;
+                  left: 0;
+                  top: 0;
+                  width: 0;
+                  height: 0;
+                  border-bottom: 10px solid #ddd;
+                  border-left: 10px solid transparent;
+            }
+
+            .vue-modal-resizer.clicked::after {
+                  border-bottom: 10px solid #369be9;
+            }
+      </style>
+      <style type="text/css">
+            .v--modal-block-scroll {
+                  overflow: hidden;
+                  width: 100vw;
+            }
+
+            .v--modal-overlay {
+                  position: fixed;
+                  box-sizing: border-box;
+                  left: 0;
+                  top: 0;
+                  width: 100%;
+                  height: 100vh;
+                  background: rgba(0, 0, 0, 0.2);
+                  z-index: 999;
+                  opacity: 1;
+            }
+
+            .v--modal-overlay.scrollable {
+                  height: 100%;
+                  min-height: 100vh;
+                  overflow-y: auto;
+                  -webkit-overflow-scrolling: touch;
+            }
+
+            .v--modal-overlay .v--modal-background-click {
+                  width: 100%;
+                  min-height: 100%;
+                  height: auto;
+            }
+
+            .v--modal-overlay .v--modal-box {
+                  position: relative;
+                  overflow: hidden;
+                  box-sizing: border-box;
+            }
+
+            .v--modal-overlay.scrollable .v--modal-box {
+                  margin-bottom: 2px;
+            }
+
+            .v--modal {
+                  background-color: white;
+                  text-align: left;
+                  border-radius: 3px;
+                  box-shadow: 0 20px 60px -2px rgba(27, 33, 58, 0.4);
+                  padding: 0;
+            }
+
+            .v--modal.v--modal-fullscreen {
+                  width: 100vw;
+                  height: 100vh;
+                  margin: 0;
+                  left: 0;
+                  top: 0;
+            }
+
+            .v--modal-top-right {
+                  display: block;
+                  position: absolute;
+                  right: 0;
+                  top: 0;
+            }
+
+            .overlay-fade-enter-active,
+            .overlay-fade-leave-active {
+                  transition: all 0.2s;
+            }
+
+            .overlay-fade-enter,
+            .overlay-fade-leave-active {
+                  opacity: 0;
+            }
+
+            .nice-modal-fade-enter-active,
+            .nice-modal-fade-leave-active {
+                  transition: all 0.4s;
+            }
+
+            .nice-modal-fade-enter,
+            .nice-modal-fade-leave-active {
+                  opacity: 0;
+                  transform: translateY(-20px);
+            }
+      </style>
+      <style type="text/css">
+            .vue-dialog div {
+                  box-sizing: border-box;
+            }
+
+            .vue-dialog .dialog-flex {
+                  width: 100%;
+                  height: 100%;
+            }
+
+            .vue-dialog .dialog-content {
+                  flex: 1 0 auto;
+                  width: 100%;
+                  padding: 15px;
+                  font-size: 14px;
+            }
+
+            .vue-dialog .dialog-c-title {
+                  font-weight: 600;
+                  padding-bottom: 15px;
+            }
+
+            .vue-dialog .dialog-c-text {}
+
+            .vue-dialog .vue-dialog-buttons {
+                  display: flex;
+                  flex: 0 1 auto;
+                  width: 100%;
+                  border-top: 1px solid #eee;
+            }
+
+            .vue-dialog .vue-dialog-buttons-none {
+                  width: 100%;
+                  padding-bottom: 15px;
+            }
+
+            .vue-dialog-button {
+                  font-size: 12px !important;
+                  background: transparent;
+                  padding: 0;
+                  margin: 0;
+                  border: 0;
+                  cursor: pointer;
+                  box-sizing: border-box;
+                  line-height: 40px;
+                  height: 40px;
+                  color: inherit;
+                  font: inherit;
+                  outline: none;
+            }
+
+            .vue-dialog-button:hover {
+                  background: rgba(0, 0, 0, 0.01);
+            }
+
+            .vue-dialog-button:active {
+                  background: rgba(0, 0, 0, 0.025);
+            }
+
+            .vue-dialog-button:not(:first-of-type) {
+                  border-left: 1px solid #eee;
+            }
+      </style>
+      <title>Games | Warcraft III Stats</title>
+      <link data-vue-meta="1" data-vmid="shortcut" rel="shortcut icon" href="https://wc3stats.com/assets/favicon.ico">
+      <link data-vue-meta="1" data-vmid="apple-touch-icon" rel="apple-touch-icon image_src"
+            href="https://wc3stats.com/assets/favicon.ico">
+      <link data-vue-meta="1" data-vmid="canonical" rel="canonical" href="https://wc3stats.com/">
+      <meta data-vue-meta="1" data-vmid="charset" charset="utf-8">
+      <meta data-vue-meta="1" data-vmid="og:type" property="og:type" content="website">
+      <meta data-vue-meta="1" data-vmid="og:image" property="og:image"
+            content="https://wc3stats.com/assets/favicon.png">
+      <meta data-vue-meta="1" data-vmid="og:url" property="og:url" content="https://wc3stats.com/">
+      <meta data-vue-meta="1" data-vmid="og:site_name" property="og:site_name" content="Warcraft III Stats">
+      <meta data-vue-meta="1" data-vmid="twitter:image" property="twitter:image"
+            content="https://wc3stats.com/assets/favicon.png">
+      <meta data-vue-meta="1" data-vmid="robots" name="robots" content="index, follow">
+      <meta data-vue-meta="1" data-vmid="og:title" name="og:title" content="Games | Warcraft III Stats">
+      <meta data-vue-meta="1" data-vmid="twitter:title" name="twitter:title" content="Games | Warcraft III Stats">
+      <meta data-vue-meta="1" data-vmid="description" name="description"
+            content="Browse and search a real-time games directory for every Warcraft III replay ever uploaded.">
+      <meta data-vue-meta="1" data-vmid="og:description" name="og:description"
+            content="Browse and search a real-time games directory for every Warcraft III replay ever uploaded.">
+      <meta data-vue-meta="1" data-vmid="twitter:description" name="twitter:description"
+            content="Browse and search a real-time games directory for every Warcraft III replay ever uploaded.">
+</head>
+
+<body><noscript><strong>Sorry but wc3stats.com does not work properly without JavaScript enabled. Please enable it to
+                  continue.</strong></noscript>
+      <div class="Body-wrapper">
+            <div class="container container--ultrawide">
+                  <nav class="W3S-navbar W3S-navbar--sticky"><a href="/">
+                              <div class="W3S-logo"></div>
+                        </a>
+                        <div class="W3S-navbar__links">
+                              <div class="W3S-navbar__links--left"><a href="/"
+                                          class="W3S-navbar__link router-link-active"><span>Home</span></a><a
+                                          href="/games"
+                                          class="W3S-navbar__link router-link-exact-active router-link-active W3S-navbar__link--active"
+                                          aria-current="page"><span>Games</span></a>
+                                    <div class="W3S-navbar__link"><span>
+                                                Maps
+                                                <i class="W3S-navbar__icon fas fa-angle-down"></i><!----></span></div><a
+                                          href="/upload" class="W3S-navbar__link"><span>Upload</span></a>
+                              </div><a href="https://patreon.com/wc3stats" target="_blank"
+                                    class="W3S-navbar__link hoverable">
+                                    <div data-v-155cad79=""><span data-v-155cad79="" class="letter"
+                                                style="color: rgb(248, 183, 0); font-size: 23px;">P</span><span
+                                                data-v-155cad79="" class="letter"
+                                                style="color: rgb(229, 179, 15); font-size: 12px;">a</span><span
+                                                data-v-155cad79="" class="letter"
+                                                style="color: rgb(200, 176, 56); font-size: 19px;">t</span><span
+                                                data-v-155cad79="" class="letter"
+                                                style="color: rgb(157, 144, 128); font-size: 19px;">r</span><span
+                                                data-v-155cad79="" class="letter"
+                                                style="color: rgb(229, 179, 15); font-size: 15px;">e</span><span
+                                                data-v-155cad79="" class="letter"
+                                                style="color: rgb(229, 179, 15); font-size: 18px;">o</span><span
+                                                data-v-155cad79="" class="letter"
+                                                style="color: rgb(62, 156, 220); font-size: 14px;">n</span></div>
+                              </a><a href="/gamelist" class="W3S-navbar__link"><span>Lobbies <sup
+                                                class="W3S-navbar__link--live">Live</sup></span></a>
+                              <div class="W3S-navbar__links--right">
+                                    <div class="W3S-navbar__link d-none d-md-block"><span>
+                                                Info
+                                                <i class="W3S-navbar__icon fas fa-angle-down"></i><!----></span></div>
+                              </div>
+                        </div>
+                        <div class="W3S-navbar__dropdown" style="display: none;">
+                              <ul class="W3S-navbar__dropdown__columns">
+                                    <li class="W3S-navbar__dropdown__column">
+                                          <div class="W3S-navbar__dropdown__title">Featured</div><a
+                                                href="/risk-europe/leaderboard" class="">
+                                                Risk Europe <span class="W3S-navbar__upload-stats">14 / 90</span></a>
+                                    </li>
+                                    <li class="W3S-navbar__dropdown__column">
+                                          <div class="W3S-navbar__dropdown__title">Survival &amp; Vampirism</div><a
+                                                href="/island-defense/leaderboard" class="" data-map="Island Defense">
+                                                Island Defense
+                                                <span class="W3S-navbar__upload-stats">3 / 19</span></a><a
+                                                href="/dark-ages-zombie-incursion/leaderboard" class=""
+                                                data-map="Dark Ages Zombie Incursion">
+                                                D.A.Z.I
+                                                <span class="W3S-navbar__upload-stats">3 / 129</span></a><a
+                                                href="/tree-tag/leaderboard" class="">
+                                                Tree Tag
+                                                <span class="W3S-navbar__upload-stats">1 / 22</span></a>
+                                    </li>
+                                    <li class="W3S-navbar__dropdown__column">
+                                          <div class="W3S-navbar__dropdown__title">Tower Defense</div><a
+                                                href="/legion-td/leaderboard" class="">Legion TD
+                                                <span class="W3S-navbar__upload-stats">74 / 502</span></a><a
+                                                href="/castle-fight/leaderboard" class="">Castle Fight
+                                                <span class="W3S-navbar__upload-stats">4 / 53</span></a>
+                                    </li>
+                                    <li class="W3S-navbar__dropdown__column">
+                                          <div class="W3S-navbar__dropdown__title">Other</div><a
+                                                href="/anime-choice-arena/leaderboard" class="">Anime Choice Arena
+                                                <span class="W3S-navbar__upload-stats">4 / 83</span></a><a
+                                                href="/battleships-crossfire/leaderboard" class="">Battleships Crossfire
+                                                <span class="W3S-navbar__upload-stats">10 / 97</span></a><a
+                                                href="/helms-deep/leaderboard" class="">
+                                                Helms Deep
+                                                <span class="W3S-navbar__upload-stats">2 / 28</span></a><a
+                                                href="/hero-line-wars/leaderboard" class="" data-map="HLW">
+                                                Hero Line Wars
+                                                <span class="W3S-navbar__upload-stats">3 / 19</span></a>
+                                    </li>
+                              </ul>
+                        </div><!---->
+                  </nav>
+            </div>
+            <main class="Body-main">
+                  <div class="Splash Games">
+                        <div class="Page-gutter">
+                              <div class="Page-header">
+                                    <h1>Games</h1>
+                                    <div class="Page-caption">
+                                          When replays are uploaded to WC3Stats, they will automatically be added to
+                                          this list.
+                                    </div>
+                              </div>
+                        </div>
+                        <div class="Splash-content">
+                              <div class="container">
+                                    <div class="GameDirectory container">
+                                          <div class="Table-wrapper">
+                                                <div class="Table-controls top">
+                                                      <div class="search"><input type="text" placeholder="Search"></div>
+                                                      <div class="paging">
+                                                            <ul class="Pagination">
+                                                                  <li><a><i class="fas fa-angle-left"></i></a></li>
+                                                                  <li class="active"><a>1</a></li>
+                                                                  <li class=""><a>2</a></li>
+                                                                  <li class=""><a>3</a></li>
+                                                                  <li class=""><a>4</a></li>
+                                                                  <li class=""><a>5</a></li>
+                                                                  <li class=""><a>6</a></li>
+                                                                  <li class=""><a>7</a></li>
+                                                                  <li class="">
+                                                                        <div class="v-popover Pagination-jumpbox"
+                                                                              style="display: inline-block;">
+                                                                              <div class="trigger"
+                                                                                    style="display: inline-block;">
+                                                                                    <a>...</a></div>
+                                                                        </div>
+                                                                  </li>
+                                                                  <li class=""><a>86</a></li>
+                                                                  <li><a><i class="fas fa-angle-right"></i></a></li>
+                                                            </ul>
+                                                      </div>
+                                                </div>
+                                                <div><!----><!---->
+                                                      <div class="Table">
+                                                            <div class="Row Row-header">
+                                                                  <div class="Cell"><span class="ml10"><!----></span>
+                                                                  </div>
+                                                                  <div class="Cell text-left sortable">Game Name<span
+                                                                              class="ml10"><i
+                                                                                    class="invisible fas fa-sort"></i><i
+                                                                                    class="hidden fas fa-sort-up"></i><i
+                                                                                    class="hidden fas fa-sort-down"></i></span>
+                                                                  </div>
+                                                                  <div class="Cell sortable">Map<span class="ml10"><i
+                                                                                    class="invisible fas fa-sort"></i><i
+                                                                                    class="hidden fas fa-sort-up"></i><i
+                                                                                    class="hidden fas fa-sort-down"></i></span>
+                                                                  </div>
+                                                                  <div class="Cell sortable">Length<span class="ml10"><i
+                                                                                    class="invisible fas fa-sort"></i><i
+                                                                                    class="hidden fas fa-sort-up"></i><i
+                                                                                    class="hidden fas fa-sort-down"></i></span>
+                                                                  </div>
+                                                                  <div class="Cell sortable">Uploaded<span
+                                                                              class="ml10"><i
+                                                                                    class="hidden fas fa-sort"></i><i
+                                                                                    class="hidden fas fa-sort-up"></i><i
+                                                                                    class="fas fa-sort-down"></i></span>
+                                                                  </div>
+                                                            </div><a href="/games/720371"
+                                                                  class="Row clickable Row-body">
+                                                                  <div class="Cell">
+                                                                        <div class="v-popover"
+                                                                              style="display: inline-block;">
+                                                                              <div class="trigger"
+                                                                                    style="display: inline-block;"><i
+                                                                                          class="fas ml10 mr10 fa-users"></i>
+                                                                              </div>
+                                                                        </div><i
+                                                                              class="fas fa-wave-square mr10 orange has-tooltip"
+                                                                              data-original-title="null"></i><i
+                                                                              class="fas fa-trophy mr10 yellow has-tooltip"
+                                                                              data-original-title="null"></i><i
+                                                                              class="fas fa-comments invisible mr10"></i><!----><span
+                                                                              class="ml10"><!----></span>
+                                                                  </div>
+                                                                  <div class="Cell text-left">LOTR BFME<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell">BFME<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell">26:39<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell has-tooltip"
+                                                                        data-original-title="null">19 hours ago<span
+                                                                              class="ml10"><!----></span></div>
+                                                            </a><a href="/games/720370" class="Row clickable Row-body">
+                                                                  <div class="Cell">
+                                                                        <div class="v-popover"
+                                                                              style="display: inline-block;">
+                                                                              <div class="trigger"
+                                                                                    style="display: inline-block;"><i
+                                                                                          class="fas ml10 mr10 fa-users"></i>
+                                                                              </div>
+                                                                        </div><i
+                                                                              class="fas fa-wave-square mr10 orange has-tooltip"
+                                                                              data-original-title="null"></i><i
+                                                                              class="fas fa-trophy mr10 yellow has-tooltip"
+                                                                              data-original-title="null"></i><i
+                                                                              class="fas fa-comments invisible mr10"></i><!----><span
+                                                                              class="ml10"><!----></span>
+                                                                  </div>
+                                                                  <div class="Cell text-left">LOTR BFME<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell">BFME<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell">26:56<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell has-tooltip"
+                                                                        data-original-title="null">19 hours ago<span
+                                                                              class="ml10"><!----></span></div>
+                                                            </a><a href="/games/720369" class="Row clickable Row-body">
+                                                                  <div class="Cell">
+                                                                        <div class="v-popover"
+                                                                              style="display: inline-block;">
+                                                                              <div class="trigger"
+                                                                                    style="display: inline-block;"><i
+                                                                                          class="fas ml10 mr10 fa-users"></i>
+                                                                              </div>
+                                                                        </div><i
+                                                                              class="fas fa-wave-square mr10 orange has-tooltip"
+                                                                              data-original-title="null"></i><i
+                                                                              class="fas fa-trophy mr10 yellow has-tooltip"
+                                                                              data-original-title="null"></i><i
+                                                                              class="fas fa-comments invisible mr10"></i><!----><span
+                                                                              class="ml10"><!----></span>
+                                                                  </div>
+                                                                  <div class="Cell text-left">LOTR BFME<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell">BFME<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell">13:29<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell has-tooltip"
+                                                                        data-original-title="null">19 hours ago<span
+                                                                              class="ml10"><!----></span></div>
+                                                            </a><a href="/games/720047" class="Row clickable Row-body">
+                                                                  <div class="Cell">
+                                                                        <div class="v-popover"
+                                                                              style="display: inline-block;">
+                                                                              <div class="trigger"
+                                                                                    style="display: inline-block;"><i
+                                                                                          class="fas ml10 mr10 fa-users"></i>
+                                                                              </div>
+                                                                        </div><i
+                                                                              class="fas fa-wave-square mr10 orange has-tooltip"
+                                                                              data-original-title="null"></i><i
+                                                                              class="fas fa-trophy mr10 yellow has-tooltip"
+                                                                              data-original-title="null"></i><i
+                                                                              class="fas fa-comments invisible mr10"></i><!----><span
+                                                                              class="ml10"><!----></span>
+                                                                  </div>
+                                                                  <div class="Cell text-left">LOTR BFME<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell">BFME<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell">47:03<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell has-tooltip"
+                                                                        data-original-title="null">2 days ago<span
+                                                                              class="ml10"><!----></span></div>
+                                                            </a><a href="/games/720046" class="Row clickable Row-body">
+                                                                  <div class="Cell">
+                                                                        <div class="v-popover"
+                                                                              style="display: inline-block;">
+                                                                              <div class="trigger"
+                                                                                    style="display: inline-block;"><i
+                                                                                          class="fas ml10 mr10 fa-users"></i>
+                                                                              </div>
+                                                                        </div><i
+                                                                              class="fas fa-wave-square mr10 orange has-tooltip"
+                                                                              data-original-title="null"></i><i
+                                                                              class="fas fa-trophy mr10 yellow has-tooltip"
+                                                                              data-original-title="null"></i><i
+                                                                              class="fas fa-comments invisible mr10"></i><!----><span
+                                                                              class="ml10"><!----></span>
+                                                                  </div>
+                                                                  <div class="Cell text-left">LOTR BFME<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell">BFME<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell">44:10<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell has-tooltip"
+                                                                        data-original-title="null">2 days ago<span
+                                                                              class="ml10"><!----></span></div>
+                                                            </a><a href="/games/720007" class="Row clickable Row-body">
+                                                                  <div class="Cell">
+                                                                        <div class="v-popover"
+                                                                              style="display: inline-block;">
+                                                                              <div class="trigger"
+                                                                                    style="display: inline-block;"><i
+                                                                                          class="fas ml10 mr10 fa-users"></i>
+                                                                              </div>
+                                                                        </div><i
+                                                                              class="fas fa-wave-square mr10 orange has-tooltip"
+                                                                              data-original-title="null"></i><i
+                                                                              class="fas fa-trophy mr10 yellow invisible has-tooltip"
+                                                                              data-original-title="null"></i><i
+                                                                              class="fas fa-comments invisible mr10"></i><!----><span
+                                                                              class="ml10"><!----></span>
+                                                                  </div>
+                                                                  <div class="Cell text-left">LOTR BFME 3<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell">BFME<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell">62:37<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell has-tooltip"
+                                                                        data-original-title="null">2 days ago<span
+                                                                              class="ml10"><!----></span></div>
+                                                            </a><a href="/games/720006" class="Row clickable Row-body">
+                                                                  <div class="Cell">
+                                                                        <div class="v-popover"
+                                                                              style="display: inline-block;">
+                                                                              <div class="trigger"
+                                                                                    style="display: inline-block;"><i
+                                                                                          class="fas ml10 mr10 fa-users"></i>
+                                                                              </div>
+                                                                        </div><i
+                                                                              class="fas fa-wave-square mr10 orange has-tooltip"
+                                                                              data-original-title="null"></i><i
+                                                                              class="fas fa-trophy mr10 yellow has-tooltip"
+                                                                              data-original-title="null"></i><i
+                                                                              class="fas fa-comments invisible mr10"></i><!----><span
+                                                                              class="ml10"><!----></span>
+                                                                  </div>
+                                                                  <div class="Cell text-left">LOTR BFME 2<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell">BFME<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell">18:08<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell has-tooltip"
+                                                                        data-original-title="null">2 days ago<span
+                                                                              class="ml10"><!----></span></div>
+                                                            </a><a href="/games/720005" class="Row clickable Row-body">
+                                                                  <div class="Cell">
+                                                                        <div class="v-popover"
+                                                                              style="display: inline-block;">
+                                                                              <div class="trigger"
+                                                                                    style="display: inline-block;"><i
+                                                                                          class="fas ml10 mr10 fa-users"></i>
+                                                                              </div>
+                                                                        </div><i
+                                                                              class="fas fa-wave-square mr10 orange has-tooltip"
+                                                                              data-original-title="null"></i><i
+                                                                              class="fas fa-trophy mr10 yellow invisible has-tooltip"
+                                                                              data-original-title="null"></i><i
+                                                                              class="fas fa-comments invisible mr10"></i><!----><span
+                                                                              class="ml10"><!----></span>
+                                                                  </div>
+                                                                  <div class="Cell text-left">LOTR BFME!<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell">BFME<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell">27:16<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell has-tooltip"
+                                                                        data-original-title="null">2 days ago<span
+                                                                              class="ml10"><!----></span></div>
+                                                            </a><a href="/games/719672" class="Row clickable Row-body">
+                                                                  <div class="Cell">
+                                                                        <div class="v-popover"
+                                                                              style="display: inline-block;">
+                                                                              <div class="trigger"
+                                                                                    style="display: inline-block;"><i
+                                                                                          class="fas ml10 mr10 fa-users"></i>
+                                                                              </div>
+                                                                        </div><i
+                                                                              class="fas fa-wave-square mr10 orange has-tooltip"
+                                                                              data-original-title="null"></i><i
+                                                                              class="fas fa-trophy mr10 yellow has-tooltip"
+                                                                              data-original-title="null"></i><i
+                                                                              class="fas fa-comments invisible mr10"></i><!----><span
+                                                                              class="ml10"><!----></span>
+                                                                  </div>
+                                                                  <div class="Cell text-left">LOTR BFME<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell">BFME<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell">39:18<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell has-tooltip"
+                                                                        data-original-title="null">2 days ago<span
+                                                                              class="ml10"><!----></span></div>
+                                                            </a><a href="/games/720004" class="Row clickable Row-body">
+                                                                  <div class="Cell">
+                                                                        <div class="v-popover"
+                                                                              style="display: inline-block;">
+                                                                              <div class="trigger"
+                                                                                    style="display: inline-block;"><i
+                                                                                          class="fas ml10 mr10 fa-users"></i>
+                                                                              </div>
+                                                                        </div><i
+                                                                              class="fas fa-wave-square mr10 orange has-tooltip"
+                                                                              data-original-title="null"></i><i
+                                                                              class="fas fa-trophy mr10 yellow has-tooltip"
+                                                                              data-original-title="null"></i><i
+                                                                              class="fas fa-comments invisible mr10"></i><!----><span
+                                                                              class="ml10"><!----></span>
+                                                                  </div>
+                                                                  <div class="Cell text-left">LOTR BFME<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell">BFME<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell">23:24<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell has-tooltip"
+                                                                        data-original-title="null">2 days ago<span
+                                                                              class="ml10"><!----></span></div>
+                                                            </a><a href="/games/719643" class="Row clickable Row-body">
+                                                                  <div class="Cell">
+                                                                        <div class="v-popover"
+                                                                              style="display: inline-block;">
+                                                                              <div class="trigger"
+                                                                                    style="display: inline-block;"><i
+                                                                                          class="fas ml10 mr10 fa-users"></i>
+                                                                              </div>
+                                                                        </div><i
+                                                                              class="fas fa-wave-square mr10 orange has-tooltip"
+                                                                              data-original-title="null"></i><i
+                                                                              class="fas fa-trophy mr10 yellow has-tooltip"
+                                                                              data-original-title="null"></i><i
+                                                                              class="fas fa-comments invisible mr10"></i><!----><span
+                                                                              class="ml10"><!----></span>
+                                                                  </div>
+                                                                  <div class="Cell text-left">LOTR BFME<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell">BFME<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell">33:56<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell has-tooltip"
+                                                                        data-original-title="null">2 days ago<span
+                                                                              class="ml10"><!----></span></div>
+                                                            </a><a href="/games/719625" class="Row clickable Row-body">
+                                                                  <div class="Cell">
+                                                                        <div class="v-popover"
+                                                                              style="display: inline-block;">
+                                                                              <div class="trigger"
+                                                                                    style="display: inline-block;"><i
+                                                                                          class="fas ml10 mr10 fa-users"></i>
+                                                                              </div>
+                                                                        </div><i
+                                                                              class="fas fa-wave-square mr10 orange has-tooltip"
+                                                                              data-original-title="null"></i><i
+                                                                              class="fas fa-trophy mr10 yellow has-tooltip"
+                                                                              data-original-title="null"></i><i
+                                                                              class="fas fa-comments invisible mr10"></i><!----><span
+                                                                              class="ml10"><!----></span>
+                                                                  </div>
+                                                                  <div class="Cell text-left">LOTR BFME<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell">BFME<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell">34:14<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell has-tooltip"
+                                                                        data-original-title="null">3 days ago<span
+                                                                              class="ml10"><!----></span></div>
+                                                            </a><a href="/games/719624" class="Row clickable Row-body">
+                                                                  <div class="Cell">
+                                                                        <div class="v-popover"
+                                                                              style="display: inline-block;">
+                                                                              <div class="trigger"
+                                                                                    style="display: inline-block;"><i
+                                                                                          class="fas ml10 mr10 fa-users"></i>
+                                                                              </div>
+                                                                        </div><i
+                                                                              class="fas fa-wave-square mr10 orange has-tooltip"
+                                                                              data-original-title="null"></i><i
+                                                                              class="fas fa-trophy mr10 yellow has-tooltip"
+                                                                              data-original-title="null"></i><i
+                                                                              class="fas fa-comments invisible mr10"></i><!----><span
+                                                                              class="ml10"><!----></span>
+                                                                  </div>
+                                                                  <div class="Cell text-left">LOTR BFME<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell">BFME<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell">23:23<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell has-tooltip"
+                                                                        data-original-title="null">3 days ago<span
+                                                                              class="ml10"><!----></span></div>
+                                                            </a><a href="/games/719309" class="Row clickable Row-body">
+                                                                  <div class="Cell">
+                                                                        <div class="v-popover"
+                                                                              style="display: inline-block;">
+                                                                              <div class="trigger"
+                                                                                    style="display: inline-block;"><i
+                                                                                          class="fas ml10 mr10 fa-users"></i>
+                                                                              </div>
+                                                                        </div><i
+                                                                              class="fas fa-wave-square mr10 orange has-tooltip"
+                                                                              data-original-title="null"></i><i
+                                                                              class="fas fa-trophy mr10 yellow has-tooltip"
+                                                                              data-original-title="null"></i><i
+                                                                              class="fas fa-comments invisible mr10"></i><!----><span
+                                                                              class="ml10"><!----></span>
+                                                                  </div>
+                                                                  <div class="Cell text-left">LOTR BFME<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell">BFME<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell">40:13<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell has-tooltip"
+                                                                        data-original-title="null">4 days ago<span
+                                                                              class="ml10"><!----></span></div>
+                                                            </a><a href="/games/719317" class="Row clickable Row-body">
+                                                                  <div class="Cell">
+                                                                        <div class="v-popover"
+                                                                              style="display: inline-block;">
+                                                                              <div class="trigger"
+                                                                                    style="display: inline-block;"><i
+                                                                                          class="fas ml10 mr10 fa-users"></i>
+                                                                              </div>
+                                                                        </div><i
+                                                                              class="fas fa-wave-square mr10 orange has-tooltip"
+                                                                              data-original-title="null"></i><i
+                                                                              class="fas fa-trophy mr10 yellow has-tooltip"
+                                                                              data-original-title="null"></i><i
+                                                                              class="fas fa-comments invisible mr10"></i><!----><span
+                                                                              class="ml10"><!----></span>
+                                                                  </div>
+                                                                  <div class="Cell text-left">LOTR BFME<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell">BFME<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell">17:05<span
+                                                                              class="ml10"><!----></span></div>
+                                                                  <div class="Cell has-tooltip"
+                                                                        data-original-title="null">4 days ago<span
+                                                                              class="ml10"><!----></span></div>
+                                                            </a>
+                                                      </div><!---->
+                                                      <div class="Table-controls bottom">
+                                                            <ul class="Pagination">
+                                                                  <li><a><i class="fas fa-angle-left"></i></a></li>
+                                                                  <li class="active"><a>1</a></li>
+                                                                  <li class=""><a>2</a></li>
+                                                                  <li class=""><a>3</a></li>
+                                                                  <li class=""><a>4</a></li>
+                                                                  <li class=""><a>5</a></li>
+                                                                  <li class=""><a>6</a></li>
+                                                                  <li class=""><a>7</a></li>
+                                                                  <li class="">
+                                                                        <div class="v-popover Pagination-jumpbox"
+                                                                              style="display: inline-block;">
+                                                                              <div class="trigger"
+                                                                                    style="display: inline-block;">
+                                                                                    <a>...</a></div>
+                                                                        </div>
+                                                                  </li>
+                                                                  <li class=""><a>86</a></li>
+                                                                  <li><a><i class="fas fa-angle-right"></i></a></li>
+                                                            </ul>
+                                                      </div><!---->
+                                                </div>
+                                          </div>
+                                    </div>
+                              </div>
+                        </div>
+                  </div>
+            </main>
+            <div class="Footer">
+                  <div class="text-center">
+                        Warcraft III is a registered trademark of Blizzard Entertainment.
+                  </div>
+            </div>
+      </div>
+      <script src="https://cdn.jsdelivr.net/npm/mutex-promise@0.1.0/index.min.js"></script>
+      <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.2/css/all.css"
+            integrity="sha384-oS3vJWv+0UjzBfQzYUhtDYW+Pj2yciDJxpsK1OYPAYjqT085Qq/1cq5FLXAZQ7Ay" crossorigin="anonymous">
+      <script src="/js/chunk-vendors.9291e3f4.js"></script>
+      <script src="/js/index.db64be36.js"></script>
+      <div id="popover_od4rtsuule" aria-hidden="true" tabindex="0" class="tooltip vue-popover-theme"
+            style="visibility: hidden; position: absolute; transform: translate3d(156px, 547px, 0px); top: 0px; left: 0px; will-change: transform;"
+            x-placement="left">
+            <div class="wrapper">
+                  <div class="tooltip-inner popover-inner" style="position: relative;">
+                        <div>
+                              <ul class="condensed text-nowrap">
+                                    <li><span class="Block has-tooltip"
+                                                style="background-color: rgba(var(--wc3-red), 1); width: 10px; height: 10px;"
+                                                data-original-title="null"></span> Keso
+                                    </li>
+                                    <li><span class="Block has-tooltip"
+                                                style="background-color: rgba(var(--wc3-blue), 1); width: 10px; height: 10px;"
+                                                data-original-title="null"></span> BigE
+                                    </li>
+                                    <li><span class="Block has-tooltip"
+                                                style="background-color: rgba(var(--wc3-teal), 1); width: 10px; height: 10px;"
+                                                data-original-title="null"></span> Ligoulas
+                                    </li>
+                                    <li><span class="Block has-tooltip"
+                                                style="background-color: rgba(var(--wc3-purple), 1); width: 10px; height: 10px;"
+                                                data-original-title="null"></span> Wuschiwaschi
+                                    </li>
+                                    <li><span class="Block has-tooltip"
+                                                style="background-color: rgba(var(--wc3-yellow), 1); width: 10px; height: 10px;"
+                                                data-original-title="null"></span> Faithfull
+                                    </li>
+                                    <li><span class="Block has-tooltip"
+                                                style="background-color: rgba(var(--wc3-green), 1); width: 10px; height: 10px;"
+                                                data-original-title="null"></span> Finrod
+                                    </li>
+                                    <li><span class="Block has-tooltip"
+                                                style="background-color: rgba(var(--wc3-grey), 1); width: 10px; height: 10px;"
+                                                data-original-title="null"></span> TimirCembra
+                                    </li>
+                                    <li><span class="Block has-tooltip"
+                                                style="background-color: rgba(var(--wc3-light-blue), 1); width: 10px; height: 10px;"
+                                                data-original-title="null"></span> EatSomePizza
+                                    </li>
+                                    <li><span class="Block has-tooltip"
+                                                style="background-color: rgba(var(--wc3-dark-green), 1); width: 10px; height: 10px;"
+                                                data-original-title="null"></span> Drathenar
+                                    </li>
+                                    <li><span class="Block has-tooltip"
+                                                style="background-color: rgba(var(--wc3-brown), 1); width: 10px; height: 10px;"
+                                                data-original-title="null"></span> Rohan
+                                    </li>
+                                    <li><span class="Block has-tooltip"
+                                                style="background-color: rgba(var(--wc3-maroon), 1); width: 10px; height: 10px;"
+                                                data-original-title="null"></span> arathalion
+                                    </li>
+                                    <li><span class="Block has-tooltip"
+                                                style="background-color: rgba(var(--wc3-navy), 1); width: 10px; height: 10px;"
+                                                data-original-title="null"></span> adad26
+                                    </li>
+                                    <li><span class="Block has-tooltip"
+                                                style="background-color: rgba(var(--wc3-turquoise), 1); width: 10px; height: 10px;"
+                                                data-original-title="null"></span> Slamcore
+                                    </li>
+                                    <li><span class="Block has-tooltip"
+                                                style="background-color: rgba(var(--wc3-violet), 1); width: 10px; height: 10px;"
+                                                data-original-title="null"></span> josef256
+                                    </li>
+                              </ul>
+                        </div>
+                        <div data-v-8859cc6c="" tabindex="-1" class="resize-observer"><object aria-hidden="true"
+                                    tabindex="-1" type="text/html" data="about:blank"></object></div>
+                  </div>
+                  <div class="tooltip-arrow popover-arrow" style="top: 175px;"></div>
+            </div>
+      </div>
+      <div id="popover_b15q0jpkpd" aria-hidden="true" tabindex="0" class="tooltip vue-popover-theme"
+            style="visibility: hidden; position: absolute; transform: translate3d(159px, 1036px, 0px); top: 0px; left: 0px; will-change: transform;"
+            x-placement="left">
+            <div class="wrapper">
+                  <div class="tooltip-inner popover-inner" style="position: relative;">
+                        <div>
+                              <ul class="condensed text-nowrap">
+                                    <li><span class="Block has-tooltip"
+                                                style="background-color: rgba(var(--wc3-red), 1); width: 10px; height: 10px;"
+                                                data-original-title="null"></span> KaptajnSnaps
+                                    </li>
+                                    <li><span class="Block has-tooltip"
+                                                style="background-color: rgba(var(--wc3-blue), 1); width: 10px; height: 10px;"
+                                                data-original-title="null"></span> Keso
+                                    </li>
+                                    <li><span class="Block has-tooltip"
+                                                style="background-color: rgba(var(--wc3-teal), 1); width: 10px; height: 10px;"
+                                                data-original-title="null"></span> Zuma
+                                    </li>
+                                    <li><span class="Block has-tooltip"
+                                                style="background-color: rgba(var(--wc3-purple), 1); width: 10px; height: 10px;"
+                                                data-original-title="null"></span> Keep
+                                    </li>
+                                    <li><span class="Block has-tooltip"
+                                                style="background-color: rgba(var(--wc3-yellow), 1); width: 10px; height: 10px;"
+                                                data-original-title="null"></span> EasyE
+                                    </li>
+                                    <li><span class="Block has-tooltip"
+                                                style="background-color: rgba(var(--wc3-green), 1); width: 10px; height: 10px;"
+                                                data-original-title="null"></span> policarpo
+                                    </li>
+                                    <li><span class="Block has-tooltip"
+                                                style="background-color: rgba(var(--wc3-grey), 1); width: 10px; height: 10px;"
+                                                data-original-title="null"></span> Ele
+                                    </li>
+                                    <li><span class="Block has-tooltip"
+                                                style="background-color: rgba(var(--wc3-light-blue), 1); width: 10px; height: 10px;"
+                                                data-original-title="null"></span> Sorc
+                                    </li>
+                                    <li><span class="Block has-tooltip"
+                                                style="background-color: rgba(var(--wc3-dark-green), 1); width: 10px; height: 10px;"
+                                                data-original-title="null"></span> Fuccboiii69
+                                    </li>
+                                    <li><span class="Block has-tooltip"
+                                                style="background-color: rgba(var(--wc3-brown), 1); width: 10px; height: 10px;"
+                                                data-original-title="null"></span> WarCat
+                                    </li>
+                                    <li><span class="Block has-tooltip"
+                                                style="background-color: rgba(var(--wc3-maroon), 1); width: 10px; height: 10px;"
+                                                data-original-title="null"></span> Wolfbud91
+                                    </li>
+                                    <li><span class="Block has-tooltip"
+                                                style="background-color: rgba(var(--wc3-navy), 1); width: 10px; height: 10px;"
+                                                data-original-title="null"></span> Faithfull
+                                    </li>
+                                    <li><span class="Block has-tooltip"
+                                                style="background-color: rgba(var(--wc3-turquoise), 1); width: 10px; height: 10px;"
+                                                data-original-title="null"></span> Slamcore
+                                    </li>
+                                    <li><span class="Block has-tooltip"
+                                                style="background-color: rgba(var(--wc3-peach), 1); width: 10px; height: 10px;"
+                                                data-original-title="null"></span> BroManBillbo
+                                    </li>
+                              </ul>
+                        </div>
+                        <div data-v-8859cc6c="" tabindex="-1" class="resize-observer"><object aria-hidden="true"
+                                    tabindex="-1" type="text/html" data="about:blank"></object></div>
+                  </div>
+                  <div class="tooltip-arrow popover-arrow" style="top: 175px;"></div>
+            </div>
+      </div>
+</body>
+
+</html>

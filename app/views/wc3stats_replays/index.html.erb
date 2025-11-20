@@ -1,29 +1,42 @@
 <% content_for :title, "Wc3stats replays" %>
 
-<div class="w-full">
+<div class="w-full max-w-6xl mx-auto">
   <% if notice.present? %>
     <p class="py-2 px-3 bg-green-50 mb-5 text-green-500 font-medium rounded-md inline-block" id="notice"><%= notice %></p>
   <% end %>
 
-  <div class="flex justify-between items-center">
-    <h1 class="font-bold text-4xl">Wc3stats replays</h1>
-    <%= link_to "New wc3stats replay", new_wc3stats_replay_path, class: "rounded-md px-3.5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white block font-medium" %>
+  <div class="flex justify-between items-center mb-8">
+    <h1 class="font-bold text-4xl">WC3Stats Replays</h1>
+    <%= link_to "New Replay", new_wc3stats_replay_path, class: "rounded-md px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium" %>
   </div>
 
-  <div id="wc3stats_replays" class="min-w-full divide-y divide-gray-200 space-y-5">
+  <div id="wc3stats_replays" class="space-y-4">
     <% if @wc3stats_replays.any? %>
       <% @wc3stats_replays.each do |wc3stats_replay| %>
-        <div class="flex flex-col sm:flex-row justify-between items-center pb-5 sm:pb-0">
-          <%= render wc3stats_replay %>
-          <div class="w-full sm:w-auto flex flex-col sm:flex-row space-x-2 space-y-2">
-            <%= link_to "Show", wc3stats_replay, class: "w-full sm:w-auto text-center rounded-md px-3.5 py-2.5 bg-gray-100 hover:bg-gray-50 inline-block font-medium" %>
-            <%= link_to "Edit", edit_wc3stats_replay_path(wc3stats_replay), class: "w-full sm:w-auto text-center rounded-md px-3.5 py-2.5 bg-gray-100 hover:bg-gray-50 inline-block font-medium" %>
-            <%= button_to "Destroy", wc3stats_replay, method: :delete, class: "w-full sm:w-auto rounded-md px-3.5 py-2.5 text-white bg-red-600 hover:bg-red-500 font-medium cursor-pointer", data: { turbo_confirm: "Are you sure?" } %>
+        <div class="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+          <div class="flex-grow w-full">
+            <%= link_to wc3stats_replay, class: "block" do %>
+              <%= render wc3stats_replay %>
+            <% end %>
+          </div>
+          <div class="flex lg:flex-col gap-2 w-full lg:w-auto">
+            <%= link_to "Show", wc3stats_replay, class: "text-center rounded-md px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium" %>
+            <%= link_to "Edit", edit_wc3stats_replay_path(wc3stats_replay), class: "text-center rounded-md px-4 py-2 bg-gray-100 hover:bg-gray-50 font-medium" %>
+            <%= button_to "Delete", wc3stats_replay, method: :delete, class: "text-center rounded-md px-4 py-2 text-white bg-red-600 hover:bg-red-500 font-medium cursor-pointer", data: { turbo_confirm: "Are you sure?" } %>
           </div>
         </div>
       <% end %>
     <% else %>
-      <p class="text-center my-10">No wc3stats replays found.</p>
+      <div class="text-center py-16 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">No replays</h3>
+        <p class="mt-1 text-sm text-gray-500">Get started by creating a new replay.</p>
+        <div class="mt-6">
+          <%= link_to "New Replay", new_wc3stats_replay_path, class: "inline-flex items-center rounded-md px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium" %>
+        </div>
+      </div>
     <% end %>
   </div>
 </div>

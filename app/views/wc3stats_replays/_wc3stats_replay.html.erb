@@ -1,10 +1,34 @@
-<div id="<%= dom_id wc3stats_replay %>" class="w-full sm:w-auto my-5 space-y-5">
-  <div>
-    <strong class="block font-medium mb-1">Body:</strong>
-    <%= wc3stats_replay.body %>
+<div id="<%= dom_id wc3stats_replay %>" class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
+  <div class="flex justify-between items-start mb-4">
+    <div>
+      <h3 class="text-xl font-bold text-gray-900"><%= wc3stats_replay.game_name %></h3>
+      <p class="text-sm text-gray-500">Map: <%= wc3stats_replay.map_name %></p>
+    </div>
+    <span class="px-3 py-1 text-xs font-semibold text-blue-800 bg-blue-100 rounded-full">
+      ID: <%= wc3stats_replay.wc3stats_replay_id %>
+    </span>
   </div>
-  <div>
-    <strong class="block font-medium mb-1">Wc3stats replay:</strong>
-    <%= wc3stats_replay.wc3stats_replay_id %>
+
+  <div class="grid grid-cols-2 gap-4 text-sm">
+    <div>
+      <span class="text-gray-500">Duration:</span>
+      <span class="font-medium text-gray-900">
+        <%= ChronicDuration.output(wc3stats_replay.game_length || 0, format: :long) %>
+      </span>
+    </div>
+    <div>
+      <span class="text-gray-500">Played:</span>
+      <span class="font-medium text-gray-900">
+        <%= wc3stats_replay.played_at&.strftime("%b %d, %Y %H:%M") || "Unknown" %>
+      </span>
+    </div>
+    <div>
+      <span class="text-gray-500">Players:</span>
+      <span class="font-medium text-gray-900"><%= wc3stats_replay.players.count %></span>
+    </div>
+    <div>
+      <span class="text-gray-500">Winners:</span>
+      <span class="font-medium text-green-600"><%= wc3stats_replay.winners.count %></span>
+    </div>
   </div>
 </div>

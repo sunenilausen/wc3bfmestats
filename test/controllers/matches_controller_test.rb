@@ -80,11 +80,15 @@ class MatchesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "should update match" do
-    # Store initial ELO values before update
+    # Store initial ELO values and old changes before update
     players(:one).reload
     players(:six).reload
     player_one_elo_before = players(:one).elo_rating
     player_six_elo_before = players(:six).elo_rating
+
+    # Store old ELO changes from the original match
+    old_good_change = appearances(:gondor_one).elo_rating_change
+    old_evil_change = appearances(:isengard_one).elo_rating_change
 
     patch match_url(@match), params: {
       match: {
@@ -125,11 +129,16 @@ class MatchesControllerTest < ActionDispatch::IntegrationTest
     assert_operator good_appearance.elo_rating_change, :<, 0, "Losing team should have negative elo_rating_change"
     assert_operator evil_appearance.elo_rating_change, :>, 0, "Winning team should have positive elo_rating_change"
 
-    # Check that player's current elo_rating reflects the new calculation
+    # Check that player's current elo_rating properly recalculated:
+    # Should be: (ELO before update) - (old change) + (new change)
+    # This ensures we're recalculating, not adding on top of existing ELO
     players(:one).reload
     players(:six).reload
-    assert_equal player_one_elo_before + good_appearance.elo_rating_change, players(:one).elo_rating, "Player's elo_rating should reflect recalculated change"
-    assert_equal player_six_elo_before + evil_appearance.elo_rating_change, players(:six).elo_rating, "Player's elo_rating should reflect recalculated change"
+    expected_player_one_elo = player_one_elo_before - old_good_change + good_appearance.elo_rating_change
+    expected_player_six_elo = player_six_elo_before - old_evil_change + evil_appearance.elo_rating_change
+
+    assert_equal expected_player_one_elo, players(:one).elo_rating, "Player's elo_rating should reflect properly recalculated change (old change removed, new change applied)"
+    assert_equal expected_player_six_elo, players(:six).elo_rating, "Player's elo_rating should reflect properly recalculated change (old change removed, new change applied)"
   end
 
   test "should destroy match" do

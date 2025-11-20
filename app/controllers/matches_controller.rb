@@ -46,6 +46,9 @@ class MatchesController < ApplicationController
 
   # PATCH/PUT /matches/1 or /matches/1.json
   def update
+    # Store old ELO changes before recalculating
+    revert_elo_ratings(@match)
+
     @match.assign_attributes(match_params)
     @match.seconds = ChronicDuration.parse(params[:match][:seconds]) if params[:match][:seconds].present?
 
@@ -156,6 +159,29 @@ class MatchesController < ApplicationController
       return nil if opponent_appearances.empty?
 
       total_elo = opponent_appearances.sum { |a| a.player&.elo_rating.to_i }
+      (total_elo.to_f / opponent_appearances.size)
+    end
+
+    def revert_elo_ratings(match)
+      match.appearances.each do |appearance|
+        next unless appearance.player && appearance.elo_rating_change
+
+        reverted_elo = appearance.player.elo_rating - appearance.elo_rating_change
+        appearance.player.update(elo_rating: reverted_elo)
+        appearance.elo_rating_change = nil
+        appearance.elo_rating = nil
+        appearance.save
+      end
+    end
+
+    def opponent_average_elo_for_update(match, appearance)
+      opponent_appearances = match.appearances.reject { |a| a.faction.good == appearance.faction.good }
+      return nil if opponent_appearances.empty?
+
+      total_elo = opponent_appearances.sum do |a|
+        # Use historical rating for opponents too
+        (a.elo_rating || a.player&.elo_rating).to_i
+      end
       (total_elo.to_f / opponent_appearances.size)
     end
 end

@@ -1,4 +1,5 @@
 class Wc3statsReplay < ApplicationRecord
+  # belongs_to :match
   validates :wc3stats_replay_id, presence: true, uniqueness: true
 
   # Access parsed body data

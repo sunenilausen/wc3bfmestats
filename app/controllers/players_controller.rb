@@ -3,7 +3,11 @@ class PlayersController < ApplicationController
 
   # GET /players or /players.json
   def index
-    @players = Player.all.order(:elo_rating).reverse_order
+    @players = Player.all
+    if params[:search].present?
+      @players = @players.where("nickname LIKE :search OR battletag LIKE :search", search: "%#{params[:search]}%")
+    end
+    @players = @players.order(elo_rating: :desc)
   end
 
   # GET /players/1 or /players/1.json

@@ -10,6 +10,16 @@
     <%= link_to "New player", new_player_path, class: "rounded-md px-3.5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white block font-medium" %>
   </div>
 
+  <div class="mt-5">
+    <%= form_with url: players_path, method: :get, class: "flex gap-2" do |f| %>
+      <%= f.text_field :search, value: params[:search], placeholder: "Search by nickname or battletag...", class: "rounded-md border border-gray-300 px-3 py-2 flex-grow" %>
+      <%= f.submit "Search", class: "rounded-md px-3.5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-medium cursor-pointer" %>
+      <% if params[:search].present? %>
+        <%= link_to "Clear", players_path, class: "rounded-md px-3.5 py-2.5 bg-gray-100 hover:bg-gray-50 font-medium" %>
+      <% end %>
+    <% end %>
+  </div>
+
   <div id="players" class="min-w-full divide-y divide-gray-200 space-y-5">
     <% if @players.any? %>
       <table class="min-w-full divide-y divide-gray-200 mb-5">

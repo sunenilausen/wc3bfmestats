@@ -17,7 +17,7 @@ class Wc3statsReplaysControllerTest < ActionDispatch::IntegrationTest
 
   test "should create wc3stats_replay" do
     assert_difference("Wc3statsReplay.count") do
-      post wc3stats_replays_url, params: { wc3stats_replay: { body: @wc3stats_replay.body, wc3stats_replay_id: @wc3stats_replay.wc3stats_replay_id } }
+      post wc3stats_replays_url, params: { wc3stats_replay: { body: @wc3stats_replay.body, wc3stats_replay_id: 999 } }
     end
 
     assert_redirected_to wc3stats_replay_url(Wc3statsReplay.last)

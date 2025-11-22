@@ -9,7 +9,7 @@ namespace :players do
     
     if replays.empty?
       puts "No replays found. Import replays first using: rails wc3stats:import"
-      exit
+      next
     end
     
     puts "Processing #{replays.count} replays..."

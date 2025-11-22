@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_20_185609) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_22_162345) do
   create_table "appearances", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.integer "elo_rating"
@@ -40,6 +40,8 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_20_185609) do
     t.datetime "played_at"
     t.integer "seconds"
     t.datetime "updated_at", null: false
+    t.integer "wc3stats_replay_id"
+    t.index ["wc3stats_replay_id"], name: "index_matches_on_wc3stats_replay_id"
   end
 
   create_table "players", force: :cascade do |t|
@@ -77,4 +79,5 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_20_185609) do
   add_foreign_key "appearances", "factions"
   add_foreign_key "appearances", "matches"
   add_foreign_key "appearances", "players"
+  add_foreign_key "matches", "wc3stats_replays"
 end

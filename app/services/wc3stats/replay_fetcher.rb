@@ -64,10 +64,18 @@ module Wc3stats
       wc3stats_replay.body = body_data
 
       if wc3stats_replay.save
+        build_match(wc3stats_replay)
         wc3stats_replay
       else
         @errors << "Failed to save replay: #{wc3stats_replay.errors.full_messages.join(', ')}"
         false
+      end
+    end
+
+    def build_match(wc3stats_replay)
+      match_builder = MatchBuilder.new(wc3stats_replay)
+      unless match_builder.call
+        @errors.concat(match_builder.errors)
       end
     end
   end

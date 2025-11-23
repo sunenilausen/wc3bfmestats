@@ -25,6 +25,21 @@
         <%= render partial: "lobbies/form_lobby_players", locals: { f: f, lobby_players: @lobby.lobby_players.select { |lp| lp.faction && !lp.faction.good? }, team_number: 2 } %>
       </tbody>
     </table>
+
+    <div id="prediction" class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+      <h3 class="text-sm font-medium text-gray-700 mb-2">Predicted Outcome</h3>
+      <div class="flex items-center gap-2">
+        <span class="text-green-700 font-medium">Good</span>
+        <div class="flex-1 h-6 bg-gray-200 rounded-full overflow-hidden">
+          <div id="good-win-bar" class="h-full bg-green-500 transition-all duration-300" style="width: 50%"></div>
+        </div>
+        <span class="text-red-700 font-medium">Evil</span>
+      </div>
+      <div class="flex justify-between mt-1 text-sm">
+        <span id="good-win-pct" class="text-green-700">50%</span>
+        <span id="evil-win-pct" class="text-red-700">50%</span>
+      </div>
+    </div>
   </div>
 
   <div class="mt-4">

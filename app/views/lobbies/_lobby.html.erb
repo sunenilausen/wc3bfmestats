@@ -27,7 +27,13 @@
             <span style="display: inline-block; width: 16px; height: 16px; background-color: <%= lp.faction.color %>; border: 1px solid #000; vertical-align: middle; margin-right: 6px;"></span>
             <%= lp.faction.name %>
           </td>
-          <td class="px-4 py-2 whitespace-nowrap"><%= lp.player&.nickname || "-" %></td>
+          <td class="px-4 py-2 whitespace-nowrap">
+            <% if lp.player %>
+              <%= link_to lp.player.nickname, player_path(lp.player), class: "text-blue-600 hover:underline" %>
+            <% else %>
+              -
+            <% end %>
+          </td>
           <td class="px-4 py-2 whitespace-nowrap"><%= lp.player&.elo_rating&.round || "-" %></td>
           <td class="px-4 py-2 whitespace-nowrap">
             <% if lp.player %>
@@ -69,7 +75,13 @@
             <span style="display: inline-block; width: 16px; height: 16px; background-color: <%= lp.faction.color %>; border: 1px solid #000; vertical-align: middle; margin-right: 6px;"></span>
             <%= lp.faction.name %>
           </td>
-          <td class="px-4 py-2 whitespace-nowrap"><%= lp.player&.nickname || "-" %></td>
+          <td class="px-4 py-2 whitespace-nowrap">
+            <% if lp.player %>
+              <%= link_to lp.player.nickname, player_path(lp.player), class: "text-blue-600 hover:underline" %>
+            <% else %>
+              -
+            <% end %>
+          </td>
           <td class="px-4 py-2 whitespace-nowrap"><%= lp.player&.elo_rating&.round || "-" %></td>
           <td class="px-4 py-2 whitespace-nowrap">
             <% if lp.player %>
@@ -108,7 +120,9 @@
         </tr>
         <% lobby.observers.each do |observer| %>
           <tr>
-            <td class="px-4 py-2 whitespace-nowrap" colspan="2"><%= observer.nickname %></td>
+            <td class="px-4 py-2 whitespace-nowrap" colspan="2">
+              <%= link_to observer.nickname, player_path(observer), class: "text-blue-600 hover:underline" %>
+            </td>
             <td class="px-4 py-2 whitespace-nowrap"><%= observer.elo_rating&.round || "-" %></td>
             <td class="px-4 py-2 whitespace-nowrap">
               <span class="text-green-600"><%= observer.wins %>W</span>/<span class="text-red-600"><%= observer.losses %>L</span>

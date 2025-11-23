@@ -58,6 +58,24 @@
     <% end %>
   </div>
 
+  <div>
+    <strong class="block font-medium mb-1">Top Unit Kills on Team:</strong>
+    <%= player.times_top_unit_kills_on_team %> times
+    <% if player.matches.count > 0 %>
+      <span class="text-gray-500">(<%= number_with_precision(player.times_top_unit_kills_on_team.to_f / player.matches.count * 100, precision: 1) %>%)</span>
+    <% end %>
+  </div>
+
+  <div>
+    <strong class="block font-medium mb-1">Avg Hero Kill Contribution:</strong>
+    <%= player.avg_hero_kill_contribution %>%
+  </div>
+
+  <div>
+    <strong class="block font-medium mb-1">Avg Unit Kill Contribution:</strong>
+    <%= player.avg_unit_kill_contribution %>%
+  </div>
+
   <% most_played = player.appearances.group(:faction).order('count_id DESC').limit(5).count(:id) %>
   <% if most_played.any? %>
     <div>

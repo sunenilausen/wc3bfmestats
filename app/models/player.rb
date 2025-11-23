@@ -125,6 +125,69 @@ class Player < ApplicationRecord
     end
   end
 
+  def times_top_unit_kills_on_team
+    appearances.includes(:match, :faction).count do |appearance|
+      next false unless appearance.unit_kills.present?
+
+      match = appearance.match
+      player_good = appearance.faction.good?
+
+      # Get teammates' appearances (same side)
+      team_appearances = match.appearances.includes(:faction).select do |a|
+        a.faction.good? == player_good && a.unit_kills.present?
+      end
+
+      next false if team_appearances.empty?
+
+      max_unit_kills = team_appearances.map(&:unit_kills).max
+      appearance.unit_kills == max_unit_kills
+    end
+  end
+
+  def avg_hero_kill_contribution
+    contributions = []
+    appearances.includes(:match, :faction).each do |appearance|
+      next unless appearance.hero_kills.present?
+
+      match = appearance.match
+      player_good = appearance.faction.good?
+
+      team_appearances = match.appearances.includes(:faction).select do |a|
+        a.faction.good? == player_good && a.hero_kills.present?
+      end
+
+      team_total = team_appearances.sum(&:hero_kills)
+      next if team_total.zero?
+
+      contributions << (appearance.hero_kills.to_f / team_total * 100)
+    end
+
+    return 0 if contributions.empty?
+    (contributions.sum / contributions.size).round(1)
+  end
+
+  def avg_unit_kill_contribution
+    contributions = []
+    appearances.includes(:match, :faction).each do |appearance|
+      next unless appearance.unit_kills.present?
+
+      match = appearance.match
+      player_good = appearance.faction.good?
+
+      team_appearances = match.appearances.includes(:faction).select do |a|
+        a.faction.good? == player_good && a.unit_kills.present?
+      end
+
+      team_total = team_appearances.sum(&:unit_kills)
+      next if team_total.zero?
+
+      contributions << (appearance.unit_kills.to_f / team_total * 100)
+    end
+
+    return 0 if contributions.empty?
+    (contributions.sum / contributions.size).round(1)
+  end
+
   private
 
   def elo_differences_by_role(role)

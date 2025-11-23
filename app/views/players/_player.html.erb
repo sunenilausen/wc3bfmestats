@@ -38,6 +38,18 @@
     <% end %>
   </div>
 
+  <div>
+    <strong class="block font-medium mb-1">As Underdog:</strong>
+    <span class="text-green-600 font-medium"><%= player.wins_as_underdog %>W</span> / <span class="text-red-600 font-medium"><%= player.losses_as_underdog %>L</span>
+    <span class="text-gray-500">(avg <%= player.avg_underdog_elo_difference %> ELO deficit)</span>
+  </div>
+
+  <div>
+    <strong class="block font-medium mb-1">As Favorite:</strong>
+    <span class="text-green-600 font-medium"><%= player.wins_as_favorite %>W</span> / <span class="text-red-600 font-medium"><%= player.losses_as_favorite %>L</span>
+    <span class="text-gray-500">(avg <%= player.avg_favorite_elo_difference %> ELO advantage)</span>
+  </div>
+
   <% most_played = player.appearances.group(:faction).order('count_id DESC').limit(5).count(:id) %>
   <% if most_played.any? %>
     <div>

@@ -3,11 +3,21 @@ class PlayersController < ApplicationController
 
   # GET /players or /players.json
   def index
+    @sort_column = %w[elo_rating matches_played].include?(params[:sort]) ? params[:sort] : "elo_rating"
+    @sort_direction = %w[asc desc].include?(params[:direction]) ? params[:direction] : "desc"
+
     @players = Player.all
     if params[:search].present?
       @players = @players.where("nickname LIKE :search OR battletag LIKE :search", search: "%#{params[:search]}%")
     end
-    @players = @players.order(elo_rating: :desc)
+
+    @player_count = @players.count
+
+    if @sort_column == "matches_played"
+      @players = @players.left_joins(:matches).group("players.id").order(Arel.sql("COUNT(matches.id) #{@sort_direction}"))
+    else
+      @players = @players.includes(:matches).order(@sort_column => @sort_direction)
+    end
   end
 
   # GET /players/1 or /players/1.json

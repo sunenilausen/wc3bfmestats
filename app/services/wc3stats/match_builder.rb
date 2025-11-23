@@ -10,7 +10,7 @@ module Wc3stats
       5 => "Isengard",
       6 => "Easterlings",
       7 => "Harad",
-      8 => "Nazgul",
+      8 => "Minas Morgul",
       9 => "Mordor"
     }.freeze
 

@@ -20,6 +20,8 @@ class LobbiesController < ApplicationController
       player_id = latest_match&.appearances&.find_by(faction: faction)&.player_id
       @lobby.lobby_players.build(faction: faction, player_id: player_id)
     end
+
+    preload_player_stats
   end
 
   # GET /lobbies/1/edit
@@ -31,6 +33,8 @@ class LobbiesController < ApplicationController
         @lobby.lobby_players.build(faction: faction)
       end
     end
+
+    preload_player_stats
   end
 
   # POST /lobbies or /lobbies.json
@@ -103,5 +107,30 @@ class LobbiesController < ApplicationController
     # Only allow a list of trusted parameters through.
     def lobby_params
       params.fetch(:lobby, {})
+    end
+
+    def preload_player_stats
+      # Precompute wins for all players in 2 queries instead of N*2
+      @player_stats = {}
+
+      # Get all wins (good team + good_victory OR evil team + evil_victory)
+      wins_good = Appearance.joins(:match, :faction)
+        .where(factions: { good: true }, matches: { good_victory: true })
+        .group(:player_id).count
+
+      wins_evil = Appearance.joins(:match, :faction)
+        .where(factions: { good: false }, matches: { good_victory: false })
+        .group(:player_id).count
+
+      # Get total matches per player
+      total_matches = Appearance.group(:player_id).count
+
+      Player.pluck(:id).each do |player_id|
+        wins = (wins_good[player_id] || 0) + (wins_evil[player_id] || 0)
+        total = total_matches[player_id] || 0
+        @player_stats[player_id] = { wins: wins, losses: total - wins }
+      end
+
+      @players_for_select = Player.order(:nickname).select(:id, :nickname, :elo_rating)
     end
 end

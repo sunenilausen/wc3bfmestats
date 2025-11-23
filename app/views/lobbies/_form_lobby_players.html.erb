@@ -11,18 +11,31 @@
         <input type="hidden" name="lobby[lobby_players_attributes][<%= index %>][id]" value="<%= lobby_player.id %>">
       <% end %>
       <select name="lobby[lobby_players_attributes][<%= index %>][player_id]"
-              class="form-control"
+              class="form-control player-select"
               data-average-elo-target="playerSelect"
-              data-action="change->average-elo#calculateAverageElo">
-        <option value="">-- Select Player --</option>
-        <% Player.order(:nickname).each do |player| %>
+              data-action="change->average-elo#calculateAverageElo"
+              data-wl-target="wl-<%= index %>"
+              onchange="updateWL(this, 'wl-<%= index %>')">
+        <option value="" data-wins="" data-losses="">-- Select Player --</option>
+        <% @players_for_select.each do |player| %>
+          <% stats = @player_stats[player.id] || { wins: 0, losses: 0 } %>
           <option value="<%= player.id %>"
                   data-elo="<%= player.elo_rating.round %>"
+                  data-wins="<%= stats[:wins] %>"
+                  data-losses="<%= stats[:losses] %>"
                   <%= "selected" if player.id == lobby_player.player_id %>>
             <%= "#{player.nickname} - #{player.elo_rating.round}" %>
           </option>
         <% end %>
       </select>
+    </td>
+    <td class="px-4 py-2 whitespace-nowrap" id="wl-<%= index %>">
+      <% if lobby_player.player_id && @player_stats[lobby_player.player_id] %>
+        <% stats = @player_stats[lobby_player.player_id] %>
+        <span class="text-green-600"><%= stats[:wins] %>W</span>/<span class="text-red-600"><%= stats[:losses] %>L</span>
+      <% else %>
+        -
+      <% end %>
     </td>
   </tr>
 <% end %>
@@ -33,4 +46,18 @@
       <%= lobby_players.any? ? (lobby_players.map { |lp| lp.player&.elo_rating.to_i }.compact.sum / [lobby_players.count { |lp| lp.player.present? }, 1].max) : 0 %>
     </span>
   </td>
+  <td class="px-4 py-2"></td>
 </tr>
+<script>
+  function updateWL(select, targetId) {
+    const option = select.options[select.selectedIndex];
+    const wins = option.dataset.wins;
+    const losses = option.dataset.losses;
+    const target = document.getElementById(targetId);
+    if (wins && losses) {
+      target.innerHTML = '<span class="text-green-600">' + wins + 'W</span>/<span class="text-red-600">' + losses + 'L</span>';
+    } else {
+      target.innerHTML = '-';
+    }
+  }
+</script>

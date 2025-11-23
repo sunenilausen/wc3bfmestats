@@ -21,8 +21,15 @@ class Wc3statsReplay < ApplicationRecord
   end
 
   def played_at
-    timestamp = body&.dig("playedOn")
-    Time.at(timestamp) if timestamp
+    # Try to extract date from the file path (e.g., /data/replays/2025/11/18/hash.w3g)
+    file_path = body&.dig("file") || body&.dig("uploads", 0, "file")
+    if file_path && file_path =~ %r{/data/replays/(\d{4})/(\d{2})/(\d{2})/}
+      Date.new($1.to_i, $2.to_i, $3.to_i)
+    else
+      # Fall back to playedOn timestamp
+      timestamp = body&.dig("playedOn")
+      Time.at(timestamp) if timestamp
+    end
   end
 
   def replay_hash

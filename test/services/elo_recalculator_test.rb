@@ -76,14 +76,14 @@ class EloRecalculatorTest < ActiveSupport::TestCase
     assert_equal(-16, app2.elo_rating_change)
   end
 
-  test "skips matches without played_at" do
+  test "includes matches without played_at using created_at for ordering" do
     Match.create!(played_at: nil, good_victory: true, seconds: 1800)
     Match.create!(played_at: Time.current, good_victory: true, seconds: 1800)
 
     recalculator = EloRecalculator.new
     recalculator.call
 
-    assert_equal 1, recalculator.matches_processed
+    assert_equal 2, recalculator.matches_processed
   end
 
   test "uses default elo when seed is nil" do

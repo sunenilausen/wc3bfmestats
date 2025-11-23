@@ -78,12 +78,13 @@
   </div>
 
   <h2 class="text-2xl font-bold mb-3">Appearances</h2>
-  <% last_appearances = player.appearances.order(created_at: :desc) %>
+  <% last_appearances = player.appearances.joins(:match).order(Arel.sql('COALESCE(matches.played_at, matches.created_at) DESC')) %>
   <% if last_appearances.any? %>
     <ul class="list-disc ml-5">
       <% last_appearances.each do |appearance| %>
         <li>
-          <%= link_to "Match ##{appearance.match.id} (#{appearance.match.created_at.strftime('%Y-%m-%d')})", match_path(appearance.match), class: "text-blue-600 hover:underline" %>
+          <% match_date = (appearance.match.played_at || appearance.match.created_at).strftime('%Y-%m-%d') %>
+          <%= link_to "Match ##{appearance.match.id} (#{match_date})", match_path(appearance.match), class: "text-blue-600 hover:underline" %>
         </li>
       <% end %>
     </ul>

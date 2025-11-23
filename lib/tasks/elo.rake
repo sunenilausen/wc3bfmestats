@@ -7,7 +7,7 @@ namespace :elo do
     puts
 
     player_count = Player.count
-    match_count = Match.where.not(played_at: nil).count
+    match_count = Match.count
 
     puts "Players: #{player_count}"
     puts "Matches to process: #{match_count}"
@@ -60,7 +60,7 @@ namespace :elo do
     puts "=" * 60
     puts
 
-    match_count = Match.where.not(played_at: nil).count
+    match_count = Match.count
     puts "Matches to process: #{match_count}"
 
     if match_count.zero?

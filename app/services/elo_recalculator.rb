@@ -29,8 +29,7 @@ class EloRecalculator
 
   def recalculate_all_matches
     matches = Match.includes(appearances: [:player, :faction])
-                   .where.not(played_at: nil)
-                   .order(:played_at)
+                   .order(Arel.sql("COALESCE(played_at, created_at)"))
 
     matches.find_each do |match|
       calculate_and_update_elo_ratings(match)

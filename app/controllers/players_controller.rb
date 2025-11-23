@@ -3,7 +3,7 @@ class PlayersController < ApplicationController
 
   # GET /players or /players.json
   def index
-    @sort_column = %w[elo_rating matches_played].include?(params[:sort]) ? params[:sort] : "elo_rating"
+    @sort_column = %w[elo_rating matches_played matches_observed].include?(params[:sort]) ? params[:sort] : "elo_rating"
     @sort_direction = %w[asc desc].include?(params[:direction]) ? params[:direction] : "desc"
 
     @players = Player.all
@@ -11,10 +11,24 @@ class PlayersController < ApplicationController
       @players = @players.where("nickname LIKE :search OR battletag LIKE :search", search: "%#{params[:search]}%")
     end
 
-    @player_count = @players.count
+    @player_count = @players.joins(:matches).distinct.count
+    @observer_count = @players.left_joins(:matches).where(matches: { id: nil }).count
+
+    # Precompute observation counts for all players
+    @observation_counts = Hash.new(0)
+    Wc3statsReplay.find_each do |replay|
+      replay.players.each do |p|
+        if p["slot"].nil? || p["slot"] > 9 || p["isWinner"].nil?
+          @observation_counts[p["name"]] += 1
+        end
+      end
+    end
 
     if @sort_column == "matches_played"
       @players = @players.left_joins(:matches).group("players.id").order(Arel.sql("COUNT(matches.id) #{@sort_direction}"))
+    elsif @sort_column == "matches_observed"
+      @players = @players.includes(:matches).sort_by { |p| @observation_counts[p.battletag] }
+      @players = @players.reverse if @sort_direction == "desc"
     else
       @players = @players.includes(:matches).order(@sort_column => @sort_direction)
     end

@@ -38,13 +38,17 @@
     <% end %>
   </div>
 
-  <% most_played = player.appearances.group(:faction).order('count_id DESC').limit(3).count(:id) %>
+  <% most_played = player.appearances.group(:faction).order('count_id DESC').limit(5).count(:id) %>
   <% if most_played.any? %>
     <div>
-      <strong class="block font-medium mb-1">Most Played Factions:</strong>
+      <strong class="block font-medium mb-1">Top Factions:</strong>
       <ul class="list-disc ml-5">
         <% most_played.each do |faction, count| %>
-          <li><%= faction.name %> (<%= count %> matches)</li>
+          <li>
+            <%= faction.name %> -
+            <span class="text-green-600"><%= player.wins_with_faction(faction) %>W</span>/<span class="text-red-600"><%= player.losses_with_faction(faction) %>L</span>
+            <span class="text-gray-500">(<%= player.win_rate_with_faction(faction) %>% win rate, <%= count %> matches)</span>
+          </li>
         <% end %>
       </ul>
     </div>

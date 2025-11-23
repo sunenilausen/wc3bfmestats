@@ -51,6 +51,25 @@ class Player < ApplicationRecord
     recent_with_faction - recent_wins_with_faction(faction, days: days)
   end
 
+  def wins_with_faction(faction)
+    won = faction.good? ? true : false
+    appearances.joins(:match)
+      .where(faction: faction)
+      .where(matches: { good_victory: won })
+      .count
+  end
+
+  def losses_with_faction(faction)
+    total_with_faction = appearances.where(faction: faction).count
+    total_with_faction - wins_with_faction(faction)
+  end
+
+  def win_rate_with_faction(faction)
+    total = appearances.where(faction: faction).count
+    return 0 if total.zero?
+    (wins_with_faction(faction).to_f / total * 100).round(1)
+  end
+
   def observation_count
     Wc3statsReplay.all.count do |replay|
       replay.players.any? do |p|

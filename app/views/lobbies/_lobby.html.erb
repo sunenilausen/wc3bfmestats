@@ -13,11 +13,13 @@
         <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Player</th>
         <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ELO</th>
         <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">W/L</th>
+        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">100d (any)</th>
+        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">1y (faction)</th>
       </tr>
     </thead>
     <tbody class="bg-white divide-y divide-gray-200">
       <tr class="bg-gray-100">
-        <td colspan="4" class="px-4 py-2 text-left text-sm text-gray-500 font-medium">Forces of Middle Earth</td>
+        <td colspan="6" class="px-4 py-2 text-left text-sm text-gray-500 font-medium">Forces of Middle Earth</td>
       </tr>
       <% good_players.each do |lp| %>
         <tr>
@@ -34,18 +36,32 @@
               -
             <% end %>
           </td>
+          <td class="px-4 py-2 whitespace-nowrap">
+            <% if lp.player %>
+              <span class="text-green-600"><%= lp.player.recent_wins %>W</span>/<span class="text-red-600"><%= lp.player.recent_losses %>L</span>
+            <% else %>
+              -
+            <% end %>
+          </td>
+          <td class="px-4 py-2 whitespace-nowrap">
+            <% if lp.player && lp.faction %>
+              <span class="text-green-600"><%= lp.player.recent_wins_with_faction(lp.faction, days: 365) %>W</span>/<span class="text-red-600"><%= lp.player.recent_losses_with_faction(lp.faction, days: 365) %>L</span>
+            <% else %>
+              -
+            <% end %>
+          </td>
         </tr>
       <% end %>
       <tr class="bg-gray-50">
         <td class="px-4 py-2 font-bold">Average ELO</td>
         <td class="px-4 py-2"></td>
         <td class="px-4 py-2 font-bold"><%= good_avg_elo %></td>
-        <td class="px-4 py-2"></td>
+        <td class="px-4 py-2" colspan="3"></td>
       </tr>
     </tbody>
     <tbody class="bg-white divide-y divide-gray-200">
       <tr class="bg-gray-100">
-        <td colspan="4" class="px-4 py-2 text-left text-sm text-gray-500 font-medium">Forces of Sauron</td>
+        <td colspan="6" class="px-4 py-2 text-left text-sm text-gray-500 font-medium">Forces of Sauron</td>
       </tr>
       <% evil_players.each do |lp| %>
         <tr>
@@ -62,19 +78,33 @@
               -
             <% end %>
           </td>
+          <td class="px-4 py-2 whitespace-nowrap">
+            <% if lp.player %>
+              <span class="text-green-600"><%= lp.player.recent_wins %>W</span>/<span class="text-red-600"><%= lp.player.recent_losses %>L</span>
+            <% else %>
+              -
+            <% end %>
+          </td>
+          <td class="px-4 py-2 whitespace-nowrap">
+            <% if lp.player && lp.faction %>
+              <span class="text-green-600"><%= lp.player.recent_wins_with_faction(lp.faction, days: 365) %>W</span>/<span class="text-red-600"><%= lp.player.recent_losses_with_faction(lp.faction, days: 365) %>L</span>
+            <% else %>
+              -
+            <% end %>
+          </td>
         </tr>
       <% end %>
       <tr class="bg-gray-50">
         <td class="px-4 py-2 font-bold">Average ELO</td>
         <td class="px-4 py-2"></td>
         <td class="px-4 py-2 font-bold"><%= evil_avg_elo %></td>
-        <td class="px-4 py-2"></td>
+        <td class="px-4 py-2" colspan="3"></td>
       </tr>
     </tbody>
     <% if lobby.observers.any? %>
       <tbody class="bg-white divide-y divide-gray-200">
         <tr class="bg-gray-100">
-          <td colspan="4" class="px-4 py-2 text-left text-sm text-gray-500 font-medium">Observers</td>
+          <td colspan="6" class="px-4 py-2 text-left text-sm text-gray-500 font-medium">Observers</td>
         </tr>
         <% lobby.observers.each do |observer| %>
           <tr>
@@ -83,9 +113,33 @@
             <td class="px-4 py-2 whitespace-nowrap">
               <span class="text-green-600"><%= observer.wins %>W</span>/<span class="text-red-600"><%= observer.losses %>L</span>
             </td>
+            <td class="px-4 py-2 whitespace-nowrap">
+              <span class="text-green-600"><%= observer.recent_wins %>W</span>/<span class="text-red-600"><%= observer.recent_losses %>L</span>
+            </td>
+            <td class="px-4 py-2 whitespace-nowrap">-</td>
           </tr>
         <% end %>
       </tbody>
     <% end %>
   </table>
+
+  <% if good_avg_elo > 0 && evil_avg_elo > 0 %>
+    <% good_expected = 1.0 / (1 + 10 ** ((evil_avg_elo - good_avg_elo) / 400.0)) %>
+    <% good_pct = (good_expected * 100).round %>
+    <% evil_pct = 100 - good_pct %>
+    <div class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+      <h3 class="text-sm font-medium text-gray-700 mb-2">Predicted Outcome</h3>
+      <div class="flex items-center gap-2">
+        <span class="text-green-700 font-medium">Good</span>
+        <div class="flex-1 h-6 bg-red-500 rounded-full overflow-hidden">
+          <div class="h-full bg-green-500" style="width: <%= good_pct %>%"></div>
+        </div>
+        <span class="text-red-700 font-medium">Evil</span>
+      </div>
+      <div class="flex justify-between mt-1 text-sm">
+        <span class="text-green-700"><%= good_pct %>%</span>
+        <span class="text-red-700"><%= evil_pct %>%</span>
+      </div>
+    </div>
+  <% end %>
 </div>

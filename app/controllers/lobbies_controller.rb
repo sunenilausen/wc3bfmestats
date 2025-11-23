@@ -52,6 +52,11 @@ class LobbiesController < ApplicationController
       end
     end
 
+    # Handle observers
+    if params[:lobby] && params[:lobby][:observer_ids]
+      @lobby.observer_ids = params[:lobby][:observer_ids].reject(&:blank?)
+    end
+
     respond_to do |format|
       if @lobby.save
         format.html { redirect_to @lobby, notice: "Lobby was successfully created." }
@@ -80,6 +85,11 @@ class LobbiesController < ApplicationController
           lobby_player.save
         end
       end
+    end
+
+    # Handle observers
+    if params[:lobby]
+      @lobby.observer_ids = (params[:lobby][:observer_ids] || []).reject(&:blank?)
     end
 
     respond_to do |format|

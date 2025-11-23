@@ -71,5 +71,21 @@
         <td class="px-4 py-2"></td>
       </tr>
     </tbody>
+    <% if lobby.observers.any? %>
+      <tbody class="bg-white divide-y divide-gray-200">
+        <tr class="bg-gray-100">
+          <td colspan="4" class="px-4 py-2 text-left text-sm text-gray-500 font-medium">Observers</td>
+        </tr>
+        <% lobby.observers.each do |observer| %>
+          <tr>
+            <td class="px-4 py-2 whitespace-nowrap" colspan="2"><%= observer.nickname %></td>
+            <td class="px-4 py-2 whitespace-nowrap"><%= observer.elo_rating&.round || "-" %></td>
+            <td class="px-4 py-2 whitespace-nowrap">
+              <span class="text-green-600"><%= observer.wins %>W</span>/<span class="text-red-600"><%= observer.losses %>L</span>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    <% end %>
   </table>
 </div>

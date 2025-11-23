@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_23_020521) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_23_023211) do
   create_table "appearances", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.integer "elo_rating"
@@ -37,6 +37,15 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_23_020521) do
   create_table "lobbies", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "lobby_observers", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "lobby_id", null: false
+    t.integer "player_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["lobby_id"], name: "index_lobby_observers_on_lobby_id"
+    t.index ["player_id"], name: "index_lobby_observers_on_player_id"
   end
 
   create_table "lobby_players", force: :cascade do |t|
@@ -95,6 +104,8 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_23_020521) do
   add_foreign_key "appearances", "factions"
   add_foreign_key "appearances", "matches"
   add_foreign_key "appearances", "players"
+  add_foreign_key "lobby_observers", "lobbies"
+  add_foreign_key "lobby_observers", "players"
   add_foreign_key "lobby_players", "factions"
   add_foreign_key "lobby_players", "lobbies"
   add_foreign_key "lobby_players", "players"

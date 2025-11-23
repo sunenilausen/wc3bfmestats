@@ -12,6 +12,7 @@
       <% end %>
       <select name="lobby[lobby_players_attributes][<%= index %>][player_id]"
               class="form-control player-select"
+              data-controller="searchable-select"
               data-average-elo-target="playerSelect"
               data-action="change->average-elo#calculateAverageElo"
               data-wl-target="wl-<%= index %>"
@@ -24,10 +25,18 @@
                   data-wins="<%= stats[:wins] %>"
                   data-losses="<%= stats[:losses] %>"
                   <%= "selected" if player.id == lobby_player.player_id %>>
-            <%= "#{player.nickname} - #{player.elo_rating.round}" %>
+            <%= player.nickname %>
           </option>
         <% end %>
       </select>
+    </td>
+    <td class="px-4 py-2 whitespace-nowrap" id="elo-<%= index %>">
+      <% if lobby_player.player_id %>
+        <% player = @players_for_select.find { |p| p.id == lobby_player.player_id } %>
+        <%= player&.elo_rating&.round || "-" %>
+      <% else %>
+        -
+      <% end %>
     </td>
     <td class="px-4 py-2 whitespace-nowrap" id="wl-<%= index %>">
       <% if lobby_player.player_id && @player_stats[lobby_player.player_id] %>
@@ -41,7 +50,8 @@
 <% end %>
 <tr class="average-elo-row" data-controller="average-elo" data-team="<%= team_number %>">
   <td class="px-4 py-2 font-bold">Average ELO</td>
-  <td class="px-4 py-2">
+  <td class="px-4 py-2"></td>
+  <td class="px-4 py-2 font-bold">
     <span data-average-elo-target="value">
       <%= lobby_players.any? ? (lobby_players.map { |lp| lp.player&.elo_rating.to_i }.compact.sum / [lobby_players.count { |lp| lp.player.present? }, 1].max) : 0 %>
     </span>
@@ -53,11 +63,16 @@
     const option = select.options[select.selectedIndex];
     const wins = option.dataset.wins;
     const losses = option.dataset.losses;
-    const target = document.getElementById(targetId);
+    const elo = option.dataset.elo;
+    const wlTarget = document.getElementById(targetId);
+    const eloTarget = document.getElementById(targetId.replace('wl-', 'elo-'));
     if (wins && losses) {
-      target.innerHTML = '<span class="text-green-600">' + wins + 'W</span>/<span class="text-red-600">' + losses + 'L</span>';
+      wlTarget.innerHTML = '<span class="text-green-600">' + wins + 'W</span>/<span class="text-red-600">' + losses + 'L</span>';
     } else {
-      target.innerHTML = '-';
+      wlTarget.innerHTML = '-';
+    }
+    if (eloTarget) {
+      eloTarget.innerHTML = elo || '-';
     }
   }
 </script>

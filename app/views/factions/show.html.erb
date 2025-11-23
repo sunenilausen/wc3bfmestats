@@ -1,15 +1,65 @@
-<% content_for :title, "Showing faction" %>
+<% content_for :title, @faction.name %>
 
 <div class="md:w-2/3 w-full">
   <% if notice.present? %>
     <p class="py-2 px-3 bg-green-50 mb-5 text-green-500 font-medium rounded-md inline-block" id="notice"><%= notice %></p>
   <% end %>
 
-  <h1 class="font-bold text-4xl">Showing faction</h1>
+  <h1 class="font-bold text-4xl"><%= @faction.name %></h1>
+  <p class="text-gray-500 mb-5"><%= @faction.good? ? "Good" : "Evil" %> faction</p>
 
-  <%= render @faction %>
+  <h2 class="text-2xl font-bold mb-3 mt-8">Faction Stats</h2>
+  <div class="grid grid-cols-2 gap-4 mb-8">
+    <div>
+      <strong class="block font-medium mb-1">Avg Unit Kills per Game:</strong>
+      <%= number_with_precision(@avg_unit_kills, precision: 1) %>
+    </div>
+    <div>
+      <strong class="block font-medium mb-1">Avg Unit Kills per Minute:</strong>
+      <%= number_with_precision(@avg_unit_kills_per_min, precision: 2) %>
+    </div>
+    <div>
+      <strong class="block font-medium mb-1">Avg Hero Kills per Game:</strong>
+      <%= number_with_precision(@avg_hero_kills, precision: 1) %>
+    </div>
+    <div>
+      <strong class="block font-medium mb-1">Avg Hero Kills per Minute:</strong>
+      <%= number_with_precision(@avg_hero_kills_per_min, precision: 2) %>
+    </div>
+  </div>
 
-  <%= link_to "Edit this faction", edit_faction_path(@faction), class: "w-full sm:w-auto text-center rounded-md px-3.5 py-2.5 bg-gray-100 hover:bg-gray-50 inline-block font-medium" %>
-  <%= link_to "Back to factions", factions_path, class: "w-full sm:w-auto text-center mt-2 sm:mt-0 sm:ml-2 rounded-md px-3.5 py-2.5 bg-gray-100 hover:bg-gray-50 inline-block font-medium" %>
-  <%= button_to "Destroy this faction", @faction, method: :delete, form_class: "sm:inline-block mt-2 sm:mt-0 sm:ml-2", class: "w-full rounded-md px-3.5 py-2.5 text-white bg-red-600 hover:bg-red-500 font-medium cursor-pointer", data: { turbo_confirm: "Are you sure?" } %>
+  <h2 class="text-2xl font-bold mb-3 mt-8">Highest Win Rate (min 10 games)</h2>
+  <% if @top_winrate_players.any? %>
+    <ol class="list-decimal ml-5 space-y-1">
+      <% @top_winrate_players.each do |data| %>
+        <li>
+          <%= link_to data[:player].nickname, player_path(data[:player]), class: "text-blue-600 hover:underline" %>
+          - <span class="text-green-600 font-medium"><%= data[:winrate] %>%</span>
+          <span class="text-gray-500">(<%= data[:wins] %>W/<%= data[:games] - data[:wins] %>L, <%= data[:games] %> games)</span>
+        </li>
+      <% end %>
+    </ol>
+  <% else %>
+    <p class="text-gray-500">No players with 10+ games yet.</p>
+  <% end %>
+
+  <h2 class="text-2xl font-bold mb-3 mt-8">Most Wins</h2>
+  <% if @most_wins_players.any? %>
+    <ol class="list-decimal ml-5 space-y-1">
+      <% @most_wins_players.each do |data| %>
+        <li>
+          <%= link_to data[:player].nickname, player_path(data[:player]), class: "text-blue-600 hover:underline" %>
+          - <span class="text-green-600 font-medium"><%= data[:wins] %> wins</span>
+          <span class="text-gray-500">(<%= data[:games] %> games)</span>
+        </li>
+      <% end %>
+    </ol>
+  <% else %>
+    <p class="text-gray-500">No players found.</p>
+  <% end %>
+
+  <div class="mt-8">
+    <%= link_to "Edit this faction", edit_faction_path(@faction), class: "w-full sm:w-auto text-center rounded-md px-3.5 py-2.5 bg-gray-100 hover:bg-gray-50 inline-block font-medium" %>
+    <%= link_to "Back to factions", factions_path, class: "w-full sm:w-auto text-center mt-2 sm:mt-0 sm:ml-2 rounded-md px-3.5 py-2.5 bg-gray-100 hover:bg-gray-50 inline-block font-medium" %>
+  </div>
 </div>

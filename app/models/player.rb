@@ -106,6 +106,25 @@ class Player < ApplicationRecord
     (diffs.sum / diffs.size).round(0)
   end
 
+  def times_top_hero_kills_on_team
+    appearances.includes(:match, :faction).count do |appearance|
+      next false unless appearance.hero_kills.present?
+
+      match = appearance.match
+      player_good = appearance.faction.good?
+
+      # Get teammates' appearances (same side)
+      team_appearances = match.appearances.includes(:faction).select do |a|
+        a.faction.good? == player_good && a.hero_kills.present?
+      end
+
+      next false if team_appearances.empty?
+
+      max_hero_kills = team_appearances.map(&:hero_kills).max
+      appearance.hero_kills == max_hero_kills
+    end
+  end
+
   private
 
   def elo_differences_by_role(role)

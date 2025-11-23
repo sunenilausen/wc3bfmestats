@@ -1,6 +1,9 @@
 class HomeController < ApplicationController
   def index
     @underdog_stats = calculate_underdog_stats
+    @matches_count = Match.count
+    @players_count = Player.joins(:matches).distinct.count
+    @observers_count = Player.left_joins(:matches).where(matches: { id: nil }).count
   end
 
   private

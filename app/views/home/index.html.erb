@@ -1,7 +1,22 @@
 <div>
   <h1 class="font-bold text-4xl">BfME Stats</h1>
 
-  <div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  <div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
+      <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Matches</h2>
+      <p class="mt-2 text-3xl font-bold text-blue-600"><%= @matches_count %></p>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
+      <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Players</h2>
+      <p class="mt-2 text-3xl font-bold text-blue-600"><%= @players_count %></p>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
+      <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Observers</h2>
+      <p class="mt-2 text-3xl font-bold text-blue-600"><%= @observers_count %></p>
+    </div>
+
     <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
       <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Underdog Win Rate</h2>
       <p class="mt-2 text-3xl font-bold text-blue-600"><%= @underdog_stats[:percentage] %>%</p>

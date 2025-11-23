@@ -6,7 +6,7 @@
   <% end %>
 
   <div class="flex justify-between items-center">
-    <h1 class="font-bold text-4xl">Players</h1>
+    <h1 class="font-bold text-4xl">Players <span class="text-gray-500 text-2xl font-normal">(<%= @players.size %>)</span></h1>
     <%= link_to "New player", new_player_path, class: "rounded-md px-3.5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white block font-medium" %>
   </div>
 

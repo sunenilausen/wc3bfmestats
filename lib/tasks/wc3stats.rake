@@ -249,8 +249,26 @@ namespace :wc3stats do
     puts "  Failed: #{failed_count}"
     puts
 
-    # Step 3: Cleanup invalid matches
-    puts "Step 3: Cleaning up invalid matches..."
+    # Step 3: Fix Korean/Unicode name encoding issues
+    puts "Step 3: Fixing Korean/Unicode name encoding..."
+    unicode_fixer = UnicodeNameFixer.new
+    unicode_fixer.call
+    if unicode_fixer.fixed_count > 0
+      puts "  Fixed #{unicode_fixer.fixed_count} players with encoding issues"
+      unicode_fixer.changes.select { |c| c[:type] == :player }.first(5).each do |change|
+        puts "    #{change[:nickname][:from]} → #{change[:nickname][:to]}"
+      end
+      puts "    ..." if unicode_fixer.fixed_count > 5
+    else
+      puts "  No encoding issues found"
+    end
+    if unicode_fixer.errors.any?
+      puts "  Errors: #{unicode_fixer.errors.count}"
+    end
+    puts
+
+    # Step 4: Cleanup invalid matches
+    puts "Step 4: Cleaning up invalid matches..."
     invalid_matches = Match.left_joins(:appearances)
                            .group(:id)
                            .having("COUNT(appearances.id) != 10")
@@ -264,8 +282,8 @@ namespace :wc3stats do
     end
     puts
 
-    # Step 4: Recalculate ELO
-    puts "Step 4: Recalculating ELO ratings..."
+    # Step 5: Recalculate ELO
+    puts "Step 5: Recalculating ELO ratings..."
     recalculator = EloRecalculator.new
     recalculator.call
 

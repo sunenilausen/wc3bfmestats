@@ -121,4 +121,14 @@ namespace :players do
     end
     puts "=" * 60
   end
+
+  desc "Export players to CSV"
+  task export: :environment do
+    csv = PlayersCsvExporter.call
+    filename = "players_#{Date.current.strftime('%Y%m%d')}.csv"
+    filepath = Rails.root.join("tmp", filename)
+
+    File.write(filepath, csv)
+    puts "Exported #{Player.count} players to #{filepath}"
+  end
 end

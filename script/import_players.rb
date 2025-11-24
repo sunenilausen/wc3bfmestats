@@ -14,12 +14,12 @@ CSV.parse(example_players_csv, headers: true) do |row|
   )
 end
 
-def export_players_csv
-  CSV.generate do |csv|
-    csv << [ "nickname", "elo_rating" ]
-    Player.find_each do |player|
-      csv << [ player.nickname, player.elo_rating ]
-    end
+
+require 'csv'
+CSV.generate do |csv|
+  csv << [ "nickname", "elo_rating", "appearances_count", "last appearance", "wins", "losses" ]
+  Player.find_each do |player|
+    csv << [ player.nickname, player.elo_rating, player.appearances.count, player.matches.by_played_at(:desc).first.played_at_formatted, player.wins, player.losses ]
   end
 end
 

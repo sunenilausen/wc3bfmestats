@@ -1,6 +1,7 @@
 class HomeController < ApplicationController
   def index
     @underdog_stats = calculate_underdog_stats
+    @good_vs_evil_stats = calculate_good_vs_evil_stats
     @matches_count = Match.count
     @players_count = Player.joins(:matches).distinct.count
     @observers_count = Player.left_joins(:matches).where(matches: { id: nil }).count
@@ -40,6 +41,21 @@ class HomeController < ApplicationController
       underdog_wins: underdog_wins,
       total_matches: total_matches,
       percentage: total_matches > 0 ? (underdog_wins.to_f / total_matches * 100).round(1) : 0
+    }
+  end
+
+  def calculate_good_vs_evil_stats
+    matches_with_result = Match.where.not(good_victory: nil)
+    total = matches_with_result.count
+    good_wins = matches_with_result.where(good_victory: true).count
+    evil_wins = total - good_wins
+
+    {
+      good_wins: good_wins,
+      evil_wins: evil_wins,
+      total: total,
+      good_percentage: total > 0 ? (good_wins.to_f / total * 100).round(1) : 0,
+      evil_percentage: total > 0 ? (evil_wins.to_f / total * 100).round(1) : 0
     }
   end
 end

@@ -284,10 +284,6 @@ namespace :wc3stats do
     puts "Valid matches: #{Match.count}"
     puts "Players: #{Player.count}"
     puts
-    puts "Top 5 Players by ELO:"
-    Player.order(elo_rating: :desc).limit(5).each_with_index do |player, i|
-      puts "  #{i + 1}. #{player.nickname}: #{player.elo_rating.round}"
-    end
     puts "=" * 60
   end
 end

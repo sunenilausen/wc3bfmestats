@@ -76,19 +76,75 @@
     <%= player.avg_unit_kill_contribution %>%
   </div>
 
-  <% most_played = player.appearances.group(:faction).order('count_id DESC').limit(5).count(:id) %>
-  <% if most_played.any? %>
-    <div>
-      <strong class="block font-medium mb-1">Top Factions:</strong>
-      <ul class="list-disc ml-5">
-        <% most_played.each do |faction, count| %>
-          <li>
-            <%= faction.name %> -
-            <span class="text-green-600"><%= player.wins_with_faction(faction) %>W</span>/<span class="text-red-600"><%= player.losses_with_faction(faction) %>L</span>
-            <span class="text-gray-500">(<%= player.win_rate_with_faction(faction) %>% win rate, <%= count %> matches)</span>
-          </li>
-        <% end %>
-      </ul>
+  <% played_factions = player.appearances.group(:faction).count(:id) %>
+  <% if played_factions.any? %>
+    <h2 class="text-2xl font-bold mb-3">Faction Stats</h2>
+
+    <% good_factions = Faction.where(good: true).order(:name) %>
+    <% evil_factions = Faction.where(good: false).order(:name) %>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
+        <h3 class="text-lg font-semibold text-green-700 mb-2">Good</h3>
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b">
+              <th class="text-left py-1">Faction</th>
+              <th class="text-center py-1">W/L</th>
+              <th class="text-center py-1">Win%</th>
+              <th class="text-center py-1">Games</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% good_factions.each do |faction| %>
+              <% games = played_factions[faction] || 0 %>
+              <% next if games == 0 %>
+              <% wins = player.wins_with_faction(faction) %>
+              <% losses = player.losses_with_faction(faction) %>
+              <% win_rate = player.win_rate_with_faction(faction) %>
+              <tr class="border-b border-gray-100">
+                <td class="py-1"><%= link_to faction.name, faction_path(faction), class: "text-blue-600 hover:underline" %></td>
+                <td class="text-center py-1">
+                  <span class="text-green-600"><%= wins %></span>/<span class="text-red-600"><%= losses %></span>
+                </td>
+                <td class="text-center py-1"><%= win_rate %>%</td>
+                <td class="text-center py-1 text-gray-500"><%= games %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <div>
+        <h3 class="text-lg font-semibold text-red-700 mb-2">Evil</h3>
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b">
+              <th class="text-left py-1">Faction</th>
+              <th class="text-center py-1">W/L</th>
+              <th class="text-center py-1">Win%</th>
+              <th class="text-center py-1">Games</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% evil_factions.each do |faction| %>
+              <% games = played_factions[faction] || 0 %>
+              <% next if games == 0 %>
+              <% wins = player.wins_with_faction(faction) %>
+              <% losses = player.losses_with_faction(faction) %>
+              <% win_rate = player.win_rate_with_faction(faction) %>
+              <tr class="border-b border-gray-100">
+                <td class="py-1"><%= link_to faction.name, faction_path(faction), class: "text-blue-600 hover:underline" %></td>
+                <td class="text-center py-1">
+                  <span class="text-green-600"><%= wins %></span>/<span class="text-red-600"><%= losses %></span>
+                </td>
+                <td class="text-center py-1"><%= win_rate %>%</td>
+                <td class="text-center py-1 text-gray-500"><%= games %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
     </div>
   <% else %>
     <div>No appearances recorded.</div>

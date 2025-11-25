@@ -112,9 +112,9 @@ class PlayerStatsCalculator
   def process_kill_stats(appearance, team_appearances, player_good, stats, faction_id)
     faction_stats = stats[:faction_stats][faction_id]
 
-    # Hero kills
-    if appearance.hero_kills.present?
-      team_with_hero_kills = team_appearances.select { |a| a.hero_kills.present? }
+    # Hero kills - skip if flagged to ignore
+    if appearance.hero_kills.present? && !appearance.ignore_hero_kills?
+      team_with_hero_kills = team_appearances.select { |a| a.hero_kills.present? && !a.ignore_hero_kills? }
 
       if team_with_hero_kills.any?
         max_hero_kills = team_with_hero_kills.map(&:hero_kills).max
@@ -132,9 +132,9 @@ class PlayerStatsCalculator
       end
     end
 
-    # Unit kills
-    if appearance.unit_kills.present?
-      team_with_unit_kills = team_appearances.select { |a| a.unit_kills.present? }
+    # Unit kills - skip if flagged to ignore
+    if appearance.unit_kills.present? && !appearance.ignore_unit_kills?
+      team_with_unit_kills = team_appearances.select { |a| a.unit_kills.present? && !a.ignore_unit_kills? }
 
       if team_with_unit_kills.any?
         max_unit_kills = team_with_unit_kills.map(&:unit_kills).max

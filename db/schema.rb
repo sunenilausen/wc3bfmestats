@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_25_171428) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_25_211324) do
   create_table "appearances", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.integer "elo_rating"
@@ -20,6 +20,8 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_25_171428) do
     t.float "glicko2_rating_change"
     t.float "glicko2_rating_deviation"
     t.integer "hero_kills"
+    t.boolean "ignore_hero_kills", default: false, null: false
+    t.boolean "ignore_unit_kills", default: false, null: false
     t.integer "match_id", null: false
     t.integer "player_id", null: false
     t.integer "unit_kills"

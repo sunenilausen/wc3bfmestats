@@ -267,8 +267,42 @@ namespace :wc3stats do
     end
     puts
 
-    # Step 4: Cleanup invalid matches
-    puts "Step 4: Cleaning up invalid matches..."
+    # Step 4: Set ignore flags on kill stats
+    puts "Step 4: Updating ignore flags on kill stats..."
+    updated_unit = 0
+    updated_hero = 0
+
+    Match.includes(:appearances).find_each do |match|
+      appearances = match.appearances
+
+      appearances.each do |app|
+        if app.unit_kills == 0 && !app.ignore_unit_kills?
+          app.update_column(:ignore_unit_kills, true)
+          updated_unit += 1
+        end
+      end
+
+      all_zero = appearances.all? { |a| a.hero_kills.nil? || a.hero_kills == 0 }
+      if all_zero
+        appearances.each do |app|
+          unless app.ignore_hero_kills?
+            app.update_column(:ignore_hero_kills, true)
+            updated_hero += 1
+          end
+        end
+      end
+    end
+
+    if updated_unit > 0 || updated_hero > 0
+      puts "  Set ignore_unit_kills on #{updated_unit} appearances"
+      puts "  Set ignore_hero_kills on #{updated_hero} appearances"
+    else
+      puts "  No changes needed"
+    end
+    puts
+
+    # Step 5: Cleanup invalid matches
+    puts "Step 5: Cleaning up invalid matches..."
     invalid_matches = Match.left_joins(:appearances)
                            .group(:id)
                            .having("COUNT(appearances.id) != 10")
@@ -282,8 +316,8 @@ namespace :wc3stats do
     end
     puts
 
-    # Step 5: Recalculate ELO
-    puts "Step 5: Recalculating ELO ratings..."
+    # Step 6: Recalculate ELO
+    puts "Step 6: Recalculating ELO ratings..."
     elo_recalculator = EloRecalculator.new
     elo_recalculator.call
 
@@ -294,8 +328,8 @@ namespace :wc3stats do
     end
     puts
 
-    # Step 6: Recalculate Glicko-2
-    puts "Step 6: Recalculating Glicko-2 ratings..."
+    # Step 7: Recalculate Glicko-2
+    puts "Step 7: Recalculating Glicko-2 ratings..."
     glicko_recalculator = Glicko2Recalculator.new
     glicko_recalculator.call
 
@@ -314,6 +348,44 @@ namespace :wc3stats do
     puts "Valid matches: #{Match.count}"
     puts "Players: #{Player.count}"
     puts
+    puts "=" * 60
+  end
+
+  desc "Set ignore_unit_kills and ignore_hero_kills flags on appearances"
+  task set_ignore_kills: :environment do
+    puts "=" * 60
+    puts "Setting ignore_kills flags on appearances"
+    puts "=" * 60
+    puts
+
+    updated_unit_kills = 0
+    updated_hero_kills = 0
+
+    Match.includes(:appearances).find_each do |match|
+      appearances = match.appearances
+
+      # Ignore unit kills when unit_kills is 0
+      appearances.each do |app|
+        if app.unit_kills == 0 && !app.ignore_unit_kills?
+          app.update_column(:ignore_unit_kills, true)
+          updated_unit_kills += 1
+        end
+      end
+
+      # Ignore hero kills when all players in the match have 0 hero kills
+      all_zero_hero_kills = appearances.all? { |a| a.hero_kills.nil? || a.hero_kills == 0 }
+      if all_zero_hero_kills
+        appearances.each do |app|
+          unless app.ignore_hero_kills?
+            app.update_column(:ignore_hero_kills, true)
+            updated_hero_kills += 1
+          end
+        end
+      end
+    end
+
+    puts "Updated #{updated_unit_kills} appearances with ignore_unit_kills = true"
+    puts "Updated #{updated_hero_kills} appearances with ignore_hero_kills = true"
     puts "=" * 60
   end
 end

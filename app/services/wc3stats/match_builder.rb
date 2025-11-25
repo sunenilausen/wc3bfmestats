@@ -48,6 +48,7 @@ module Wc3stats
       ActiveRecord::Base.transaction do
         match = create_match
         create_appearances(match)
+        set_ignore_flags(match)
         match
       end
     rescue ActiveRecord::RecordInvalid => e
@@ -115,6 +116,23 @@ module Wc3stats
         elo_rating: 1500,
         elo_rating_seed: 1500
       )
+    end
+
+    def set_ignore_flags(match)
+      appearances = match.appearances.reload
+
+      # Ignore unit kills when unit_kills is 0
+      appearances.each do |app|
+        app.update_column(:ignore_unit_kills, true) if app.unit_kills == 0
+      end
+
+      # Ignore hero kills when all players in the match have 0 hero kills
+      all_zero_hero_kills = appearances.all? { |a| a.hero_kills.nil? || a.hero_kills == 0 }
+      if all_zero_hero_kills
+        appearances.each do |app|
+          app.update_column(:ignore_hero_kills, true)
+        end
+      end
     end
   end
 end

@@ -8,46 +8,7 @@ class FactionsController < ApplicationController
 
   # GET /factions/1 or /factions/1.json
   def show
-    players_with_stats = Player.joins(:appearances)
-      .where(appearances: { faction_id: @faction.id })
-      .group("players.id")
-      .having("COUNT(appearances.id) >= 10")
-      .select("players.*, COUNT(appearances.id) as games_count")
-
-    @top_winrate_players = players_with_stats.map do |player|
-      wins = player.wins_with_faction(@faction)
-      games = player.appearances.where(faction: @faction).count
-      winrate = games > 0 ? (wins.to_f / games * 100).round(1) : 0
-      { player: player, wins: wins, games: games, winrate: winrate }
-    end.sort_by { |p| -p[:winrate] }.first(10)
-
-    @most_wins_players = Player.joins(:appearances)
-      .where(appearances: { faction_id: @faction.id })
-      .group("players.id")
-      .select("players.*")
-      .map do |player|
-        wins = player.wins_with_faction(@faction)
-        games = player.appearances.where(faction: @faction).count
-        { player: player, wins: wins, games: games }
-      end.sort_by { |p| -p[:wins] }.first(10)
-
-    # Calculate average kills stats for this faction
-    faction_appearances = @faction.appearances
-    @avg_unit_kills = faction_appearances.average(:unit_kills) || 0
-    @avg_hero_kills = faction_appearances.average(:hero_kills) || 0
-
-    # Calculate per-minute stats
-    appearances_with_duration = faction_appearances.joins(:match).where.not(matches: { seconds: nil })
-    if appearances_with_duration.any?
-      total_unit_kills = appearances_with_duration.sum(:unit_kills) || 0
-      total_hero_kills = appearances_with_duration.sum(:hero_kills) || 0
-      total_minutes = appearances_with_duration.joins(:match).sum("matches.seconds") / 60.0
-      @avg_unit_kills_per_min = total_minutes > 0 ? total_unit_kills / total_minutes : 0
-      @avg_hero_kills_per_min = total_minutes > 0 ? total_hero_kills / total_minutes : 0
-    else
-      @avg_unit_kills_per_min = 0
-      @avg_hero_kills_per_min = 0
-    end
+    @stats = FactionStatsCalculator.new(@faction).compute
   end
 
   # GET /factions/new

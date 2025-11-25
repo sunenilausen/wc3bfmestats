@@ -1,65 +1,174 @@
 <% content_for :title, @faction.name %>
 
-<div class="md:w-2/3 w-full">
+<div class="w-full">
   <% if notice.present? %>
     <p class="py-2 px-3 bg-green-50 mb-5 text-green-500 font-medium rounded-md inline-block" id="notice"><%= notice %></p>
   <% end %>
 
-  <h1 class="font-bold text-4xl"><%= @faction.name %></h1>
-  <p class="text-gray-500 mb-5"><%= @faction.good? ? "Good" : "Evil" %> faction</p>
+  <div class="flex items-center gap-3 mb-6">
+    <h1 class="font-bold text-4xl"><%= @faction.name %></h1>
+    <span class="px-2 py-1 rounded text-sm font-medium <%= @faction.good? ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' %>">
+      <%= @faction.good? ? "Good" : "Evil" %>
+    </span>
+  </div>
 
-  <h2 class="text-2xl font-bold mb-3 mt-8">Faction Stats</h2>
-  <div class="grid grid-cols-2 gap-4 mb-8">
-    <div>
-      <strong class="block font-medium mb-1">Avg Unit Kills per Game:</strong>
-      <%= number_with_precision(@avg_unit_kills, precision: 1) %>
+  <%# Stats Cards %>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="bg-gray-50 rounded-md p-3">
+      <h3 class="font-semibold mb-2 text-gray-700">Kill Averages</h3>
+      <table class="w-full text-sm">
+        <tbody>
+          <tr>
+            <td class="py-0.5">Hero Kills/game</td>
+            <td class="text-right py-0.5"><%= @stats[:avg_hero_kills] %></td>
+          </tr>
+          <tr>
+            <td class="py-0.5">Hero Kills/min</td>
+            <td class="text-right py-0.5"><%= @stats[:avg_hero_kills_per_min] %></td>
+          </tr>
+          <tr>
+            <td class="py-0.5">Unit Kills/game</td>
+            <td class="text-right py-0.5"><%= @stats[:avg_unit_kills] %></td>
+          </tr>
+          <tr>
+            <td class="py-0.5">Unit Kills/min</td>
+            <td class="text-right py-0.5"><%= @stats[:avg_unit_kills_per_min] %></td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-    <div>
-      <strong class="block font-medium mb-1">Avg Unit Kills per Minute:</strong>
-      <%= number_with_precision(@avg_unit_kills_per_min, precision: 2) %>
+
+    <div class="bg-gray-50 rounded-md p-3">
+      <h3 class="font-semibold mb-2 text-gray-700">Team Contribution</h3>
+      <table class="w-full text-sm">
+        <tbody>
+          <tr>
+            <td class="py-0.5">Avg Hero Kill Share</td>
+            <td class="text-right py-0.5"><%= @stats[:avg_hero_kill_contribution] %>%</td>
+          </tr>
+          <tr>
+            <td class="py-0.5">Top Hero Killer</td>
+            <td class="text-right py-0.5"><%= @stats[:times_top_hero_kills] %>x (<%= @stats[:top_hero_kills_pct] %>%)</td>
+          </tr>
+          <tr>
+            <td class="py-0.5">Avg Unit Kill Share</td>
+            <td class="text-right py-0.5"><%= @stats[:avg_unit_kill_contribution] %>%</td>
+          </tr>
+          <tr>
+            <td class="py-0.5">Top Unit Killer</td>
+            <td class="text-right py-0.5"><%= @stats[:times_top_unit_kills] %>x (<%= @stats[:top_unit_kills_pct] %>%)</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-    <div>
-      <strong class="block font-medium mb-1">Avg Hero Kills per Game:</strong>
-      <%= number_with_precision(@avg_hero_kills, precision: 1) %>
-    </div>
-    <div>
-      <strong class="block font-medium mb-1">Avg Hero Kills per Minute:</strong>
-      <%= number_with_precision(@avg_hero_kills_per_min, precision: 2) %>
+
+    <div class="bg-gray-50 rounded-md p-3">
+      <h3 class="font-semibold mb-2 text-gray-700">Overview</h3>
+      <table class="w-full text-sm">
+        <tbody>
+          <tr>
+            <td class="py-0.5">Unique Players</td>
+            <td class="text-right py-0.5"><%= @stats[:unique_players] %></td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
-  <h2 class="text-2xl font-bold mb-3 mt-8">Highest Win Rate (min 10 games)</h2>
-  <% if @top_winrate_players.any? %>
-    <ol class="list-decimal ml-5 space-y-1">
-      <% @top_winrate_players.each do |data| %>
-        <li>
-          <%= link_to data[:player].nickname, player_path(data[:player]), class: "text-blue-600 hover:underline" %>
-          - <span class="text-green-600 font-medium"><%= data[:winrate] %>%</span>
-          <span class="text-gray-500">(<%= data[:wins] %>W/<%= data[:games] - data[:wins] %>L, <%= data[:games] %> games)</span>
-        </li>
+  <%# Leaderboards %>
+  <h2 class="text-xl font-bold mb-3">Leaderboards</h2>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+    <%# Highest Win Rate %>
+    <div class="bg-gray-50 rounded-md p-3">
+      <h3 class="font-semibold mb-2 text-gray-700">Highest Win Rate <span class="text-xs text-gray-400">(min 10 games)</span></h3>
+      <% if @stats[:top_winrate_players].any? %>
+        <table class="w-full text-sm">
+          <tbody>
+            <% @stats[:top_winrate_players].each_with_index do |data, i| %>
+              <tr class="<%= i < @stats[:top_winrate_players].size - 1 ? 'border-b border-gray-100' : '' %>">
+                <td class="py-1"><%= i + 1 %>. <%= link_to data[:player].nickname, player_path(data[:player]), class: "text-blue-600 hover:underline" %></td>
+                <td class="text-right py-1">
+                  <span class="text-green-600 font-medium"><%= data[:winrate] %>%</span>
+                  <span class="text-gray-400 text-xs">(<%= data[:wins] %>W/<%= data[:games] %>G)</span>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <p class="text-gray-400 text-sm">No players with 10+ games yet.</p>
       <% end %>
-    </ol>
-  <% else %>
-    <p class="text-gray-500">No players with 10+ games yet.</p>
-  <% end %>
+    </div>
 
-  <h2 class="text-2xl font-bold mb-3 mt-8">Most Wins</h2>
-  <% if @most_wins_players.any? %>
-    <ol class="list-decimal ml-5 space-y-1">
-      <% @most_wins_players.each do |data| %>
-        <li>
-          <%= link_to data[:player].nickname, player_path(data[:player]), class: "text-blue-600 hover:underline" %>
-          - <span class="text-green-600 font-medium"><%= data[:wins] %> wins</span>
-          <span class="text-gray-500">(<%= data[:games] %> games)</span>
-        </li>
+    <%# Most Wins %>
+    <div class="bg-gray-50 rounded-md p-3">
+      <h3 class="font-semibold mb-2 text-gray-700">Most Wins</h3>
+      <% if @stats[:most_wins_players].any? %>
+        <table class="w-full text-sm">
+          <tbody>
+            <% @stats[:most_wins_players].each_with_index do |data, i| %>
+              <tr class="<%= i < @stats[:most_wins_players].size - 1 ? 'border-b border-gray-100' : '' %>">
+                <td class="py-1"><%= i + 1 %>. <%= link_to data[:player].nickname, player_path(data[:player]), class: "text-blue-600 hover:underline" %></td>
+                <td class="text-right py-1">
+                  <span class="text-green-600 font-medium"><%= data[:wins] %></span>
+                  <span class="text-gray-400 text-xs">(<%= data[:games] %> games)</span>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <p class="text-gray-400 text-sm">No players found.</p>
       <% end %>
-    </ol>
-  <% else %>
-    <p class="text-gray-500">No players found.</p>
-  <% end %>
+    </div>
 
-  <div class="mt-8">
-    <%= link_to "Edit this faction", edit_faction_path(@faction), class: "w-full sm:w-auto text-center rounded-md px-3.5 py-2.5 bg-gray-100 hover:bg-gray-50 inline-block font-medium" %>
-    <%= link_to "Back to factions", factions_path, class: "w-full sm:w-auto text-center mt-2 sm:mt-0 sm:ml-2 rounded-md px-3.5 py-2.5 bg-gray-100 hover:bg-gray-50 inline-block font-medium" %>
+    <%# Top Hero Killers %>
+    <div class="bg-gray-50 rounded-md p-3">
+      <h3 class="font-semibold mb-2 text-gray-700">Top Hero Killers <span class="text-xs text-gray-400">(min 5 games)</span></h3>
+      <% if @stats[:top_hero_killers].any? %>
+        <table class="w-full text-sm">
+          <tbody>
+            <% @stats[:top_hero_killers].each_with_index do |data, i| %>
+              <tr class="<%= i < @stats[:top_hero_killers].size - 1 ? 'border-b border-gray-100' : '' %>">
+                <td class="py-1"><%= i + 1 %>. <%= link_to data[:player].nickname, player_path(data[:player]), class: "text-blue-600 hover:underline" %></td>
+                <td class="text-right py-1">
+                  <span class="font-medium"><%= data[:top_pct] %>%</span>
+                  <span class="text-gray-400 text-xs">(<%= data[:top_hero] %>/<%= data[:games] %>)</span>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <p class="text-gray-400 text-sm">No players with 5+ games yet.</p>
+      <% end %>
+    </div>
+
+    <%# Top Unit Killers %>
+    <div class="bg-gray-50 rounded-md p-3">
+      <h3 class="font-semibold mb-2 text-gray-700">Top Unit Killers <span class="text-xs text-gray-400">(min 5 games)</span></h3>
+      <% if @stats[:top_unit_killers].any? %>
+        <table class="w-full text-sm">
+          <tbody>
+            <% @stats[:top_unit_killers].each_with_index do |data, i| %>
+              <tr class="<%= i < @stats[:top_unit_killers].size - 1 ? 'border-b border-gray-100' : '' %>">
+                <td class="py-1"><%= i + 1 %>. <%= link_to data[:player].nickname, player_path(data[:player]), class: "text-blue-600 hover:underline" %></td>
+                <td class="text-right py-1">
+                  <span class="font-medium"><%= data[:top_pct] %>%</span>
+                  <span class="text-gray-400 text-xs">(<%= data[:top_unit] %>/<%= data[:games] %>)</span>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <p class="text-gray-400 text-sm">No players with 5+ games yet.</p>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="flex gap-2">
+    <%= link_to "Edit", edit_faction_path(@faction), class: "rounded-md px-3 py-2 bg-gray-100 hover:bg-gray-50 text-sm font-medium" %>
+    <%= link_to "Back", factions_path, class: "rounded-md px-3 py-2 bg-gray-100 hover:bg-gray-50 text-sm font-medium" %>
   </div>
 </div>

@@ -6,6 +6,7 @@
   <% end %>
 
   <div class="flex items-center gap-3 mb-6">
+    <span class="w-5 h-5 rounded-full inline-block" style="background-color: <%= @faction.color_hex %>"></span>
     <h1 class="font-bold text-4xl"><%= @faction.name %></h1>
     <span class="px-2 py-1 rounded text-sm font-medium <%= @faction.good? ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' %>">
       <%= @faction.good? ? "Good" : "Evil" %>

@@ -10,12 +10,15 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_25_130057) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_25_171428) do
   create_table "appearances", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.integer "elo_rating"
     t.integer "elo_rating_change"
     t.integer "faction_id", null: false
+    t.float "glicko2_rating"
+    t.float "glicko2_rating_change"
+    t.float "glicko2_rating_deviation"
     t.integer "hero_kills"
     t.integer "match_id", null: false
     t.integer "player_id", null: false
@@ -77,6 +80,10 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_25_130057) do
     t.datetime "created_at", null: false
     t.float "elo_rating"
     t.float "elo_rating_seed"
+    t.float "glicko2_rating", default: 1500.0
+    t.float "glicko2_rating_deviation", default: 350.0
+    t.float "glicko2_rating_seed"
+    t.float "glicko2_volatility", default: 0.06
     t.string "nickname"
     t.string "region"
     t.datetime "updated_at", null: false

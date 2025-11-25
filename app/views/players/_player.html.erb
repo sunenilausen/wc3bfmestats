@@ -5,16 +5,24 @@
   <% highest_elo = elo_ratings.any? ? elo_ratings.max : nil %>
   <% lowest_elo = elo_ratings.any? ? elo_ratings.min : nil %>
 
+  <%# Compute Glicko-2 extremes %>
+  <% glicko_ratings = appearances.map(&:glicko2_rating).compact %>
+  <% glicko_ratings << player.glicko2_rating if player.glicko2_rating %>
+  <% highest_glicko = glicko_ratings.any? ? glicko_ratings.max.round : nil %>
+  <% lowest_glicko = glicko_ratings.any? ? glicko_ratings.min.round : nil %>
+
   <%# Player Info %>
   <div class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-2 text-sm">
     <div><strong>Battletag:</strong> <%= player.battletag %></div>
     <div><strong>Nickname:</strong> <%= player.nickname %></div>
     <div><strong>Battlenet:</strong> <%= player.battlenet_name %></div>
     <div><strong>ELO:</strong> <%= player.elo_rating&.round || "-" %></div>
+    <div><strong>Glicko-2:</strong> <%= player.glicko2_rating&.round || "-" %> <span class="text-gray-400 text-xs" title="Rating Deviation (uncertainty)">&plusmn;<%= player.glicko2_rating_deviation&.round || "-" %></span></div>
     <div><strong>Region:</strong> <%= player.region %></div>
-    <div><strong>BNet #:</strong> <%= player.battlenet_number %></div>
     <div><strong>Highest ELO:</strong> <%= highest_elo || "-" %></div>
     <div><strong>Lowest ELO:</strong> <%= lowest_elo || "-" %></div>
+    <div><strong>Highest Glicko:</strong> <%= highest_glicko || "-" %></div>
+    <div><strong>Lowest Glicko:</strong> <%= lowest_glicko || "-" %></div>
   </div>
 
   <%# Compute averages from preloaded appearances %>
@@ -233,6 +241,8 @@
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Unit Kills">UK</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="ELO change">+/-</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="ELO after match">ELO</th>
+            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Glicko-2 change">G+/-</th>
+            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Glicko-2 after match">Glicko</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase">Duration</th>
           </tr>
         </thead>
@@ -279,6 +289,28 @@
                   <%= appearance.elo_rating + appearance.elo_rating_change %>
                 <% elsif appearance.elo_rating %>
                   <%= appearance.elo_rating %>
+                <% else %>
+                  -
+                <% end %>
+              </td>
+              <td class="px-2 py-1 text-center whitespace-nowrap">
+                <% if appearance.glicko2_rating_change %>
+                  <% if appearance.glicko2_rating_change > 0 %>
+                    <span class="text-green-600">+<%= appearance.glicko2_rating_change.round %></span>
+                  <% elsif appearance.glicko2_rating_change < 0 %>
+                    <span class="text-red-600"><%= appearance.glicko2_rating_change.round %></span>
+                  <% else %>
+                    <span class="text-gray-400">0</span>
+                  <% end %>
+                <% else %>
+                  -
+                <% end %>
+              </td>
+              <td class="px-2 py-1 text-center whitespace-nowrap">
+                <% if appearance.glicko2_rating && appearance.glicko2_rating_change %>
+                  <%= (appearance.glicko2_rating + appearance.glicko2_rating_change).round %>
+                <% elsif appearance.glicko2_rating %>
+                  <%= appearance.glicko2_rating.round %>
                 <% else %>
                   -
                 <% end %>

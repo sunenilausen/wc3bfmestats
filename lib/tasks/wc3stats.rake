@@ -284,13 +284,25 @@ namespace :wc3stats do
 
     # Step 5: Recalculate ELO
     puts "Step 5: Recalculating ELO ratings..."
-    recalculator = EloRecalculator.new
-    recalculator.call
+    elo_recalculator = EloRecalculator.new
+    elo_recalculator.call
 
-    puts "  Matches processed: #{recalculator.matches_processed}"
-    if recalculator.errors.any?
-      puts "  Errors: #{recalculator.errors.count}"
-      recalculator.errors.first(3).each { |e| puts "    - #{e}" }
+    puts "  Matches processed: #{elo_recalculator.matches_processed}"
+    if elo_recalculator.errors.any?
+      puts "  Errors: #{elo_recalculator.errors.count}"
+      elo_recalculator.errors.first(3).each { |e| puts "    - #{e}" }
+    end
+    puts
+
+    # Step 6: Recalculate Glicko-2
+    puts "Step 6: Recalculating Glicko-2 ratings..."
+    glicko_recalculator = Glicko2Recalculator.new
+    glicko_recalculator.call
+
+    puts "  Matches processed: #{glicko_recalculator.matches_processed}"
+    if glicko_recalculator.errors.any?
+      puts "  Errors: #{glicko_recalculator.errors.count}"
+      glicko_recalculator.errors.first(3).each { |e| puts "    - #{e}" }
     end
     puts
 

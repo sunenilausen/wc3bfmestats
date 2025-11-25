@@ -212,17 +212,74 @@
     <div>No appearances recorded.</div>
   <% end %>
 
-  <h2 class="text-2xl font-bold mb-3">Appearances</h2>
+  <h2 class="text-2xl font-bold mb-3">Match History</h2>
   <% if appearances.any? %>
-    <ul class="list-disc ml-5">
-      <% appearances.each do |appearance| %>
-        <li>
-          <% match_date = (appearance.match.played_at || appearance.match.created_at).strftime('%Y-%m-%d') %>
-          <%= link_to "Match ##{appearance.match.id} (#{match_date})", match_path(appearance.match), class: "text-blue-600 hover:underline" %>
-        </li>
-      <% end %>
-    </ul>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm border border-gray-200 rounded">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Faction</th>
+            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase">Result</th>
+            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Hero Kills">HK</th>
+            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Unit Kills">UK</th>
+            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="ELO at match time">ELO</th>
+            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="ELO change">+/-</th>
+            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase">Duration</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          <% appearances.each do |appearance| %>
+            <% match = appearance.match %>
+            <% faction = appearance.faction %>
+            <% player_won = (faction.good? && match.good_victory?) || (!faction.good? && !match.good_victory?) %>
+            <% match_date = (match.played_at || match.created_at).strftime('%Y-%m-%d') %>
+            <tr class="<%= player_won ? 'bg-green-50' : 'bg-red-50' %>">
+              <td class="px-2 py-1 whitespace-nowrap">
+                <%= link_to match_date, match_path(match), class: "text-blue-600 hover:underline" %>
+              </td>
+              <td class="px-2 py-1 whitespace-nowrap">
+                <span class="inline-flex items-center gap-1">
+                  <span class="w-2.5 h-2.5 rounded-full" style="background-color: <%= faction.color_hex %>"></span>
+                  <%= faction.name %>
+                </span>
+              </td>
+              <td class="px-2 py-1 text-center whitespace-nowrap">
+                <% if player_won %>
+                  <span class="text-green-600 font-medium">Win</span>
+                <% else %>
+                  <span class="text-red-600 font-medium">Loss</span>
+                <% end %>
+              </td>
+              <td class="px-2 py-1 text-center whitespace-nowrap"><%= appearance.hero_kills || '-' %></td>
+              <td class="px-2 py-1 text-center whitespace-nowrap"><%= appearance.unit_kills || '-' %></td>
+              <td class="px-2 py-1 text-center whitespace-nowrap"><%= appearance.elo_rating || '-' %></td>
+              <td class="px-2 py-1 text-center whitespace-nowrap">
+                <% if appearance.elo_rating_change %>
+                  <% if appearance.elo_rating_change > 0 %>
+                    <span class="text-green-600">+<%= appearance.elo_rating_change %></span>
+                  <% elsif appearance.elo_rating_change < 0 %>
+                    <span class="text-red-600"><%= appearance.elo_rating_change %></span>
+                  <% else %>
+                    <span class="text-gray-400">0</span>
+                  <% end %>
+                <% else %>
+                  -
+                <% end %>
+              </td>
+              <td class="px-2 py-1 text-center whitespace-nowrap text-gray-500">
+                <% if match.seconds %>
+                  <%= "#{match.seconds / 60}m" %>
+                <% else %>
+                  -
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
   <% else %>
-    <div>No appearances found.</div>
+    <div>No matches found.</div>
   <% end %>
 </div>

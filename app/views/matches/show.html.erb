@@ -1,11 +1,29 @@
 <% content_for :title, "Showing match" %>
 
-<div class="md:w-2/3 w-full">
+<div class="w-full">
   <% if notice.present? %>
     <p class="py-2 px-3 bg-green-50 mb-5 text-green-500 font-medium rounded-md inline-block" id="notice"><%= notice %></p>
   <% end %>
 
-  <h1 class="font-bold text-4xl">Showing match</h1>
+  <div class="flex justify-between items-center mb-4">
+    <% if @previous_match %>
+      <%= link_to match_path(@previous_match), class: "rounded-md px-3 py-2 bg-gray-100 hover:bg-gray-200 font-medium" do %>
+        &larr; Previous
+      <% end %>
+    <% else %>
+      <span class="rounded-md px-3 py-2 bg-gray-50 text-gray-400 font-medium">&larr; Previous</span>
+    <% end %>
+
+    <h1 class="font-bold text-4xl">Match</h1>
+
+    <% if @next_match %>
+      <%= link_to match_path(@next_match), class: "rounded-md px-3 py-2 bg-gray-100 hover:bg-gray-200 font-medium" do %>
+        Next &rarr;
+      <% end %>
+    <% else %>
+      <span class="rounded-md px-3 py-2 bg-gray-50 text-gray-400 font-medium">Next &rarr;</span>
+    <% end %>
+  </div>
 
   <%= render @match %>
 

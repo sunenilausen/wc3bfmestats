@@ -8,6 +8,10 @@ class MatchesController < ApplicationController
 
   # GET /matches/1 or /matches/1.json
   def show
+    @previous_match = Match.where("COALESCE(played_at, created_at) < ?", @match.played_at || @match.created_at)
+                           .order(Arel.sql("COALESCE(played_at, created_at) DESC")).first
+    @next_match = Match.where("COALESCE(played_at, created_at) > ?", @match.played_at || @match.created_at)
+                       .order(Arel.sql("COALESCE(played_at, created_at) ASC")).first
   end
 
   # GET /matches/new

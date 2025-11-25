@@ -1,20 +1,36 @@
-<div id="<%= dom_id match %>" class="w-full sm:w-auto my-5 space-y-5">
+<div id="<%= dom_id match %>" class="w-full my-5">
   <div>
-    <strong class="block font-medium mb-1">Played at:</strong>
-    <%= match.played_at %>
-  </div>
-  <div>
-    <strong class="block font-medium mb-1">Seconds:</strong>
-    <%= match.seconds %>
+    <strong class="inline font-medium">Played:</strong>
+    <%= match.played_at&.strftime("%Y-%m-%d") || match.created_at.strftime("%Y-%m-%d") %>
+    <% if match.seconds.present? && match.seconds > 0 %>
+      <span class="text-gray-500">(<%= ChronicDuration.output(match.seconds, format: :short) %>)</span>
+    <% end %>
   </div>
 
-  <div>
-    <strong class="block font-medium mb-1">Appearances:</strong>
-    <ul class="list-disc pl-5">
-      <li class="font-semibold mb-2">Forces of Middle Earth (<%= match.good_victory ? "Victory" : "Defeat" %>) </li>
-      <%= render partial: "matches/team_table", locals: { appearances: match.appearances[0..4] } %>
-      <li class="font-semibold mb-2">Forces of Sauron (<%= match.good_victory ? "Defeat" : "Victory" %>) </li>
-      <%= render partial: "matches/team_table", locals: { appearances: match.appearances[5..9] } %>
-    </ul>
+  <div class="flex flex-col md:flex-row gap-6 mt-4">
+    <div class="md:w-2/3">
+      <strong class="block font-medium mb-1">Appearances:</strong>
+      <ul class="list-disc pl-5">
+        <li class="font-semibold mb-2">Forces of Middle Earth (<%= match.good_victory ? "Victory" : "Defeat" %>) </li>
+        <%= render partial: "matches/team_table", locals: { appearances: match.appearances[0..4] } %>
+        <li class="font-semibold mb-2">Forces of Sauron (<%= match.good_victory ? "Defeat" : "Victory" %>) </li>
+        <%= render partial: "matches/team_table", locals: { appearances: match.appearances[5..9] } %>
+      </ul>
+    </div>
+
+    <% if match.wc3stats_replay&.chatlog&.any? %>
+      <div class="md:w-1/3">
+        <strong class="block font-medium mb-2">Chat History:</strong>
+        <div class="bg-gray-50 rounded-md p-3 max-h-96 overflow-y-auto text-sm font-mono">
+          <% match.wc3stats_replay.chatlog.each do |msg| %>
+            <div class="mb-1">
+              <span class="text-gray-500"><%= ChronicDuration.output(msg["time"], format: :short) %></span>
+              <span class="font-semibold text-blue-700"><%= match.wc3stats_replay.player_name_by_id(msg["playerId"]) %>:</span>
+              <span><%= msg["message"] %></span>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
   </div>
 </div>

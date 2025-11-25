@@ -68,4 +68,13 @@ class Wc3statsReplay < ApplicationRecord
     player = player_by_name(player_name)
     player&.dig("variables", "heroKills")
   end
+
+  def chatlog
+    body&.dig("data", "chatlog") || []
+  end
+
+  def player_name_by_id(player_id)
+    player = players.find { |p| p["id"] == player_id }
+    player&.dig("name")&.split("#")&.first || "Player #{player_id}"
+  end
 end

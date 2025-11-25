@@ -5,6 +5,9 @@
     <% if match.seconds.present? && match.seconds > 0 %>
       <span class="text-gray-500">(<%= ChronicDuration.output(match.seconds, format: :short) %>)</span>
     <% end %>
+    <% if match.ignored? %>
+      <span class="ml-2 px-2 py-0.5 bg-red-100 text-red-700 text-sm rounded">Ignored</span>
+    <% end %>
   </div>
 
   <div class="flex flex-col md:flex-row gap-6 mt-4">

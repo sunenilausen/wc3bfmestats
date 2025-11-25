@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_23_023211) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_25_130057) do
   create_table "appearances", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.integer "elo_rating"
@@ -62,6 +62,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_23_023211) do
   create_table "matches", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.boolean "good_victory"
+    t.boolean "ignored", default: false, null: false
     t.datetime "played_at"
     t.integer "seconds"
     t.datetime "updated_at", null: false

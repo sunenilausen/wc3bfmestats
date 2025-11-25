@@ -12,8 +12,9 @@
       <div class="text-xs text-gray-500 mt-0.5 ml-1">Format: h:mm:ss (hours optional)</div>
     </div>
 
-    <div class="flex items-center mb-4">
+    <div class="flex items-center gap-6 mb-4">
       <%= f.input :good_victory, as: :boolean, label: "Good Victory?", inline_label: true, input_html: { class: "form-checkbox h-5 w-5 text-blue-600" }, wrapper_html: { class: "flex items-center" } %>
+      <%= f.input :ignored, as: :boolean, label: "Ignored", inline_label: true, input_html: { class: "form-checkbox h-5 w-5 text-red-600" }, wrapper_html: { class: "flex items-center" } %>
     </div>
 
     <table class="min-w-full divide-y divide-gray-200 border border-gray-300 rounded-lg shadow-sm">

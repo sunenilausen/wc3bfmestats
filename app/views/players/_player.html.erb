@@ -1,12 +1,20 @@
 <div id="<%= dom_id player %>" class="w-full sm:w-auto my-5 space-y-5">
+  <%# Compute ELO extremes from preloaded appearances (include current ELO) %>
+  <% elo_ratings = appearances.map(&:elo_rating).compact %>
+  <% elo_ratings << player.elo_rating.round if player.elo_rating %>
+  <% highest_elo = elo_ratings.any? ? elo_ratings.max : nil %>
+  <% lowest_elo = elo_ratings.any? ? elo_ratings.min : nil %>
+
   <%# Player Info %>
   <div class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-2 text-sm">
     <div><strong>Battletag:</strong> <%= player.battletag %></div>
     <div><strong>Nickname:</strong> <%= player.nickname %></div>
     <div><strong>Battlenet:</strong> <%= player.battlenet_name %></div>
-    <div><strong>ELO:</strong> <%= player.elo_rating %></div>
+    <div><strong>ELO:</strong> <%= player.elo_rating&.round || "-" %></div>
     <div><strong>Region:</strong> <%= player.region %></div>
     <div><strong>BNet #:</strong> <%= player.battlenet_number %></div>
+    <div><strong>Highest ELO:</strong> <%= highest_elo || "-" %></div>
+    <div><strong>Lowest ELO:</strong> <%= lowest_elo || "-" %></div>
   </div>
 
   <%# Compute averages from preloaded appearances %>
@@ -223,8 +231,8 @@
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase">Result</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Hero Kills">HK</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Unit Kills">UK</th>
-            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="ELO at match time">ELO</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="ELO change">+/-</th>
+            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="ELO after match">ELO</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase">Duration</th>
           </tr>
         </thead>
@@ -253,7 +261,6 @@
               </td>
               <td class="px-2 py-1 text-center whitespace-nowrap"><%= appearance.hero_kills || '-' %></td>
               <td class="px-2 py-1 text-center whitespace-nowrap"><%= appearance.unit_kills || '-' %></td>
-              <td class="px-2 py-1 text-center whitespace-nowrap"><%= appearance.elo_rating || '-' %></td>
               <td class="px-2 py-1 text-center whitespace-nowrap">
                 <% if appearance.elo_rating_change %>
                   <% if appearance.elo_rating_change > 0 %>
@@ -263,6 +270,15 @@
                   <% else %>
                     <span class="text-gray-400">0</span>
                   <% end %>
+                <% else %>
+                  -
+                <% end %>
+              </td>
+              <td class="px-2 py-1 text-center whitespace-nowrap">
+                <% if appearance.elo_rating && appearance.elo_rating_change %>
+                  <%= appearance.elo_rating + appearance.elo_rating_change %>
+                <% elsif appearance.elo_rating %>
+                  <%= appearance.elo_rating %>
                 <% else %>
                   -
                 <% end %>

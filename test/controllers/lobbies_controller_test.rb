@@ -12,7 +12,8 @@ class LobbiesControllerTest < ActionDispatch::IntegrationTest
 
   test "should get new" do
     get new_lobby_url
-    assert_response :success
+    # New lobby now instantly creates and redirects to edit
+    assert_redirected_to edit_lobby_url(Lobby.last)
   end
 
   test "should create lobby" do
@@ -35,7 +36,8 @@ class LobbiesControllerTest < ActionDispatch::IntegrationTest
 
   test "should update lobby" do
     patch lobby_url(@lobby), params: { lobby: {} }
-    assert_redirected_to lobby_url(@lobby)
+    # Update now redirects back to edit for auto-save workflow
+    assert_redirected_to edit_lobby_url(@lobby)
   end
 
   test "should destroy lobby" do

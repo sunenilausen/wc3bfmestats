@@ -3,8 +3,62 @@
 <div class="md:w-2/3 w-full">
   <h1 class="font-bold text-4xl">Editing lobby</h1>
 
-  <%= render "form", lobby: @lobby %>
+  <%= render partial: "lobby", locals: { lobby: @lobby, editable: true } %>
 
   <%= link_to "Show this lobby", @lobby, class: "w-full sm:w-auto text-center mt-2 sm:mt-0 sm:ml-2 rounded-md px-3.5 py-2.5 bg-gray-100 hover:bg-gray-50 inline-block font-medium" %>
   <%= link_to "Back to lobbies", lobbies_path, class: "w-full sm:w-auto text-center mt-2 sm:mt-0 sm:ml-2 rounded-md px-3.5 py-2.5 bg-gray-100 hover:bg-gray-50 inline-block font-medium" %>
 </div>
+
+<script>
+  function updateWL(select, targetId) {
+    const option = select.options[select.selectedIndex];
+    const wins = option.dataset.wins;
+    const losses = option.dataset.losses;
+    const elo = option.dataset.elo;
+    const wlTarget = document.getElementById(targetId);
+    const eloTarget = document.getElementById(targetId.replace('wl-', 'elo-'));
+    if (wins && losses) {
+      wlTarget.innerHTML = '<span class="text-green-600">' + wins + 'W</span>/<span class="text-red-600">' + losses + 'L</span>';
+    } else {
+      wlTarget.innerHTML = '-';
+    }
+    if (eloTarget) {
+      eloTarget.innerHTML = elo || '-';
+    }
+    updatePrediction();
+  }
+
+  function updatePrediction() {
+    const allEloCells = document.querySelectorAll('[id^="elo-"]');
+    let goodElos = [];
+    let evilElos = [];
+
+    allEloCells.forEach(cell => {
+      const row = cell.closest('tr');
+      if (!row) return;
+      const team = row.dataset.team;
+      const elo = parseInt(cell.textContent);
+      if (!isNaN(elo)) {
+        if (team === '1') {
+          goodElos.push(elo);
+        } else if (team === '2') {
+          evilElos.push(elo);
+        }
+      }
+    });
+
+    const goodAvg = goodElos.length > 0 ? goodElos.reduce((a, b) => a + b, 0) / goodElos.length : 1500;
+    const evilAvg = evilElos.length > 0 ? evilElos.reduce((a, b) => a + b, 0) / evilElos.length : 1500;
+
+    const goodExpected = 1 / (1 + Math.pow(10, (evilAvg - goodAvg) / 400));
+    const goodPct = Math.round(goodExpected * 100);
+    const evilPct = 100 - goodPct;
+
+    document.getElementById('good-win-bar').style.width = goodPct + '%';
+    document.getElementById('good-win-pct').textContent = goodPct + '%';
+    document.getElementById('evil-win-pct').textContent = evilPct + '%';
+  }
+
+  document.addEventListener('DOMContentLoaded', updatePrediction);
+  document.addEventListener('turbo:load', updatePrediction);
+</script>

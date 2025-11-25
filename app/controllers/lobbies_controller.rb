@@ -10,18 +10,24 @@ class LobbiesController < ApplicationController
   def show
   end
 
-  # GET /lobbies/new
+  # GET /lobbies/new - creates lobby instantly with previous match players
   def new
     @lobby = Lobby.new
     latest_match = Match.order(played_at: :desc).first
 
-    Faction.all.each do |faction|
+    Faction.order(:id).each do |faction|
       # Find player from latest match who played this faction
       player_id = latest_match&.appearances&.find_by(faction: faction)&.player_id
       @lobby.lobby_players.build(faction: faction, player_id: player_id)
     end
 
-    preload_player_stats
+    if @lobby.save
+      redirect_to edit_lobby_path(@lobby)
+    else
+      # Fallback to showing the form if save fails
+      preload_player_stats
+      render :new
+    end
   end
 
   # GET /lobbies/1/edit
@@ -93,7 +99,8 @@ class LobbiesController < ApplicationController
     end
 
     respond_to do |format|
-      format.html { redirect_to @lobby, notice: "Lobby was successfully updated.", status: :see_other }
+      format.turbo_stream { head :ok }
+      format.html { redirect_to edit_lobby_path(@lobby), status: :see_other }
       format.json { render :show, status: :ok, location: @lobby }
     end
   end

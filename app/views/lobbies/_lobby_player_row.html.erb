@@ -1,0 +1,69 @@
+<% index = lobby.lobby_players.index(lp) %>
+<tr class="nested-fields" data-team="<%= team_number %>">
+  <td class="px-4 py-2 whitespace-nowrap">
+    <span style="display: inline-block; width: 16px; height: 16px; background-color: <%= lp.faction.color %>; border: 1px solid #000; vertical-align: middle; margin-right: 6px;"></span>
+    <%= lp.faction.name %>
+  </td>
+  <td class="px-4 py-2 whitespace-nowrap">
+    <% if editable %>
+      <input type="hidden" name="lobby[lobby_players_attributes][<%= index %>][faction_id]" value="<%= lp.faction_id %>">
+      <% if lp.persisted? %>
+        <input type="hidden" name="lobby[lobby_players_attributes][<%= index %>][id]" value="<%= lp.id %>">
+      <% end %>
+      <select name="lobby[lobby_players_attributes][<%= index %>][player_id]"
+              class="form-control player-select"
+              data-controller="searchable-select"
+              data-average-elo-target="playerSelect"
+              data-action="change->average-elo#calculateAverageElo change->auto-submit#submit"
+              data-wl-target="wl-<%= index %>"
+              onchange="updateWL(this, 'wl-<%= index %>')">
+        <option value="" data-wins="" data-losses="">-- Select Player --</option>
+        <% @players_for_select.each do |player| %>
+          <% stats = @player_stats[player.id] || { wins: 0, losses: 0 } %>
+          <option value="<%= player.id %>"
+                  data-elo="<%= player.elo_rating.round %>"
+                  data-wins="<%= stats[:wins] %>"
+                  data-losses="<%= stats[:losses] %>"
+                  <%= "selected" if player.id == lp.player_id %>>
+            <%= player.nickname %>
+          </option>
+        <% end %>
+      </select>
+    <% elsif lp.player %>
+      <%= link_to lp.player.nickname, player_path(lp.player), class: "text-blue-600 hover:underline" %>
+    <% else %>
+      -
+    <% end %>
+  </td>
+  <td class="px-4 py-2 whitespace-nowrap" id="elo-<%= index %>">
+    <%= lp.player&.elo_rating&.round || "-" %>
+  </td>
+  <td class="px-4 py-2 whitespace-nowrap" id="wl-<%= index %>">
+    <% if lp.player %>
+      <% if editable && @player_stats[lp.player_id] %>
+        <% stats = @player_stats[lp.player_id] %>
+        <span class="text-green-600"><%= stats[:wins] %>W</span>/<span class="text-red-600"><%= stats[:losses] %>L</span>
+      <% else %>
+        <span class="text-green-600"><%= lp.player.wins %>W</span>/<span class="text-red-600"><%= lp.player.losses %>L</span>
+      <% end %>
+    <% else %>
+      -
+    <% end %>
+  </td>
+  <% unless editable %>
+    <td class="px-4 py-2 whitespace-nowrap">
+      <% if lp.player %>
+        <span class="text-green-600"><%= lp.player.recent_wins %>W</span>/<span class="text-red-600"><%= lp.player.recent_losses %>L</span>
+      <% else %>
+        -
+      <% end %>
+    </td>
+    <td class="px-4 py-2 whitespace-nowrap">
+      <% if lp.player && lp.faction %>
+        <span class="text-green-600"><%= lp.player.recent_wins_with_faction(lp.faction, days: 365) %>W</span>/<span class="text-red-600"><%= lp.player.recent_losses_with_faction(lp.faction, days: 365) %>L</span>
+      <% else %>
+        -
+      <% end %>
+    </td>
+  <% end %>
+</tr>

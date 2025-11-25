@@ -81,4 +81,31 @@ class Wc3statsReplay < ApplicationRecord
     player = players.find { |p| p["id"] == player_id }
     player&.dig("name")&.split("#")&.first || "Player #{player_id}"
   end
+
+  def fix_encoding(str)
+    return str if str.nil? || str.empty?
+
+    # The data was UTF-8 but got incorrectly decoded as Latin-1/CP1252
+    # and then re-encoded to UTF-8 multiple times, causing multi-level encoding corruption.
+    # We need to reverse this process, potentially multiple times.
+    result = str
+    max_iterations = 3
+
+    max_iterations.times do
+      begin
+        # Try to decode: treat the string's bytes as if they were Latin-1 (ISO-8859-1),
+        # then reinterpret those bytes as UTF-8.
+        # Using Latin-1 because it maps bytes 0-255 directly to codepoints 0-255,
+        # which allows us to recover the original byte sequence.
+        fixed = result.encode("ISO-8859-1", "UTF-8").force_encoding("UTF-8")
+
+        break unless fixed.valid_encoding? && fixed != result
+        result = fixed
+      rescue Encoding::UndefinedConversionError, Encoding::InvalidByteSequenceError
+        break
+      end
+    end
+
+    result
+  end
 end

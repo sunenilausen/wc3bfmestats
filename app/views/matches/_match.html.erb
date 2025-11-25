@@ -48,7 +48,7 @@
                   <span class="<%= event["eventName"] == "heroDeath" ? "text-red-600" : "text-orange-600" %>">
                     <%= event["eventName"] == "heroDeath" ? "Hero Death:" : "Base Destroyed:" %>
                   </span>
-                  <span><%= event["args"]&.first&.gsub("\\", "") %></span>
+                  <span><%= match.wc3stats_replay.fix_encoding(event["args"]&.first&.gsub("\\", "")) %></span>
                 </div>
               <% end %>
             </div>

@@ -1,75 +1,118 @@
 <div id="<%= dom_id player %>" class="w-full sm:w-auto my-5 space-y-5">
-  <div>
-    <strong class="block font-medium mb-1">Battletag:</strong>
-    <%= player.battletag %>
+  <%# Player Info %>
+  <div class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-2 text-sm">
+    <div><strong>Battletag:</strong> <%= player.battletag %></div>
+    <div><strong>Nickname:</strong> <%= player.nickname %></div>
+    <div><strong>Battlenet:</strong> <%= player.battlenet_name %></div>
+    <div><strong>ELO:</strong> <%= player.elo_rating %></div>
+    <div><strong>Region:</strong> <%= player.region %></div>
+    <div><strong>BNet #:</strong> <%= player.battlenet_number %></div>
   </div>
-  <div>
-    <strong class="block font-medium mb-1">Nickname:</strong>
-    <%= player.nickname %>
-  </div>
-  <div>
-    <strong class="block font-medium mb-1">Battlenet name:</strong>
-    <%= player.battlenet_name %>
-  </div>
-  <div>
-    <strong class="block font-medium mb-1">Elo rating:</strong>
-    <%= player.elo_rating %>
-  </div>
-  <div>
-    <strong class="block font-medium mb-1">Region:</strong>
-    <%= player.region %>
-  </div>
-  <div>
-    <strong class="block font-medium mb-1">Battlenet number:</strong>
-    <%= player.battlenet_number %>
-  </div>
+
+  <%# Compute averages from preloaded appearances %>
+  <% unit_kills_values = appearances.map(&:unit_kills).compact %>
+  <% hero_kills_values = appearances.map(&:hero_kills).compact %>
+  <% match_durations = appearances.map { |a| a.match.seconds }.compact %>
+  <% avg_unit_kills = unit_kills_values.any? ? unit_kills_values.sum.to_f / unit_kills_values.size : 0 %>
+  <% avg_hero_kills = hero_kills_values.any? ? hero_kills_values.sum.to_f / hero_kills_values.size : 0 %>
+  <% avg_duration = match_durations.any? ? match_durations.sum.to_f / match_durations.size : 0 %>
+  <% kills_per_min = avg_duration > 0 ? (avg_unit_kills / (avg_duration / 60.0)) : 0 %>
+  <% hero_kills_per_min = avg_duration > 0 ? (avg_hero_kills / (avg_duration / 60.0)) : 0 %>
 
   <h2 class="text-2xl font-bold mb-3">Stats</h2>
 
-  <div>
-    <strong class="block font-medium mb-1">Record:</strong>
-    <span class="text-green-600 font-medium"><%= stats[:wins] %>W</span> / <span class="text-red-600 font-medium"><%= stats[:losses] %>L</span>
-    <% if stats[:total_matches] > 0 %>
-      <span class="text-gray-500">(<%= number_with_precision(stats[:wins].to_f / stats[:total_matches] * 100, precision: 1) %>% win rate)</span>
-    <% end %>
-  </div>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <%# Win/Loss Stats %>
+    <div class="bg-gray-50 rounded-md p-3">
+      <h3 class="font-semibold mb-2 text-gray-700">Record</h3>
+      <table class="w-full text-sm">
+        <tbody>
+          <tr>
+            <td class="py-0.5">Overall</td>
+            <td class="text-right py-0.5">
+              <span class="text-green-600 font-medium"><%= stats[:wins] %>W</span>/<span class="text-red-600 font-medium"><%= stats[:losses] %>L</span>
+              <% if stats[:total_matches] > 0 %>
+                <span class="text-gray-500">(<%= number_with_precision(stats[:wins].to_f / stats[:total_matches] * 100, precision: 1) %>%)</span>
+              <% end %>
+            </td>
+          </tr>
+          <tr>
+            <td class="py-0.5">As Underdog</td>
+            <td class="text-right py-0.5">
+              <span class="text-green-600 font-medium"><%= stats[:wins_as_underdog] %>W</span>/<span class="text-red-600 font-medium"><%= stats[:losses_as_underdog] %>L</span>
+              <span class="text-gray-500">(avg <%= stats[:avg_underdog_elo_diff] %> deficit)</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="py-0.5">As Favorite</td>
+            <td class="text-right py-0.5">
+              <span class="text-green-600 font-medium"><%= stats[:wins_as_favorite] %>W</span>/<span class="text-red-600 font-medium"><%= stats[:losses_as_favorite] %>L</span>
+              <span class="text-gray-500">(avg <%= stats[:avg_favorite_elo_diff] %> adv)</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-  <div>
-    <strong class="block font-medium mb-1">As Underdog:</strong>
-    <span class="text-green-600 font-medium"><%= stats[:wins_as_underdog] %>W</span> / <span class="text-red-600 font-medium"><%= stats[:losses_as_underdog] %>L</span>
-    <span class="text-gray-500">(avg <%= stats[:avg_underdog_elo_diff] %> ELO deficit)</span>
-  </div>
+    <%# Kill Stats %>
+    <div class="bg-gray-50 rounded-md p-3">
+      <h3 class="font-semibold mb-2 text-gray-700">Performance</h3>
+      <table class="w-full text-sm">
+        <tbody>
+          <tr>
+            <td class="py-0.5">Top Hero Kills</td>
+            <td class="text-right py-0.5">
+              <%= stats[:times_top_hero_kills] %>x
+              <% if stats[:total_matches] > 0 %>
+                <span class="text-gray-500">(<%= number_with_precision(stats[:times_top_hero_kills].to_f / stats[:total_matches] * 100, precision: 1) %>%)</span>
+              <% end %>
+            </td>
+          </tr>
+          <tr>
+            <td class="py-0.5">Top Unit Kills</td>
+            <td class="text-right py-0.5">
+              <%= stats[:times_top_unit_kills] %>x
+              <% if stats[:total_matches] > 0 %>
+                <span class="text-gray-500">(<%= number_with_precision(stats[:times_top_unit_kills].to_f / stats[:total_matches] * 100, precision: 1) %>%)</span>
+              <% end %>
+            </td>
+          </tr>
+          <tr>
+            <td class="py-0.5">Avg Hero Kill Contrib</td>
+            <td class="text-right py-0.5"><%= stats[:avg_hero_kill_contribution] %>%</td>
+          </tr>
+          <tr>
+            <td class="py-0.5">Avg Unit Kill Contrib</td>
+            <td class="text-right py-0.5"><%= stats[:avg_unit_kill_contribution] %>%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-  <div>
-    <strong class="block font-medium mb-1">As Favorite:</strong>
-    <span class="text-green-600 font-medium"><%= stats[:wins_as_favorite] %>W</span> / <span class="text-red-600 font-medium"><%= stats[:losses_as_favorite] %>L</span>
-    <span class="text-gray-500">(avg <%= stats[:avg_favorite_elo_diff] %> ELO advantage)</span>
-  </div>
-
-  <div>
-    <strong class="block font-medium mb-1">Top Hero Kills on Team:</strong>
-    <%= stats[:times_top_hero_kills] %> times
-    <% if stats[:total_matches] > 0 %>
-      <span class="text-gray-500">(<%= number_with_precision(stats[:times_top_hero_kills].to_f / stats[:total_matches] * 100, precision: 1) %>%)</span>
-    <% end %>
-  </div>
-
-  <div>
-    <strong class="block font-medium mb-1">Top Unit Kills on Team:</strong>
-    <%= stats[:times_top_unit_kills] %> times
-    <% if stats[:total_matches] > 0 %>
-      <span class="text-gray-500">(<%= number_with_precision(stats[:times_top_unit_kills].to_f / stats[:total_matches] * 100, precision: 1) %>%)</span>
-    <% end %>
-  </div>
-
-  <div>
-    <strong class="block font-medium mb-1">Avg Hero Kill Contribution:</strong>
-    <%= stats[:avg_hero_kill_contribution] %>%
-  </div>
-
-  <div>
-    <strong class="block font-medium mb-1">Avg Unit Kill Contribution:</strong>
-    <%= stats[:avg_unit_kill_contribution] %>%
+    <%# Average Kills %>
+    <div class="bg-gray-50 rounded-md p-3">
+      <h3 class="font-semibold mb-2 text-gray-700">Averages</h3>
+      <table class="w-full text-sm">
+        <tbody>
+          <tr>
+            <td class="py-0.5">Hero Kills</td>
+            <td class="text-right py-0.5"><%= number_with_precision(avg_hero_kills, precision: 2) %></td>
+          </tr>
+          <tr>
+            <td class="py-0.5">Hero Kills/min</td>
+            <td class="text-right py-0.5"><%= number_with_precision(hero_kills_per_min, precision: 2) %></td>
+          </tr>
+          <tr>
+            <td class="py-0.5">Unit Kills</td>
+            <td class="text-right py-0.5"><%= number_with_precision(avg_unit_kills, precision: 2) %></td>
+          </tr>
+          <tr>
+            <td class="py-0.5">Unit Kills/min</td>
+            <td class="text-right py-0.5"><%= number_with_precision(kills_per_min, precision: 2) %></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <% if stats[:faction_stats].any? %>
@@ -158,36 +201,6 @@
   <% else %>
     <div>No appearances recorded.</div>
   <% end %>
-
-  <%# Compute averages from preloaded appearances %>
-  <% unit_kills_values = appearances.map(&:unit_kills).compact %>
-  <% hero_kills_values = appearances.map(&:hero_kills).compact %>
-  <% match_durations = appearances.map { |a| a.match.seconds }.compact %>
-  <% avg_unit_kills = unit_kills_values.any? ? unit_kills_values.sum.to_f / unit_kills_values.size : 0 %>
-  <% avg_hero_kills = hero_kills_values.any? ? hero_kills_values.sum.to_f / hero_kills_values.size : 0 %>
-  <% avg_duration = match_durations.any? ? match_durations.sum.to_f / match_durations.size : 0 %>
-
-  <div>
-    <strong class="block font-medium mb-1">Average Unit Kills:</strong>
-    <%= number_with_precision(avg_unit_kills, precision: 2) %>
-  </div>
-
-  <div>
-    <strong class="block font-medium mb-1">Average Unit Kills per Minute:</strong>
-    <% kills_per_min = avg_duration > 0 ? (avg_unit_kills / (avg_duration / 60.0)) : 0 %>
-    <%= number_with_precision(kills_per_min, precision: 2) %>
-  </div>
-
-  <div>
-    <strong class="block font-medium mb-1">Average Hero Kills:</strong>
-    <%= number_with_precision(avg_hero_kills, precision: 2) %>
-  </div>
-
-  <div>
-    <strong class="block font-medium mb-1">Average Hero Kills per Minute:</strong>
-    <% hero_kills_per_min = avg_duration > 0 ? (avg_hero_kills / (avg_duration / 60.0)) : 0 %>
-    <%= number_with_precision(hero_kills_per_min, precision: 2) %>
-  </div>
 
   <h2 class="text-2xl font-bold mb-3">Appearances</h2>
   <% if appearances.any? %>

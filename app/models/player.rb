@@ -70,6 +70,86 @@ class Player < ApplicationRecord
     (wins_with_faction(faction).to_f / total * 100).round(1)
   end
 
+  def times_top_hero_kills_with_faction(faction)
+    appearances.includes(:match).where(faction: faction).count do |appearance|
+      next false unless appearance.hero_kills.present?
+
+      match = appearance.match
+      player_good = faction.good?
+
+      team_appearances = match.appearances.includes(:faction).select do |a|
+        a.faction.good? == player_good && a.hero_kills.present?
+      end
+
+      next false if team_appearances.empty?
+
+      max_hero_kills = team_appearances.map(&:hero_kills).max
+      appearance.hero_kills == max_hero_kills
+    end
+  end
+
+  def times_top_unit_kills_with_faction(faction)
+    appearances.includes(:match).where(faction: faction).count do |appearance|
+      next false unless appearance.unit_kills.present?
+
+      match = appearance.match
+      player_good = faction.good?
+
+      team_appearances = match.appearances.includes(:faction).select do |a|
+        a.faction.good? == player_good && a.unit_kills.present?
+      end
+
+      next false if team_appearances.empty?
+
+      max_unit_kills = team_appearances.map(&:unit_kills).max
+      appearance.unit_kills == max_unit_kills
+    end
+  end
+
+  def avg_hero_kill_contribution_with_faction(faction)
+    contributions = []
+    appearances.includes(:match).where(faction: faction).each do |appearance|
+      next unless appearance.hero_kills.present?
+
+      match = appearance.match
+      player_good = faction.good?
+
+      team_appearances = match.appearances.includes(:faction).select do |a|
+        a.faction.good? == player_good && a.hero_kills.present?
+      end
+
+      team_total = team_appearances.sum(&:hero_kills)
+      next if team_total.zero?
+
+      contributions << (appearance.hero_kills.to_f / team_total * 100)
+    end
+
+    return 0 if contributions.empty?
+    (contributions.sum / contributions.size).round(1)
+  end
+
+  def avg_unit_kill_contribution_with_faction(faction)
+    contributions = []
+    appearances.includes(:match).where(faction: faction).each do |appearance|
+      next unless appearance.unit_kills.present?
+
+      match = appearance.match
+      player_good = faction.good?
+
+      team_appearances = match.appearances.includes(:faction).select do |a|
+        a.faction.good? == player_good && a.unit_kills.present?
+      end
+
+      team_total = team_appearances.sum(&:unit_kills)
+      next if team_total.zero?
+
+      contributions << (appearance.unit_kills.to_f / team_total * 100)
+    end
+
+    return 0 if contributions.empty?
+    (contributions.sum / contributions.size).round(1)
+  end
+
   def observation_count
     Wc3statsReplay.all.count do |replay|
       replay.players.any? do |p|

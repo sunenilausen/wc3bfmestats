@@ -36,6 +36,13 @@ class PlayersController < ApplicationController
 
   # GET /players/1 or /players/1.json
   def show
+    # Preload all data needed for stats computation
+    @appearances = @player.appearances
+      .includes(:faction, match: { appearances: :faction })
+      .order("matches.played_at DESC, matches.created_at DESC")
+
+    # Compute all stats in a single pass
+    @stats = PlayerStatsCalculator.new(@player, @appearances).compute
   end
 
   # GET /players/new

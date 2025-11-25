@@ -16,10 +16,6 @@
     <%= player.elo_rating %>
   </div>
   <div>
-    <strong class="block font-medium mb-1">Times observed:</strong>
-    <%= player.observation_count %>
-  </div>
-  <div>
     <strong class="block font-medium mb-1">Region:</strong>
     <%= player.region %>
   </div>
@@ -32,154 +28,171 @@
 
   <div>
     <strong class="block font-medium mb-1">Record:</strong>
-    <span class="text-green-600 font-medium"><%= player.wins %>W</span> / <span class="text-red-600 font-medium"><%= player.losses %>L</span>
-    <% if player.matches.count > 0 %>
-      <span class="text-gray-500">(<%= number_with_precision(player.wins.to_f / player.matches.count * 100, precision: 1) %>% win rate)</span>
+    <span class="text-green-600 font-medium"><%= stats[:wins] %>W</span> / <span class="text-red-600 font-medium"><%= stats[:losses] %>L</span>
+    <% if stats[:total_matches] > 0 %>
+      <span class="text-gray-500">(<%= number_with_precision(stats[:wins].to_f / stats[:total_matches] * 100, precision: 1) %>% win rate)</span>
     <% end %>
   </div>
 
   <div>
     <strong class="block font-medium mb-1">As Underdog:</strong>
-    <span class="text-green-600 font-medium"><%= player.wins_as_underdog %>W</span> / <span class="text-red-600 font-medium"><%= player.losses_as_underdog %>L</span>
-    <span class="text-gray-500">(avg <%= player.avg_underdog_elo_difference %> ELO deficit)</span>
+    <span class="text-green-600 font-medium"><%= stats[:wins_as_underdog] %>W</span> / <span class="text-red-600 font-medium"><%= stats[:losses_as_underdog] %>L</span>
+    <span class="text-gray-500">(avg <%= stats[:avg_underdog_elo_diff] %> ELO deficit)</span>
   </div>
 
   <div>
     <strong class="block font-medium mb-1">As Favorite:</strong>
-    <span class="text-green-600 font-medium"><%= player.wins_as_favorite %>W</span> / <span class="text-red-600 font-medium"><%= player.losses_as_favorite %>L</span>
-    <span class="text-gray-500">(avg <%= player.avg_favorite_elo_difference %> ELO advantage)</span>
+    <span class="text-green-600 font-medium"><%= stats[:wins_as_favorite] %>W</span> / <span class="text-red-600 font-medium"><%= stats[:losses_as_favorite] %>L</span>
+    <span class="text-gray-500">(avg <%= stats[:avg_favorite_elo_diff] %> ELO advantage)</span>
   </div>
 
   <div>
     <strong class="block font-medium mb-1">Top Hero Kills on Team:</strong>
-    <%= player.times_top_hero_kills_on_team %> times
-    <% if player.matches.count > 0 %>
-      <span class="text-gray-500">(<%= number_with_precision(player.times_top_hero_kills_on_team.to_f / player.matches.count * 100, precision: 1) %>%)</span>
+    <%= stats[:times_top_hero_kills] %> times
+    <% if stats[:total_matches] > 0 %>
+      <span class="text-gray-500">(<%= number_with_precision(stats[:times_top_hero_kills].to_f / stats[:total_matches] * 100, precision: 1) %>%)</span>
     <% end %>
   </div>
 
   <div>
     <strong class="block font-medium mb-1">Top Unit Kills on Team:</strong>
-    <%= player.times_top_unit_kills_on_team %> times
-    <% if player.matches.count > 0 %>
-      <span class="text-gray-500">(<%= number_with_precision(player.times_top_unit_kills_on_team.to_f / player.matches.count * 100, precision: 1) %>%)</span>
+    <%= stats[:times_top_unit_kills] %> times
+    <% if stats[:total_matches] > 0 %>
+      <span class="text-gray-500">(<%= number_with_precision(stats[:times_top_unit_kills].to_f / stats[:total_matches] * 100, precision: 1) %>%)</span>
     <% end %>
   </div>
 
   <div>
     <strong class="block font-medium mb-1">Avg Hero Kill Contribution:</strong>
-    <%= player.avg_hero_kill_contribution %>%
+    <%= stats[:avg_hero_kill_contribution] %>%
   </div>
 
   <div>
     <strong class="block font-medium mb-1">Avg Unit Kill Contribution:</strong>
-    <%= player.avg_unit_kill_contribution %>%
+    <%= stats[:avg_unit_kill_contribution] %>%
   </div>
 
-  <% played_factions = player.appearances.group(:faction).count(:id) %>
-  <% if played_factions.any? %>
+  <% if stats[:faction_stats].any? %>
     <h2 class="text-2xl font-bold mb-3">Faction Stats</h2>
 
     <% good_factions = Faction.where(good: true).order(:name) %>
     <% evil_factions = Faction.where(good: false).order(:name) %>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="space-y-6">
       <div>
         <h3 class="text-lg font-semibold text-green-700 mb-2">Good</h3>
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="border-b">
-              <th class="text-left py-1">Faction</th>
-              <th class="text-center py-1">W/L</th>
-              <th class="text-center py-1">Win%</th>
-              <th class="text-center py-1">Games</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% good_factions.each do |faction| %>
-              <% games = played_factions[faction] || 0 %>
-              <% next if games == 0 %>
-              <% wins = player.wins_with_faction(faction) %>
-              <% losses = player.losses_with_faction(faction) %>
-              <% win_rate = player.win_rate_with_faction(faction) %>
-              <tr class="border-b border-gray-100">
-                <td class="py-1"><%= link_to faction.name, faction_path(faction), class: "text-blue-600 hover:underline" %></td>
-                <td class="text-center py-1">
-                  <span class="text-green-600"><%= wins %></span>/<span class="text-red-600"><%= losses %></span>
-                </td>
-                <td class="text-center py-1"><%= win_rate %>%</td>
-                <td class="text-center py-1 text-gray-500"><%= games %></td>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b">
+                <th class="text-left py-1">Faction</th>
+                <th class="text-center py-1">W/L</th>
+                <th class="text-center py-1">Win%</th>
+                <th class="text-center py-1">Games</th>
+                <th class="text-center py-1" title="Times top hero killer on team">Top HK</th>
+                <th class="text-center py-1" title="Times top unit killer on team">Top UK</th>
+                <th class="text-center py-1" title="Average hero kill contribution vs team">Avg HK%</th>
+                <th class="text-center py-1" title="Average unit kill contribution vs team">Avg UK%</th>
               </tr>
-            <% end %>
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              <% good_factions.each do |faction| %>
+                <% fs = stats[:faction_stats][faction.id] %>
+                <% next unless fs && fs[:games] > 0 %>
+                <tr class="border-b border-gray-100">
+                  <td class="py-1"><%= link_to faction.name, faction_path(faction), class: "text-blue-600 hover:underline" %></td>
+                  <td class="text-center py-1">
+                    <span class="text-green-600"><%= fs[:wins] %></span>/<span class="text-red-600"><%= fs[:losses] %></span>
+                  </td>
+                  <td class="text-center py-1"><%= fs[:win_rate] %>%</td>
+                  <td class="text-center py-1 text-gray-500"><%= fs[:games] %></td>
+                  <td class="text-center py-1"><%= fs[:times_top_hero_kills] %></td>
+                  <td class="text-center py-1"><%= fs[:times_top_unit_kills] %></td>
+                  <td class="text-center py-1"><%= fs[:avg_hero_kill_contribution] %>%</td>
+                  <td class="text-center py-1"><%= fs[:avg_unit_kill_contribution] %>%</td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div>
         <h3 class="text-lg font-semibold text-red-700 mb-2">Evil</h3>
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="border-b">
-              <th class="text-left py-1">Faction</th>
-              <th class="text-center py-1">W/L</th>
-              <th class="text-center py-1">Win%</th>
-              <th class="text-center py-1">Games</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% evil_factions.each do |faction| %>
-              <% games = played_factions[faction] || 0 %>
-              <% next if games == 0 %>
-              <% wins = player.wins_with_faction(faction) %>
-              <% losses = player.losses_with_faction(faction) %>
-              <% win_rate = player.win_rate_with_faction(faction) %>
-              <tr class="border-b border-gray-100">
-                <td class="py-1"><%= link_to faction.name, faction_path(faction), class: "text-blue-600 hover:underline" %></td>
-                <td class="text-center py-1">
-                  <span class="text-green-600"><%= wins %></span>/<span class="text-red-600"><%= losses %></span>
-                </td>
-                <td class="text-center py-1"><%= win_rate %>%</td>
-                <td class="text-center py-1 text-gray-500"><%= games %></td>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b">
+                <th class="text-left py-1">Faction</th>
+                <th class="text-center py-1">W/L</th>
+                <th class="text-center py-1">Win%</th>
+                <th class="text-center py-1">Games</th>
+                <th class="text-center py-1" title="Times top hero killer on team">Top HK</th>
+                <th class="text-center py-1" title="Times top unit killer on team">Top UK</th>
+                <th class="text-center py-1" title="Average hero kill contribution vs team">Avg HK%</th>
+                <th class="text-center py-1" title="Average unit kill contribution vs team">Avg UK%</th>
               </tr>
-            <% end %>
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              <% evil_factions.each do |faction| %>
+                <% fs = stats[:faction_stats][faction.id] %>
+                <% next unless fs && fs[:games] > 0 %>
+                <tr class="border-b border-gray-100">
+                  <td class="py-1"><%= link_to faction.name, faction_path(faction), class: "text-blue-600 hover:underline" %></td>
+                  <td class="text-center py-1">
+                    <span class="text-green-600"><%= fs[:wins] %></span>/<span class="text-red-600"><%= fs[:losses] %></span>
+                  </td>
+                  <td class="text-center py-1"><%= fs[:win_rate] %>%</td>
+                  <td class="text-center py-1 text-gray-500"><%= fs[:games] %></td>
+                  <td class="text-center py-1"><%= fs[:times_top_hero_kills] %></td>
+                  <td class="text-center py-1"><%= fs[:times_top_unit_kills] %></td>
+                  <td class="text-center py-1"><%= fs[:avg_hero_kill_contribution] %>%</td>
+                  <td class="text-center py-1"><%= fs[:avg_unit_kill_contribution] %>%</td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   <% else %>
     <div>No appearances recorded.</div>
   <% end %>
 
+  <%# Compute averages from preloaded appearances %>
+  <% unit_kills_values = appearances.map(&:unit_kills).compact %>
+  <% hero_kills_values = appearances.map(&:hero_kills).compact %>
+  <% match_durations = appearances.map { |a| a.match.seconds }.compact %>
+  <% avg_unit_kills = unit_kills_values.any? ? unit_kills_values.sum.to_f / unit_kills_values.size : 0 %>
+  <% avg_hero_kills = hero_kills_values.any? ? hero_kills_values.sum.to_f / hero_kills_values.size : 0 %>
+  <% avg_duration = match_durations.any? ? match_durations.sum.to_f / match_durations.size : 0 %>
+
   <div>
     <strong class="block font-medium mb-1">Average Unit Kills:</strong>
-    <%= number_with_precision(player.appearances.average(:unit_kills) || 0, precision: 2) %>
+    <%= number_with_precision(avg_unit_kills, precision: 2) %>
   </div>
 
   <div>
     <strong class="block font-medium mb-1">Average Unit Kills per Minute:</strong>
-    <% avg_kills = player.appearances.average(:unit_kills) || 0 %>
-    <% avg_duration = player.matches.average(:seconds) || 0 %>
-    <% kills_per_min = avg_duration > 0 ? (avg_kills / (avg_duration / 60.0)) : 0 %>
+    <% kills_per_min = avg_duration > 0 ? (avg_unit_kills / (avg_duration / 60.0)) : 0 %>
     <%= number_with_precision(kills_per_min, precision: 2) %>
   </div>
 
   <div>
     <strong class="block font-medium mb-1">Average Hero Kills:</strong>
-    <%= number_with_precision(player.appearances.average(:hero_kills) || 0, precision: 2) %>
+    <%= number_with_precision(avg_hero_kills, precision: 2) %>
   </div>
 
   <div>
     <strong class="block font-medium mb-1">Average Hero Kills per Minute:</strong>
-    <% avg_hero_kills = player.appearances.average(:hero_kills) || 0 %>
     <% hero_kills_per_min = avg_duration > 0 ? (avg_hero_kills / (avg_duration / 60.0)) : 0 %>
     <%= number_with_precision(hero_kills_per_min, precision: 2) %>
   </div>
 
   <h2 class="text-2xl font-bold mb-3">Appearances</h2>
-  <% last_appearances = player.appearances.joins(:match).order(Arel.sql('COALESCE(matches.played_at, matches.created_at) DESC')) %>
-  <% if last_appearances.any? %>
+  <% if appearances.any? %>
     <ul class="list-disc ml-5">
-      <% last_appearances.each do |appearance| %>
+      <% appearances.each do |appearance| %>
         <li>
           <% match_date = (appearance.match.played_at || appearance.match.created_at).strftime('%Y-%m-%d') %>
           <%= link_to "Match ##{appearance.match.id} (#{match_date})", match_path(appearance.match), class: "text-blue-600 hover:underline" %>

@@ -25,6 +25,8 @@
           <% stats = @player_stats[player.id] || { wins: 0, losses: 0 } %>
           <option value="<%= player.id %>"
                   data-elo="<%= player.elo_rating.round %>"
+                  data-glicko="<%= player.glicko2_rating&.round || 1500 %>"
+                  data-glicko-rd="<%= player.glicko2_rating_deviation&.round || 350 %>"
                   data-wins="<%= stats[:wins] %>"
                   data-losses="<%= stats[:losses] %>"
                   <%= "selected" if player.id == lp.player_id %>>

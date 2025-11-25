@@ -85,12 +85,9 @@ class LobbiesController < ApplicationController
                        @lobby.lobby_players.find_by(faction_id: attrs[:faction_id]) ||
                        @lobby.lobby_players.build(faction_id: attrs[:faction_id])
 
-        if attrs[:player_id].blank?
-          lobby_player.destroy if lobby_player.persisted?
-        else
-          lobby_player.player_id = attrs[:player_id]
-          lobby_player.save
-        end
+        # Keep the slot but clear the player if blank
+        lobby_player.player_id = attrs[:player_id].presence
+        lobby_player.save
       end
     end
 
@@ -149,7 +146,7 @@ class LobbiesController < ApplicationController
         @player_stats[player_id] = { wins: wins, losses: total - wins }
       end
 
-      @players_for_select = Player.order(:nickname).select(:id, :nickname, :elo_rating)
+      @players_for_select = Player.order(:nickname).select(:id, :nickname, :elo_rating, :glicko2_rating, :glicko2_rating_deviation)
 
       # Build player search data with games played count
       @players_search_data = @players_for_select.map do |player|

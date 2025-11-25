@@ -11,7 +11,7 @@
 <% evil_rds = evil_with_players.map { |lp| lp.player.glicko2_rating_deviation.to_f } %>
 <% good_pooled_rd = good_rds.any? ? Math.sqrt(good_rds.map { |r| r**2 }.sum / good_rds.size) : 350 %>
 <% evil_pooled_rd = evil_rds.any? ? Math.sqrt(evil_rds.map { |r| r**2 }.sum / evil_rds.size) : 350 %>
-<% col_count = editable ? 4 : 12 %>
+<% col_count = editable ? 5 : 12 %>
 
 <div id="<%= dom_id lobby %>" class="w-full sm:w-auto my-5 space-y-5" data-controller="<%= 'auto-submit' if editable %>">
   <%= simple_form_for(lobby, data: editable ? { auto_submit_target: "form", turbo_action: "replace" } : {}) do |f| %>
@@ -45,10 +45,11 @@
         </tr>
         <%= render partial: "lobbies/lobby_player_row", collection: good_players, as: :lp, locals: { lobby: lobby, editable: editable, team_number: 1, lobby_player_stats: @lobby_player_stats || {}, faction_specific_stats: @faction_specific_stats || {}, recent_stats: @recent_stats || {} } %>
         <tr class="bg-gray-50">
-          <td class="px-4 py-2 font-bold text-sm">Average ELO</td>
+          <td class="px-4 py-2 font-bold text-sm">Average</td>
           <td class="px-4 py-2"></td>
           <td class="px-4 py-2 font-bold text-sm"><span data-average-elo-target="value"><%= good_avg_elo %></span></td>
-          <td class="px-4 py-2" colspan="<%= col_count - 3 %>"></td>
+          <td class="px-4 py-2 font-bold text-sm"><span data-average-elo-target="glickoValue"><%= good_avg_glicko.round %></span><span class="text-gray-400 text-xs">&plusmn;<span data-average-elo-target="glickoRd"><%= good_pooled_rd.round %></span></span></td>
+          <% if col_count > 4 %><td class="px-4 py-2" colspan="<%= col_count - 4 %>"></td><% end %>
         </tr>
       </tbody>
       <tbody class="bg-white divide-y divide-gray-200" data-controller="average-elo">
@@ -57,10 +58,11 @@
         </tr>
         <%= render partial: "lobbies/lobby_player_row", collection: evil_players, as: :lp, locals: { lobby: lobby, editable: editable, team_number: 2, lobby_player_stats: @lobby_player_stats || {}, faction_specific_stats: @faction_specific_stats || {}, recent_stats: @recent_stats || {} } %>
         <tr class="bg-gray-50">
-          <td class="px-4 py-2 font-bold text-sm">Average ELO</td>
+          <td class="px-4 py-2 font-bold text-sm">Average</td>
           <td class="px-4 py-2"></td>
           <td class="px-4 py-2 font-bold text-sm"><span data-average-elo-target="value"><%= evil_avg_elo %></span></td>
-          <td class="px-4 py-2" colspan="<%= col_count - 3 %>"></td>
+          <td class="px-4 py-2 font-bold text-sm"><span data-average-elo-target="glickoValue"><%= evil_avg_glicko.round %></span><span class="text-gray-400 text-xs">&plusmn;<span data-average-elo-target="glickoRd"><%= evil_pooled_rd.round %></span></span></td>
+          <% if col_count > 4 %><td class="px-4 py-2" colspan="<%= col_count - 4 %>"></td><% end %>
         </tr>
       </tbody>
       <% if editable %>

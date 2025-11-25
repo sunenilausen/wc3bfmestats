@@ -21,18 +21,39 @@
       </ul>
     </div>
 
-    <% if match.wc3stats_replay&.chatlog&.any? %>
-      <div class="md:w-1/3">
-        <strong class="block font-medium mb-2">Chat History:</strong>
-        <div class="bg-gray-50 rounded-md p-3 max-h-96 overflow-y-auto text-sm font-mono">
-          <% match.wc3stats_replay.chatlog.each do |msg| %>
-            <div class="mb-1">
-              <span class="text-gray-500"><%= ChronicDuration.output(msg["time"], format: :short) %></span>
-              <span class="font-semibold text-blue-700"><%= match.wc3stats_replay.player_name_by_id(msg["playerId"]) %>:</span>
-              <span><%= msg["message"] %></span>
+    <% if match.wc3stats_replay&.chatlog&.any? || match.wc3stats_replay&.events&.any? %>
+      <div class="md:w-1/3 space-y-4">
+        <% if match.wc3stats_replay&.chatlog&.any? %>
+          <div>
+            <strong class="block font-medium mb-2">Chat History:</strong>
+            <div class="bg-gray-50 rounded-md p-3 max-h-64 overflow-y-auto text-sm font-mono">
+              <% match.wc3stats_replay.chatlog.each do |msg| %>
+                <div class="mb-1">
+                  <span class="text-gray-500"><%= ChronicDuration.output(msg["time"], format: :short) %></span>
+                  <span class="font-semibold text-blue-700"><%= match.wc3stats_replay.player_name_by_id(msg["playerId"]) %>:</span>
+                  <span><%= msg["message"] %></span>
+                </div>
+              <% end %>
             </div>
-          <% end %>
-        </div>
+          </div>
+        <% end %>
+
+        <% if match.wc3stats_replay&.events&.any? %>
+          <div>
+            <strong class="block font-medium mb-2">Event Log:</strong>
+            <div class="bg-gray-50 rounded-md p-3 max-h-64 overflow-y-auto text-sm font-mono">
+              <% match.wc3stats_replay.events.each do |event| %>
+                <div class="mb-1">
+                  <span class="text-gray-500"><%= ChronicDuration.output(event["time"], format: :short) %></span>
+                  <span class="<%= event["eventName"] == "heroDeath" ? "text-red-600" : "text-orange-600" %>">
+                    <%= event["eventName"] == "heroDeath" ? "Hero Death:" : "Base Destroyed:" %>
+                  </span>
+                  <span><%= event["args"]&.first&.gsub("\\", "") %></span>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
       </div>
     <% end %>
   </div>

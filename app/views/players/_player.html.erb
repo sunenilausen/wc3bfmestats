@@ -118,8 +118,8 @@
   <% if stats[:faction_stats].any? %>
     <h2 class="text-2xl font-bold mb-3">Faction Stats</h2>
 
-    <% good_factions = Faction.where(good: true).order(:name) %>
-    <% evil_factions = Faction.where(good: false).order(:name) %>
+    <% good_factions = Faction.where(good: true).order(:id) %>
+    <% evil_factions = Faction.where(good: false).order(:id) %>
 
     <div class="space-y-6">
       <div>
@@ -143,7 +143,12 @@
                 <% fs = stats[:faction_stats][faction.id] %>
                 <% next unless fs && fs[:games] > 0 %>
                 <tr class="border-b border-gray-100">
-                  <td class="py-1"><%= link_to faction.name, faction_path(faction), class: "text-blue-600 hover:underline" %></td>
+                  <td class="py-1">
+                    <span class="inline-flex items-center gap-1.5">
+                      <span class="w-2.5 h-2.5 rounded-full" style="background-color: <%= faction.color_hex %>"></span>
+                      <%= link_to faction.name, faction_path(faction), class: "text-blue-600 hover:underline" %>
+                    </span>
+                  </td>
                   <td class="text-center py-1">
                     <span class="text-green-600"><%= fs[:wins] %></span>/<span class="text-red-600"><%= fs[:losses] %></span>
                   </td>
@@ -181,7 +186,12 @@
                 <% fs = stats[:faction_stats][faction.id] %>
                 <% next unless fs && fs[:games] > 0 %>
                 <tr class="border-b border-gray-100">
-                  <td class="py-1"><%= link_to faction.name, faction_path(faction), class: "text-blue-600 hover:underline" %></td>
+                  <td class="py-1">
+                    <span class="inline-flex items-center gap-1.5">
+                      <span class="w-2.5 h-2.5 rounded-full" style="background-color: <%= faction.color_hex %>"></span>
+                      <%= link_to faction.name, faction_path(faction), class: "text-blue-600 hover:underline" %>
+                    </span>
+                  </td>
                   <td class="text-center py-1">
                     <span class="text-green-600"><%= fs[:wins] %></span>/<span class="text-red-600"><%= fs[:losses] %></span>
                   </td>

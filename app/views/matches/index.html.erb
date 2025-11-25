@@ -13,11 +13,24 @@
   <div id="matches" class="min-w-full divide-y divide-gray-200 space-y-5">
     <% if @matches.any? %>
       <% @matches.each do |match| %>
-        <div class="flex flex-col sm:flex-row justify-between items-center pb-5 sm:pb-0">
-          <div>
-            <strong class="block font-medium mb-1">Match played at:</strong>
-            <%= "#{match.played_at.strftime("%Y-%m-%d %H:%M:%S")} #{match.good_victory ? "Good Victory" : "Evil Victory"}" %>
-
+        <div class="flex flex-col sm:flex-row justify-between items-start pb-5 sm:pb-0 gap-2">
+          <div class="flex-1">
+            <div class="mb-1">
+              <%= match.played_at&.strftime("%Y-%m-%d") || match.created_at.strftime("%Y-%m-%d") %>
+              <span class="ml-2 <%= match.good_victory ? 'text-green-600' : 'text-red-600' %> font-medium">
+                <%= match.good_victory ? "Good Victory" : "Evil Victory" %>
+              </span>
+              <% if match.seconds.present? && match.seconds > 0 %>
+                <span class="ml-2 text-gray-500">(<%= ChronicDuration.output(match.seconds, format: :short) %>)</span>
+              <% end %>
+            </div>
+            <% good_players = match.appearances.select { |a| a.faction&.good? }.map { |a| a.player&.nickname }.compact %>
+            <% evil_players = match.appearances.select { |a| a.faction && !a.faction.good? }.map { |a| a.player&.nickname }.compact %>
+            <div class="text-sm">
+              <span class="text-green-700"><%= good_players.join(", ") %></span>
+              <span class="text-gray-400 mx-1">vs</span>
+              <span class="text-red-700"><%= evil_players.join(", ") %></span>
+            </div>
           </div>
           <div class="w-full sm:w-auto flex flex-col sm:flex-row space-x-2 space-y-2">
             <%= link_to "Show", match, class: "w-full sm:w-auto text-center rounded-md px-3.5 py-2.5 bg-gray-100 hover:bg-gray-50 inline-block font-medium" %>

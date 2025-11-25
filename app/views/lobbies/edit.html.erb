@@ -120,7 +120,12 @@
              ondragend="handlePlayerDragEnd(event)"
              onclick="assignPlayer(${p.id}, this)">
           <div class="font-medium text-sm">${p.nickname}</div>
-          <div class="text-xs text-gray-500">${p.elo}</div>
+          <div class="text-xs text-gray-500">
+            <span>${p.elo}</span>
+            <span class="ml-1">
+              <span class="text-green-600">${p.wins}W</span>/<span class="text-red-600">${p.losses}L</span>
+            </span>
+          </div>
         </div>
       `;
     }).join('');
@@ -136,7 +141,9 @@
       return {
         id: opt.value,
         nickname: opt.text,
-        elo: playerData ? playerData.elo : '-'
+        elo: playerData ? playerData.elo : '-',
+        wins: playerData ? playerData.wins : 0,
+        losses: playerData ? playerData.losses : 0
       };
     });
 
@@ -151,7 +158,12 @@
         <div class="flex justify-between items-start">
           <div>
             <div class="font-medium text-sm">${p.nickname}</div>
-            <div class="text-xs text-gray-500">${p.elo}</div>
+            <div class="text-xs text-gray-500">
+              <span>${p.elo}</span>
+              <span class="ml-1">
+                <span class="text-green-600">${p.wins}W</span>/<span class="text-red-600">${p.losses}L</span>
+              </span>
+            </div>
           </div>
           <button type="button" onclick="removeObserver(${p.id})" class="text-gray-400 hover:text-red-500 text-lg leading-none">&times;</button>
         </div>
@@ -159,7 +171,7 @@
     `).join('');
 
     if (selectedObservers.length === 0) {
-      container.innerHTML = '<p class="text-xs text-gray-400 italic">Drag players here</p>';
+      container.innerHTML = '<div class="p-4 border-2 border-dashed border-gray-300 rounded text-center text-xs text-gray-400 italic">Drag players here</div>';
     }
   }
 

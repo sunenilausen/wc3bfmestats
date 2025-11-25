@@ -149,5 +149,26 @@ class LobbiesController < ApplicationController
       end
 
       @players_for_select = Player.order(:nickname).select(:id, :nickname, :elo_rating)
+
+      # Build player search data with games played count
+      @players_search_data = @players_for_select.map do |player|
+        stats = @player_stats[player.id] || { wins: 0, losses: 0 }
+        games = stats[:wins] + stats[:losses]
+        {
+          id: player.id,
+          nickname: player.nickname,
+          elo: player.elo_rating.round,
+          wins: stats[:wins],
+          losses: stats[:losses],
+          games: games
+        }
+      end.sort_by { |p| -p[:games] } # Sort by most games first
+
+      # Get unique players from last 5 matches (players and observers)
+      recent_match_ids = Match.order(played_at: :desc).limit(5).pluck(:id)
+      recent_player_ids = Appearance.where(match_id: recent_match_ids).distinct.pluck(:player_id)
+      @recent_players = recent_player_ids.map do |pid|
+        @players_search_data.find { |p| p[:id] == pid }
+      end.compact
     end
 end

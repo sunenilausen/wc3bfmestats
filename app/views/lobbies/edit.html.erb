@@ -1,15 +1,300 @@
 <% content_for :title, "Editing lobby" %>
 
-<div class="md:w-2/3 w-full">
-  <h1 class="font-bold text-4xl">Editing lobby</h1>
+<div class="flex gap-6" data-controller="lobby-drag">
+  <div class="flex-1">
+    <div class="flex items-center gap-4 mb-4">
+      <h1 class="font-bold text-2xl">Editing lobby</h1>
+      <%= link_to "View", @lobby, class: "text-sm px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded" %>
+    </div>
 
-  <%= render partial: "lobby", locals: { lobby: @lobby, editable: true } %>
+    <%= render partial: "lobby", locals: { lobby: @lobby, editable: true } %>
+  </div>
 
-  <%= link_to "Show this lobby", @lobby, class: "w-full sm:w-auto text-center mt-2 sm:mt-0 sm:ml-2 rounded-md px-3.5 py-2.5 bg-gray-100 hover:bg-gray-50 inline-block font-medium" %>
-  <%= link_to "Back to lobbies", lobbies_path, class: "w-full sm:w-auto text-center mt-2 sm:mt-0 sm:ml-2 rounded-md px-3.5 py-2.5 bg-gray-100 hover:bg-gray-50 inline-block font-medium" %>
+  <div class="w-56 flex-shrink-0">
+    <div class="sticky top-4">
+      <h2 class="font-bold text-lg mb-3">Player Search</h2>
+
+      <div class="mb-3">
+        <input type="text"
+               id="player-search-input"
+               placeholder="Search by name..."
+               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+
+      <div id="player-search-results" class="space-y-1 max-h-[60vh] overflow-y-auto">
+        <!-- Results populated by JS -->
+      </div>
+
+      <p id="player-count" class="text-xs text-gray-400 mt-2"></p>
+    </div>
+  </div>
+
+  <div class="w-48 flex-shrink-0">
+    <div class="sticky top-4">
+      <h2 class="font-bold text-lg mb-3">Recent Players</h2>
+      <p class="text-xs text-gray-500 mb-2">From last 5 matches</p>
+
+      <div id="recent-players-list" class="space-y-1 max-h-[70vh] overflow-y-auto">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <div class="w-40 flex-shrink-0">
+    <div class="sticky top-4">
+      <h2 class="font-bold text-lg mb-3">Observers</h2>
+      <p class="text-xs text-gray-500 mb-2">Click to remove</p>
+
+      <div id="observers-list" class="space-y-1 max-h-[70vh] overflow-y-auto"
+           data-lobby-drag-target="observerZone">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
 </div>
 
+<script id="players-data" type="application/json">
+  <%= raw @players_search_data.to_json %>
+</script>
+
+<script id="recent-players-data" type="application/json">
+  <%= raw @recent_players.to_json %>
+</script>
+
+<style>
+  .drop-zone-active {
+    outline: 2px dashed #cbd5e1;
+    outline-offset: -2px;
+  }
+  .drop-zone-hover {
+    background-color: #dbeafe !important;
+    outline-color: #3b82f6 !important;
+  }
+  .dragging {
+    opacity: 0.5;
+  }
+  .already-assigned {
+    opacity: 0.4;
+    background-color: #f3f4f6 !important;
+    cursor: default;
+  }
+  .player-card {
+    cursor: pointer;
+  }
+  .player-card:not(.already-assigned):hover {
+    background-color: #dbeafe;
+    border-color: #3b82f6;
+  }
+</style>
+
 <script>
+  const allPlayers = JSON.parse(document.getElementById('players-data').textContent);
+  const recentPlayers = JSON.parse(document.getElementById('recent-players-data').textContent);
+
+  function getAssignedPlayerIds() {
+    const assignedIds = new Set();
+    document.querySelectorAll('select[name*="player_id"]').forEach(select => {
+      if (select.value) assignedIds.add(select.value);
+    });
+    const observerSelect = document.getElementById('observer-select');
+    if (observerSelect) {
+      Array.from(observerSelect.selectedOptions).forEach(opt => {
+        assignedIds.add(opt.value);
+      });
+    }
+    return assignedIds;
+  }
+
+  function renderRecentPlayers() {
+    const assignedIds = getAssignedPlayerIds();
+    const container = document.getElementById('recent-players-list');
+
+    container.innerHTML = recentPlayers.map(p => {
+      const isAssigned = assignedIds.has(String(p.id));
+      return `
+        <div class="player-card p-2 bg-gray-50 border border-gray-200 rounded transition-colors ${isAssigned ? 'already-assigned' : ''}"
+             draggable="${!isAssigned}"
+             data-player-id="${p.id}"
+             data-player-name="${p.nickname}"
+             ondragstart="handlePlayerDragStart(event, ${p.id}, '${p.nickname}')"
+             ondragend="handlePlayerDragEnd(event)"
+             onclick="assignPlayer(${p.id}, this)">
+          <div class="font-medium text-sm">${p.nickname}</div>
+          <div class="text-xs text-gray-500">${p.elo}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderObservers() {
+    const observerSelect = document.getElementById('observer-select');
+    if (!observerSelect) return;
+
+    const container = document.getElementById('observers-list');
+    const selectedObservers = Array.from(observerSelect.selectedOptions).map(opt => {
+      const playerData = allPlayers.find(p => String(p.id) === opt.value);
+      return {
+        id: opt.value,
+        nickname: opt.text,
+        elo: playerData ? playerData.elo : '-'
+      };
+    });
+
+    container.innerHTML = selectedObservers.map(p => `
+      <div class="player-card p-2 bg-yellow-50 border border-yellow-200 rounded transition-colors cursor-move"
+           draggable="true"
+           data-player-id="${p.id}"
+           data-player-name="${p.nickname}"
+           data-source-type="observer"
+           ondragstart="handleObserverDragStart(event, ${p.id}, '${p.nickname}')"
+           ondragend="handlePlayerDragEnd(event)">
+        <div class="flex justify-between items-start">
+          <div>
+            <div class="font-medium text-sm">${p.nickname}</div>
+            <div class="text-xs text-gray-500">${p.elo}</div>
+          </div>
+          <button type="button" onclick="removeObserver(${p.id})" class="text-gray-400 hover:text-red-500 text-lg leading-none">&times;</button>
+        </div>
+      </div>
+    `).join('');
+
+    if (selectedObservers.length === 0) {
+      container.innerHTML = '<p class="text-xs text-gray-400 italic">Drag players here</p>';
+    }
+  }
+
+  function removeObserver(playerId) {
+    const observerSelect = document.getElementById('observer-select');
+    if (!observerSelect) return;
+
+    const option = observerSelect.querySelector(`option[value="${playerId}"]`);
+    if (option && option.selected) {
+      option.selected = false;
+      observerSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+      const form = document.querySelector('form');
+      if (form) form.requestSubmit();
+
+      setTimeout(() => {
+        renderPlayerResults();
+        renderRecentPlayers();
+        renderObservers();
+      }, 100);
+    }
+  }
+
+  function addObserver(playerId) {
+    const observerSelect = document.getElementById('observer-select');
+    if (!observerSelect) return;
+
+    const option = observerSelect.querySelector(`option[value="${playerId}"]`);
+    if (option && !option.selected) {
+      option.selected = true;
+      observerSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+      const form = document.querySelector('form');
+      if (form) form.requestSubmit();
+
+      setTimeout(() => {
+        renderPlayerResults();
+        renderRecentPlayers();
+        renderObservers();
+      }, 100);
+    }
+  }
+
+  function renderPlayerResults() {
+    const searchTerm = document.getElementById('player-search-input').value.toLowerCase();
+    const assignedIds = getAssignedPlayerIds();
+
+    const filtered = allPlayers.filter(p => {
+      if (searchTerm && !p.nickname.toLowerCase().includes(searchTerm)) return false;
+      return true;
+    });
+
+    const container = document.getElementById('player-search-results');
+    container.innerHTML = filtered.slice(0, 50).map(p => {
+      const isAssigned = assignedIds.has(String(p.id));
+      return `
+        <div class="player-card p-2 bg-gray-50 border border-gray-200 rounded transition-colors ${isAssigned ? 'already-assigned' : ''}"
+             draggable="${!isAssigned}"
+             data-player-id="${p.id}"
+             data-player-name="${p.nickname}"
+             ondragstart="handlePlayerDragStart(event, ${p.id}, '${p.nickname}')"
+             ondragend="handlePlayerDragEnd(event)"
+             onclick="assignPlayer(${p.id}, this)">
+          <div class="flex justify-between items-center">
+            <span class="font-medium text-sm">${p.nickname}</span>
+            <span class="text-xs text-gray-400">${p.games}g</span>
+          </div>
+          <div class="text-xs text-gray-500">
+            <span>${p.elo}</span>
+            <span class="ml-2">
+              <span class="text-green-600">${p.wins}W</span>/<span class="text-red-600">${p.losses}L</span>
+            </span>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    document.getElementById('player-count').textContent =
+      `Showing ${Math.min(filtered.length, 50)} of ${filtered.length} players`;
+  }
+
+  function assignPlayer(playerId, element) {
+    if (element.classList.contains('already-assigned')) return;
+
+    // Find first empty slot
+    const slots = document.querySelectorAll('[data-lobby-drag-target="playerSlot"]');
+    for (const slot of slots) {
+      const select = slot.querySelector('select');
+      if (select && !select.value) {
+        setSelectValue(select, String(playerId));
+
+        // Trigger form submit
+        const form = document.querySelector('form');
+        if (form) form.requestSubmit();
+
+        // Update UI
+        setTimeout(() => {
+          renderPlayerResults();
+          renderRecentPlayers();
+          renderObservers();
+        }, 100);
+        return;
+      }
+    }
+
+    // No empty slot - add as observer
+    addObserver(playerId);
+  }
+
+  function setSelectValue(select, value) {
+    select.value = value;
+
+    // Update searchable-select display
+    const wrapper = select.previousElementSibling;
+    if (wrapper && wrapper.classList.contains('searchable-select')) {
+      const input = wrapper.querySelector('.searchable-select-input');
+      if (input) {
+        const selectedOption = select.options[select.selectedIndex];
+        input.value = selectedOption ? selectedOption.text : '';
+      }
+    }
+
+    // Trigger change and update W/L
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    const wlTarget = select.dataset.wlTarget;
+    if (wlTarget && typeof updateWL === 'function') {
+      updateWL(select, wlTarget);
+    }
+  }
+
+  function refreshObserverSelect() {
+    // No longer needed since we use a hidden select now
+    // Kept for compatibility
+  }
+
   function updateWL(select, targetId) {
     const option = select.options[select.selectedIndex];
     const wins = option.dataset.wins;
@@ -25,7 +310,40 @@
     if (eloTarget) {
       eloTarget.innerHTML = elo || '-';
     }
+    updateAverageElos();
     updatePrediction();
+    renderPlayerResults();
+    renderRecentPlayers();
+    renderObservers();
+  }
+
+  function updateAverageElos() {
+    // Recalculate average ELO for each team
+    [1, 2].forEach(teamNumber => {
+      const selects = document.querySelectorAll(`tr.nested-fields[data-team="${teamNumber}"] select`);
+      let totalElo = 0;
+      let count = 0;
+      selects.forEach(select => {
+        const selectedOption = select.options[select.selectedIndex];
+        if (selectedOption && selectedOption.dataset.elo) {
+          const elo = parseInt(selectedOption.dataset.elo, 10);
+          if (!isNaN(elo)) {
+            totalElo += elo;
+            count++;
+          }
+        }
+      });
+      const averageElo = count > 0 ? Math.round(totalElo / count) : 0;
+
+      // Find the average ELO display for this team's tbody
+      const tbody = document.querySelector(`tbody[data-controller="average-elo"]:nth-of-type(${teamNumber})`);
+      if (tbody) {
+        const valueTarget = tbody.querySelector('[data-average-elo-target="value"]');
+        if (valueTarget) {
+          valueTarget.textContent = averageElo;
+        }
+      }
+    });
   }
 
   function updatePrediction() {
@@ -54,11 +372,195 @@
     const goodPct = Math.round(goodExpected * 100);
     const evilPct = 100 - goodPct;
 
-    document.getElementById('good-win-bar').style.width = goodPct + '%';
-    document.getElementById('good-win-pct').textContent = goodPct + '%';
-    document.getElementById('evil-win-pct').textContent = evilPct + '%';
+    const goodBar = document.getElementById('good-win-bar');
+    const goodPctEl = document.getElementById('good-win-pct');
+    const evilPctEl = document.getElementById('evil-win-pct');
+
+    if (goodBar) goodBar.style.width = goodPct + '%';
+    if (goodPctEl) goodPctEl.textContent = goodPct + '%';
+    if (evilPctEl) evilPctEl.textContent = evilPct + '%';
   }
 
-  document.addEventListener('DOMContentLoaded', updatePrediction);
-  document.addEventListener('turbo:load', updatePrediction);
+  // Drag handlers
+  function handlePlayerDragStart(e, playerId, playerName) {
+    e.dataTransfer.setData('text/plain', JSON.stringify({
+      playerId: playerId,
+      playerName: playerName,
+      sourceType: 'search'
+    }));
+    e.dataTransfer.effectAllowed = 'move';
+    e.target.classList.add('dragging');
+
+    // Highlight drop zones
+    document.querySelectorAll('[data-lobby-drag-target="playerSlot"]').forEach(slot => {
+      slot.classList.add('drop-zone-active');
+    });
+    const observerZone = document.querySelector('[data-lobby-drag-target="observerZone"]');
+    if (observerZone) observerZone.classList.add('drop-zone-active');
+  }
+
+  function handleObserverDragStart(e, playerId, playerName) {
+    e.dataTransfer.setData('text/plain', JSON.stringify({
+      playerId: playerId,
+      playerName: playerName,
+      sourceType: 'observer'
+    }));
+    e.dataTransfer.effectAllowed = 'move';
+    e.target.classList.add('dragging');
+
+    // Highlight only player slots (not observer zone since they're already observers)
+    document.querySelectorAll('[data-lobby-drag-target="playerSlot"]').forEach(slot => {
+      slot.classList.add('drop-zone-active');
+    });
+  }
+
+  function handleSlotDragStart(e, playerId, playerName, slotIndex) {
+    e.dataTransfer.setData('text/plain', JSON.stringify({
+      playerId: playerId,
+      playerName: playerName,
+      sourceType: 'slot',
+      sourceIndex: slotIndex
+    }));
+    e.dataTransfer.effectAllowed = 'move';
+    e.target.classList.add('dragging');
+
+    // Highlight all drop zones
+    document.querySelectorAll('[data-lobby-drag-target="playerSlot"]').forEach(slot => {
+      slot.classList.add('drop-zone-active');
+    });
+    const observerZone = document.querySelector('[data-lobby-drag-target="observerZone"]');
+    if (observerZone) observerZone.classList.add('drop-zone-active');
+  }
+
+  function clearSlot(slotIndex) {
+    const select = document.getElementById('player-select-' + slotIndex);
+    if (select) {
+      select.value = '';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+
+      // Update the cell display
+      updateSlotDisplay(slotIndex, null, null);
+
+      // Trigger form submit
+      const form = document.querySelector('form');
+      if (form) form.requestSubmit();
+
+      // Update all lists
+      setTimeout(() => {
+        renderPlayerResults();
+        renderRecentPlayers();
+        renderObservers();
+        updateAverageElos();
+        updatePrediction();
+      }, 100);
+    }
+  }
+
+  function updateSlotDisplay(slotIndex, playerId, playerName) {
+    const cell = document.getElementById('player-cell-' + slotIndex);
+    if (!cell) return;
+
+    // Find existing slot-player span or empty slot text
+    const existingPlayer = cell.querySelector('.slot-player');
+    const existingEmpty = cell.querySelector('.text-gray-400.italic');
+
+    if (playerId && playerName) {
+      const html = `
+        <span class="slot-player cursor-move px-2 py-1 bg-blue-50 border border-blue-200 rounded inline-flex items-center gap-2"
+              draggable="true"
+              data-player-id="${playerId}"
+              data-player-name="${playerName}"
+              data-slot-index="${slotIndex}"
+              ondragstart="handleSlotDragStart(event, ${playerId}, '${playerName}', ${slotIndex})"
+              ondragend="handlePlayerDragEnd(event)">
+          ${playerName}
+          <button type="button" onclick="clearSlot(${slotIndex})" class="text-gray-400 hover:text-red-500 text-sm leading-none">&times;</button>
+        </span>
+      `;
+      if (existingPlayer) {
+        existingPlayer.outerHTML = html;
+      } else if (existingEmpty) {
+        existingEmpty.outerHTML = html;
+      }
+    } else {
+      const html = '<span class="text-gray-400 italic">Empty slot</span>';
+      if (existingPlayer) {
+        existingPlayer.outerHTML = html;
+      }
+    }
+
+    // Update ELO and W/L display
+    const select = document.getElementById('player-select-' + slotIndex);
+    if (select) {
+      const option = select.options[select.selectedIndex];
+      const eloCell = document.getElementById('elo-' + slotIndex);
+      const wlCell = document.getElementById('wl-' + slotIndex);
+
+      if (eloCell) {
+        eloCell.textContent = option && option.dataset.elo ? option.dataset.elo : '-';
+      }
+      if (wlCell) {
+        if (option && option.dataset.wins && option.dataset.losses) {
+          wlCell.innerHTML = `<span class="text-green-600">${option.dataset.wins}W</span>/<span class="text-red-600">${option.dataset.losses}L</span>`;
+        } else {
+          wlCell.textContent = '-';
+        }
+      }
+    }
+  }
+
+  function handlePlayerDragEnd(e) {
+    e.target.classList.remove('dragging');
+    document.querySelectorAll('[data-lobby-drag-target="playerSlot"]').forEach(slot => {
+      slot.classList.remove('drop-zone-active', 'drop-zone-hover');
+    });
+    const observerZone = document.querySelector('[data-lobby-drag-target="observerZone"]');
+    if (observerZone) observerZone.classList.remove('drop-zone-active', 'drop-zone-hover');
+  }
+
+  // Expose functions to window for Stimulus controller
+  window.setSelectValue = setSelectValue;
+  window.refreshObserverSelect = refreshObserverSelect;
+  window.renderPlayerResults = renderPlayerResults;
+  window.renderRecentPlayers = renderRecentPlayers;
+  window.renderObservers = renderObservers;
+  window.addObserver = addObserver;
+  window.removeObserver = removeObserver;
+  window.clearSlot = clearSlot;
+  window.updateSlotDisplay = updateSlotDisplay;
+  window.updateAverageElos = updateAverageElos;
+  window.updatePrediction = updatePrediction;
+  window.handlePlayerDragStart = handlePlayerDragStart;
+  window.handleObserverDragStart = handleObserverDragStart;
+  window.handleSlotDragStart = handleSlotDragStart;
+  window.handlePlayerDragEnd = handlePlayerDragEnd;
+
+  // Event listeners
+  document.getElementById('player-search-input').addEventListener('input', renderPlayerResults);
+
+  // Also update when selects change
+  document.addEventListener('change', (e) => {
+    if (e.target.matches('select[name*="player_id"]') || e.target.id === 'observer-select') {
+      setTimeout(() => {
+        renderPlayerResults();
+        renderRecentPlayers();
+        renderObservers();
+      }, 50);
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    renderPlayerResults();
+    renderRecentPlayers();
+    renderObservers();
+    updateAverageElos();
+    updatePrediction();
+  });
+  document.addEventListener('turbo:load', () => {
+    renderPlayerResults();
+    renderRecentPlayers();
+    renderObservers();
+    updateAverageElos();
+    updatePrediction();
+  });
 </script>

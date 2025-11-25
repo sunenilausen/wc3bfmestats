@@ -1,22 +1,22 @@
 <% index = lobby.lobby_players.index(lp) %>
-<tr class="nested-fields" data-team="<%= team_number %>">
+<tr class="nested-fields" data-team="<%= team_number %>"
+    <%= "data-lobby-drag-target=playerSlot data-slot-index=#{index}" if editable %>>
   <td class="px-4 py-2 whitespace-nowrap">
-    <span style="display: inline-block; width: 16px; height: 16px; background-color: <%= lp.faction.color %>; border: 1px solid #000; vertical-align: middle; margin-right: 6px;"></span>
+    <span style="display: inline-block; width: 16px; height: 16px; background-color: <%= lp.faction.color_hex %>; border: 1px solid #000; vertical-align: middle; margin-right: 6px;"></span>
     <%= lp.faction.name %>
   </td>
-  <td class="px-4 py-2 whitespace-nowrap">
+  <td class="px-4 py-2 whitespace-nowrap" id="player-cell-<%= index %>">
     <% if editable %>
       <input type="hidden" name="lobby[lobby_players_attributes][<%= index %>][faction_id]" value="<%= lp.faction_id %>">
       <% if lp.persisted? %>
         <input type="hidden" name="lobby[lobby_players_attributes][<%= index %>][id]" value="<%= lp.id %>">
       <% end %>
       <select name="lobby[lobby_players_attributes][<%= index %>][player_id]"
-              class="form-control player-select"
-              data-controller="searchable-select"
+              class="hidden player-select"
+              id="player-select-<%= index %>"
               data-average-elo-target="playerSelect"
               data-action="change->average-elo#calculateAverageElo change->auto-submit#submit"
-              data-wl-target="wl-<%= index %>"
-              onchange="updateWL(this, 'wl-<%= index %>')">
+              data-wl-target="wl-<%= index %>">
         <option value="" data-wins="" data-losses="">-- Select Player --</option>
         <% @players_for_select.each do |player| %>
           <% stats = @player_stats[player.id] || { wins: 0, losses: 0 } %>
@@ -29,6 +29,20 @@
           </option>
         <% end %>
       </select>
+      <% if lp.player %>
+        <span class="slot-player cursor-move px-2 py-1 bg-blue-50 border border-blue-200 rounded inline-flex items-center gap-2"
+              draggable="true"
+              data-player-id="<%= lp.player_id %>"
+              data-player-name="<%= lp.player.nickname %>"
+              data-slot-index="<%= index %>"
+              ondragstart="handleSlotDragStart(event, <%= lp.player_id %>, '<%= lp.player.nickname %>', <%= index %>)"
+              ondragend="handlePlayerDragEnd(event)">
+          <%= lp.player.nickname %>
+          <button type="button" onclick="clearSlot(<%= index %>)" class="text-gray-400 hover:text-red-500 text-sm leading-none">&times;</button>
+        </span>
+      <% else %>
+        <span class="text-gray-400 italic">Empty slot</span>
+      <% end %>
     <% elsif lp.player %>
       <%= link_to lp.player.nickname, player_path(lp.player), class: "text-blue-600 hover:underline" %>
     <% else %>

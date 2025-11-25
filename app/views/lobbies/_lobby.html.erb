@@ -51,40 +51,34 @@
           <td class="px-4 py-2" colspan="<%= col_count - 3 %>"></td>
         </tr>
       </tbody>
-      <% if lobby.observers.any? || editable %>
+      <% if editable %>
+        <%# Hidden select for form submission - managed by JS observers column %>
+        <select name="lobby[observer_ids][]" multiple class="hidden" id="observer-select" data-action="change->auto-submit#submit">
+          <% @players_for_select.each do |player| %>
+            <option value="<%= player.id %>" <%= "selected" if lobby.observer_ids.include?(player.id) %>>
+              <%= player.nickname %>
+            </option>
+          <% end %>
+        </select>
+      <% elsif lobby.observers.any? %>
         <tbody class="bg-white divide-y divide-gray-200">
           <tr class="bg-gray-100">
             <td colspan="<%= col_count %>" class="px-4 py-2 text-left text-sm text-gray-500 font-medium">Observers</td>
           </tr>
-          <% if editable %>
+          <% lobby.observers.each do |observer| %>
             <tr>
-              <td colspan="<%= col_count %>" class="px-4 py-2">
-                <select name="lobby[observer_ids][]" multiple class="form-control w-full" data-controller="searchable-select" data-action="change->auto-submit#submit">
-                  <% @players_for_select.each do |player| %>
-                    <option value="<%= player.id %>" <%= "selected" if lobby.observer_ids.include?(player.id) %>>
-                      <%= player.nickname %>
-                    </option>
-                  <% end %>
-                </select>
-                <p class="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple observers</p>
+              <td class="px-4 py-2 whitespace-nowrap" colspan="2">
+                <%= link_to observer.nickname, player_path(observer), class: "text-blue-600 hover:underline" %>
               </td>
+              <td class="px-4 py-2 whitespace-nowrap"><%= observer.elo_rating&.round || "-" %></td>
+              <td class="px-4 py-2 whitespace-nowrap">
+                <span class="text-green-600"><%= observer.wins %>W</span>/<span class="text-red-600"><%= observer.losses %>L</span>
+              </td>
+              <td class="px-4 py-2 whitespace-nowrap">
+                <span class="text-green-600"><%= observer.recent_wins %>W</span>/<span class="text-red-600"><%= observer.recent_losses %>L</span>
+              </td>
+              <td class="px-4 py-2 whitespace-nowrap">-</td>
             </tr>
-          <% else %>
-            <% lobby.observers.each do |observer| %>
-              <tr>
-                <td class="px-4 py-2 whitespace-nowrap" colspan="2">
-                  <%= link_to observer.nickname, player_path(observer), class: "text-blue-600 hover:underline" %>
-                </td>
-                <td class="px-4 py-2 whitespace-nowrap"><%= observer.elo_rating&.round || "-" %></td>
-                <td class="px-4 py-2 whitespace-nowrap">
-                  <span class="text-green-600"><%= observer.wins %>W</span>/<span class="text-red-600"><%= observer.losses %>L</span>
-                </td>
-                <td class="px-4 py-2 whitespace-nowrap">
-                  <span class="text-green-600"><%= observer.recent_wins %>W</span>/<span class="text-red-600"><%= observer.recent_losses %>L</span>
-                </td>
-                <td class="px-4 py-2 whitespace-nowrap">-</td>
-              </tr>
-            <% end %>
           <% end %>
         </tbody>
       <% end %>
@@ -105,11 +99,6 @@
           <span id="good-win-pct" class="text-green-700">50%</span>
           <span id="evil-win-pct" class="text-red-700">50%</span>
         </div>
-      </div>
-
-      <div class="form-actions mt-4 flex items-center gap-4">
-        <span class="text-sm text-gray-500">Changes are saved automatically</span>
-        <%= link_to "View Lobby", lobby, class: "bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" %>
       </div>
     <% elsif good_avg_elo > 0 && evil_avg_elo > 0 %>
       <% good_expected = 1.0 / (1 + 10 ** ((evil_avg_elo - good_avg_elo) / 400.0)) %>

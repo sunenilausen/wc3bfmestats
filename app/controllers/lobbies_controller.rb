@@ -8,6 +8,7 @@ class LobbiesController < ApplicationController
 
   # GET /lobbies/1 or /lobbies/1.json
   def show
+    preload_lobby_player_stats
   end
 
   # GET /lobbies/new - creates lobby instantly with previous match players
@@ -170,5 +171,35 @@ class LobbiesController < ApplicationController
       @recent_players = recent_player_ids.map do |pid|
         @players_search_data.find { |p| p[:id] == pid }
       end.compact
+    end
+
+    def preload_lobby_player_stats
+      # Get all player IDs from this lobby (players + observers)
+      player_ids = @lobby.lobby_players.map(&:player_id).compact
+      player_ids += @lobby.observer_ids
+      player_ids.uniq!
+
+      return if player_ids.empty?
+
+      # Preload all appearances for these players with necessary associations
+      appearances_by_player = Appearance.includes(:match, :faction, match: :appearances)
+        .where(player_id: player_ids)
+        .group_by(&:player_id)
+
+      # Calculate stats for each player using PlayerStatsCalculator
+      @lobby_player_stats = {}
+      player_ids.each do |player_id|
+        player = Player.find(player_id)
+        appearances = appearances_by_player[player_id] || []
+        @lobby_player_stats[player_id] = PlayerStatsCalculator.new(player, appearances).compute
+      end
+
+      # Also get faction-specific stats for each lobby_player
+      @faction_specific_stats = {}
+      @lobby.lobby_players.each do |lp|
+        next unless lp.player_id && lp.faction_id
+        stats = @lobby_player_stats[lp.player_id]
+        @faction_specific_stats[lp.id] = stats[:faction_stats][lp.faction_id] if stats
+      end
     end
 end

@@ -1,6 +1,7 @@
 <% index = lobby.lobby_players.index(lp) %>
 <% player_stats = lobby_player_stats[lp.player_id] if lp.player_id %>
 <% fac_stats = faction_specific_stats[lp.id] %>
+<% player_recent = recent_stats[lp.player_id] if defined?(recent_stats) && lp.player_id %>
 <tr class="nested-fields" data-team="<%= team_number %>"
     <%= "data-lobby-drag-target=playerSlot data-slot-index=#{index}" if editable %>>
   <td class="px-2 py-1 whitespace-nowrap text-sm">
@@ -59,6 +60,8 @@
       <% if editable && @player_stats && @player_stats[lp.player_id] %>
         <% stats = @player_stats[lp.player_id] %>
         <span class="text-green-600"><%= stats[:wins] %>W</span>/<span class="text-red-600"><%= stats[:losses] %>L</span>
+      <% elsif player_stats %>
+        <span class="text-green-600"><%= player_stats[:wins] %>W</span>/<span class="text-red-600"><%= player_stats[:losses] %>L</span>
       <% else %>
         <span class="text-green-600"><%= lp.player.wins %>W</span>/<span class="text-red-600"><%= lp.player.losses %>L</span>
       <% end %>
@@ -77,7 +80,9 @@
     </td>
     <%# 100d form %>
     <td class="px-2 py-1 whitespace-nowrap text-sm">
-      <% if lp.player %>
+      <% if player_recent %>
+        <span class="text-green-600"><%= player_recent[:recent_wins] %></span>/<span class="text-red-600"><%= player_recent[:recent_losses] %></span>
+      <% elsif lp.player %>
         <span class="text-green-600"><%= lp.player.recent_wins %></span>/<span class="text-red-600"><%= lp.player.recent_losses %></span>
       <% else %>
         -
@@ -85,7 +90,10 @@
     </td>
     <%# 1y faction %>
     <td class="px-2 py-1 whitespace-nowrap text-sm">
-      <% if lp.player && lp.faction %>
+      <% faction_recent = player_recent&.dig(:faction_recent, lp.faction_id) %>
+      <% if faction_recent %>
+        <span class="text-green-600"><%= faction_recent[:wins] %></span>/<span class="text-red-600"><%= faction_recent[:losses] %></span>
+      <% elsif lp.player && lp.faction %>
         <span class="text-green-600"><%= lp.player.recent_wins_with_faction(lp.faction, days: 365) %></span>/<span class="text-red-600"><%= lp.player.recent_losses_with_faction(lp.faction, days: 365) %></span>
       <% else %>
         -

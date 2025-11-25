@@ -36,7 +36,7 @@
         <tr class="bg-gray-100">
           <td colspan="<%= col_count %>" class="px-2 py-1 text-left text-sm text-gray-500 font-medium">Forces of Middle Earth</td>
         </tr>
-        <%= render partial: "lobbies/lobby_player_row", collection: good_players, as: :lp, locals: { lobby: lobby, editable: editable, team_number: 1, lobby_player_stats: @lobby_player_stats || {}, faction_specific_stats: @faction_specific_stats || {} } %>
+        <%= render partial: "lobbies/lobby_player_row", collection: good_players, as: :lp, locals: { lobby: lobby, editable: editable, team_number: 1, lobby_player_stats: @lobby_player_stats || {}, faction_specific_stats: @faction_specific_stats || {}, recent_stats: @recent_stats || {} } %>
         <tr class="bg-gray-50">
           <td class="px-2 py-1 font-bold text-sm">Average ELO</td>
           <td class="px-2 py-1"></td>
@@ -48,7 +48,7 @@
         <tr class="bg-gray-100">
           <td colspan="<%= col_count %>" class="px-2 py-1 text-left text-sm text-gray-500 font-medium">Forces of Sauron</td>
         </tr>
-        <%= render partial: "lobbies/lobby_player_row", collection: evil_players, as: :lp, locals: { lobby: lobby, editable: editable, team_number: 2, lobby_player_stats: @lobby_player_stats || {}, faction_specific_stats: @faction_specific_stats || {} } %>
+        <%= render partial: "lobbies/lobby_player_row", collection: evil_players, as: :lp, locals: { lobby: lobby, editable: editable, team_number: 2, lobby_player_stats: @lobby_player_stats || {}, faction_specific_stats: @faction_specific_stats || {}, recent_stats: @recent_stats || {} } %>
         <tr class="bg-gray-50">
           <td class="px-2 py-1 font-bold text-sm">Average ELO</td>
           <td class="px-2 py-1"></td>
@@ -72,13 +72,18 @@
           </tr>
           <% lobby.observers.each do |observer| %>
             <% obs_stats = @lobby_player_stats&.dig(observer.id) %>
+            <% obs_recent = @recent_stats&.dig(observer.id) %>
             <tr>
               <td class="px-2 py-1 whitespace-nowrap text-sm" colspan="2">
                 <%= link_to observer.nickname, player_path(observer), class: "text-blue-600 hover:underline" %>
               </td>
               <td class="px-2 py-1 whitespace-nowrap text-sm"><%= observer.elo_rating&.round || "-" %></td>
               <td class="px-2 py-1 whitespace-nowrap text-sm">
-                <span class="text-green-600"><%= observer.wins %>W</span>/<span class="text-red-600"><%= observer.losses %>L</span>
+                <% if obs_stats %>
+                  <span class="text-green-600"><%= obs_stats[:wins] %>W</span>/<span class="text-red-600"><%= obs_stats[:losses] %>L</span>
+                <% else %>
+                  -
+                <% end %>
               </td>
               <%# Win% %>
               <td class="px-2 py-1 whitespace-nowrap text-sm">
@@ -90,7 +95,11 @@
               </td>
               <%# 100d %>
               <td class="px-2 py-1 whitespace-nowrap text-sm">
-                <span class="text-green-600"><%= observer.recent_wins %></span>/<span class="text-red-600"><%= observer.recent_losses %></span>
+                <% if obs_recent %>
+                  <span class="text-green-600"><%= obs_recent[:recent_wins] %></span>/<span class="text-red-600"><%= obs_recent[:recent_losses] %></span>
+                <% else %>
+                  -
+                <% end %>
               </td>
               <%# 1y Fac - N/A for observers %>
               <td class="px-2 py-1 whitespace-nowrap text-sm">-</td>

@@ -119,7 +119,7 @@ class LobbiesController < ApplicationController
   private
     # Use callbacks to share common setup or constraints between actions.
     def set_lobby
-      @lobby = Lobby.find(params.expect(:id))
+      @lobby = Lobby.includes(lobby_players: [:faction, :player], observers: []).find(params.expect(:id))
     end
 
     # Only allow a list of trusted parameters through.
@@ -179,27 +179,66 @@ class LobbiesController < ApplicationController
       player_ids += @lobby.observer_ids
       player_ids.uniq!
 
+      @lobby_player_stats = {}
+      @faction_specific_stats = {}
+      @recent_stats = {}
       return if player_ids.empty?
 
-      # Preload all appearances for these players with necessary associations
-      appearances_by_player = Appearance.includes(:match, :faction, match: :appearances)
+      # Preload players in one query
+      players_by_id = Player.where(id: player_ids).index_by(&:id)
+
+      # Preload all appearances with necessary associations in optimized queries
+      appearances_by_player = Appearance
+        .includes(:faction, match: { appearances: :faction })
         .where(player_id: player_ids)
+        .order("matches.played_at DESC")
         .group_by(&:player_id)
 
-      # Calculate stats for each player using PlayerStatsCalculator
-      @lobby_player_stats = {}
+      # Calculate recent stats cutoffs
+      cutoff_100d = 100.days.ago
+      cutoff_1y = 365.days.ago
+
+      # Calculate stats for each player
       player_ids.each do |player_id|
-        player = Player.find(player_id)
+        player = players_by_id[player_id]
+        next unless player
         appearances = appearances_by_player[player_id] || []
+
+        # Use PlayerStatsCalculator for main stats
         @lobby_player_stats[player_id] = PlayerStatsCalculator.new(player, appearances).compute
+
+        # Calculate recent stats from preloaded appearances (avoid N+1)
+        recent_100d = appearances.select { |a| a.match.played_at && a.match.played_at >= cutoff_100d }
+        recent_100d_wins = recent_100d.count do |a|
+          (a.faction.good? && a.match.good_victory?) || (!a.faction.good? && !a.match.good_victory?)
+        end
+
+        @recent_stats[player_id] = {
+          recent_wins: recent_100d_wins,
+          recent_losses: recent_100d.size - recent_100d_wins,
+          faction_recent: {}
+        }
       end
 
-      # Also get faction-specific stats for each lobby_player
-      @faction_specific_stats = {}
+      # Calculate faction-specific recent stats for each lobby_player
       @lobby.lobby_players.each do |lp|
         next unless lp.player_id && lp.faction_id
         stats = @lobby_player_stats[lp.player_id]
         @faction_specific_stats[lp.id] = stats[:faction_stats][lp.faction_id] if stats
+
+        # Calculate 1-year faction-specific stats
+        appearances = appearances_by_player[lp.player_id] || []
+        faction_apps_1y = appearances.select do |a|
+          a.faction_id == lp.faction_id && a.match.played_at && a.match.played_at >= cutoff_1y
+        end
+        faction_wins_1y = faction_apps_1y.count do |a|
+          (a.faction.good? && a.match.good_victory?) || (!a.faction.good? && !a.match.good_victory?)
+        end
+
+        @recent_stats[lp.player_id][:faction_recent][lp.faction_id] = {
+          wins: faction_wins_1y,
+          losses: faction_apps_1y.size - faction_wins_1y
+        }
       end
     end
 end

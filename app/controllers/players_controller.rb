@@ -3,12 +3,21 @@ class PlayersController < ApplicationController
 
   # GET /players or /players.json
   def index
-    @sort_column = %w[elo_rating matches_played matches_observed].include?(params[:sort]) ? params[:sort] : "elo_rating"
+    @sort_column = %w[elo_rating glicko2_rating matches_played matches_observed].include?(params[:sort]) ? params[:sort] : "elo_rating"
     @sort_direction = %w[asc desc].include?(params[:direction]) ? params[:direction] : "desc"
 
     @players = Player.all
     if params[:search].present?
       @players = @players.where("nickname LIKE :search OR battletag LIKE :search", search: "%#{params[:search]}%")
+    end
+
+    # Filter by minimum games played
+    @min_games = params[:min_games].to_i
+    if @min_games > 0
+      player_ids_with_min_games = Appearance.group(:player_id)
+                                            .having("COUNT(DISTINCT match_id) >= ?", @min_games)
+                                            .pluck(:player_id)
+      @players = @players.where(id: player_ids_with_min_games)
     end
 
     @player_count = @players.joins(:matches).distinct.count

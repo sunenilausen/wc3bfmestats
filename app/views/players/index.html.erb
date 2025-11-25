@@ -14,10 +14,14 @@
   </div>
 
   <div class="mt-5">
-    <%= form_with url: players_path, method: :get, class: "flex gap-2" do |f| %>
+    <%= form_with url: players_path, method: :get, class: "flex gap-2 flex-wrap" do |f| %>
       <%= f.text_field :search, value: params[:search], placeholder: "Search by nickname or battletag...", class: "rounded-md border border-gray-300 px-3 py-2 flex-grow" %>
-      <%= f.submit "Search", class: "rounded-md px-3.5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-medium cursor-pointer" %>
-      <% if params[:search].present? %>
+      <div class="flex items-center gap-1">
+        <label for="min_games" class="text-sm text-gray-600">Min games:</label>
+        <%= f.number_field :min_games, value: params[:min_games], min: 0, class: "rounded-md border border-gray-300 px-3 py-2 w-20" %>
+      </div>
+      <%= f.submit "Filter", class: "rounded-md px-3.5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-medium cursor-pointer" %>
+      <% if params[:search].present? || params[:min_games].present? %>
         <%= link_to "Clear", players_path, class: "rounded-md px-3.5 py-2.5 bg-gray-100 hover:bg-gray-50 font-medium" %>
       <% end %>
     <% end %>
@@ -30,17 +34,22 @@
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nickname</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              <%= link_to players_path(sort: "elo_rating", direction: @sort_column == "elo_rating" && @sort_direction == "desc" ? "asc" : "desc", search: params[:search]), class: "hover:text-gray-700" do %>
+              <%= link_to players_path(sort: "elo_rating", direction: @sort_column == "elo_rating" && @sort_direction == "desc" ? "asc" : "desc", search: params[:search], min_games: params[:min_games]), class: "hover:text-gray-700" do %>
                 Elo Rating <%= @sort_column == "elo_rating" ? (@sort_direction == "desc" ? "▼" : "▲") : "" %>
               <% end %>
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              <%= link_to players_path(sort: "matches_played", direction: @sort_column == "matches_played" && @sort_direction == "desc" ? "asc" : "desc", search: params[:search]), class: "hover:text-gray-700" do %>
+              <%= link_to players_path(sort: "glicko2_rating", direction: @sort_column == "glicko2_rating" && @sort_direction == "desc" ? "asc" : "desc", search: params[:search], min_games: params[:min_games]), class: "hover:text-gray-700" do %>
+                Glicko-2 <%= @sort_column == "glicko2_rating" ? (@sort_direction == "desc" ? "▼" : "▲") : "" %>
+              <% end %>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <%= link_to players_path(sort: "matches_played", direction: @sort_column == "matches_played" && @sort_direction == "desc" ? "asc" : "desc", search: params[:search], min_games: params[:min_games]), class: "hover:text-gray-700" do %>
                 Matches Played <%= @sort_column == "matches_played" ? (@sort_direction == "desc" ? "▼" : "▲") : "" %>
               <% end %>
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              <%= link_to players_path(sort: "matches_observed", direction: @sort_column == "matches_observed" && @sort_direction == "desc" ? "asc" : "desc", search: params[:search]), class: "hover:text-gray-700" do %>
+              <%= link_to players_path(sort: "matches_observed", direction: @sort_column == "matches_observed" && @sort_direction == "desc" ? "asc" : "desc", search: params[:search], min_games: params[:min_games]), class: "hover:text-gray-700" do %>
                 Matches Observed <%= @sort_column == "matches_observed" ? (@sort_direction == "desc" ? "▼" : "▲") : "" %>
               <% end %>
             </th>
@@ -51,7 +60,14 @@
           <% @players.each do |player| %>
             <tr>
               <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900"><%= player.nickname %></td>
-              <td class="px-6 py-4 whitespace-nowrap text-gray-900"><%= player.elo_rating %></td>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-900"><%= player.elo_rating&.round %></td>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-900">
+                <% if player.glicko2_rating %>
+                  <%= player.glicko2_rating.round %><span class="text-gray-400 text-xs">&plusmn;<%= player.glicko2_rating_deviation&.round || 350 %></span>
+                <% else %>
+                  -
+                <% end %>
+              </td>
               <td class="px-6 py-4 whitespace-nowrap text-gray-900"><%= player.matches.size %></td>
               <td class="px-6 py-4 whitespace-nowrap text-gray-900"><%= @observation_counts[player.battletag] %></td>
               <td class="px-6 py-4 whitespace-nowrap flex space-x-2">

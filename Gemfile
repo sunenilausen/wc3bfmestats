@@ -74,7 +74,7 @@ end
 
 gem "tailwindcss-rails", "~> 4.4"
 
-gem "devise", "~> 4.9"
+gem "devise", github: "heartcombo/devise", branch: "main"
 gem "cancancan"
 gem "chronic_duration"
 gem "csv"

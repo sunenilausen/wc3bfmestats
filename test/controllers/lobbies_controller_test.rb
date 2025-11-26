@@ -39,12 +39,4 @@ class LobbiesControllerTest < ActionDispatch::IntegrationTest
     # Update now redirects back to edit for auto-save workflow
     assert_redirected_to edit_lobby_url(@lobby)
   end
-
-  test "should destroy lobby" do
-    assert_difference("Lobby.count", -1) do
-      delete lobby_url(@lobby)
-    end
-
-    assert_redirected_to lobbies_url
-  end
 end

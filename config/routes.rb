@@ -1,9 +1,9 @@
 Rails.application.routes.draw do
-  resources :lobbies
+  resources :lobbies, except: [ :destroy ]
   resources :wc3stats_replays
-  resources :appearances
+  resources :appearances, only: [ :index, :show ]
   resources :matches
-  resources :factions
+  resources :factions, except: [ :new, :create, :destroy ]
   resources :players
   devise_for :users
   get "home/index"

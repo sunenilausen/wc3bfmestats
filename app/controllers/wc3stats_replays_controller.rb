@@ -1,5 +1,5 @@
 class Wc3statsReplaysController < ApplicationController
-  before_action :set_wc3stats_replay, only: %i[ show edit update destroy ]
+  load_and_authorize_resource except: %i[index]
 
   # GET /wc3stats_replays or /wc3stats_replays.json
   def index
@@ -12,7 +12,6 @@ class Wc3statsReplaysController < ApplicationController
 
   # GET /wc3stats_replays/new
   def new
-    @wc3stats_replay = Wc3statsReplay.new
   end
 
   # GET /wc3stats_replays/1/edit
@@ -21,8 +20,6 @@ class Wc3statsReplaysController < ApplicationController
 
   # POST /wc3stats_replays or /wc3stats_replays.json
   def create
-    @wc3stats_replay = Wc3statsReplay.new(wc3stats_replay_params)
-
     respond_to do |format|
       if @wc3stats_replay.save
         format.html { redirect_to @wc3stats_replay, notice: "Wc3stats replay was successfully created." }
@@ -58,10 +55,6 @@ class Wc3statsReplaysController < ApplicationController
   end
 
   private
-    # Use callbacks to share common setup or constraints between actions.
-    def set_wc3stats_replay
-      @wc3stats_replay = Wc3statsReplay.find(params.expect(:id))
-    end
 
     # Only allow a list of trusted parameters through.
     def wc3stats_replay_params

@@ -7,7 +7,9 @@
 
   <div class="flex justify-between items-center mb-8">
     <h1 class="font-bold text-4xl">WC3Stats Replays</h1>
-    <%= link_to "New Replay", new_wc3stats_replay_path, class: "rounded-md px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium" %>
+    <% if can? :create, Wc3statsReplay %>
+      <%= link_to "New Replay", new_wc3stats_replay_path, class: "rounded-md px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium" %>
+    <% end %>
   </div>
 
   <div id="wc3stats_replays" class="space-y-4">
@@ -21,8 +23,12 @@
           </div>
           <div class="flex lg:flex-col gap-2 w-full lg:w-auto">
             <%= link_to "Show", wc3stats_replay, class: "text-center rounded-md px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium" %>
-            <%= link_to "Edit", edit_wc3stats_replay_path(wc3stats_replay), class: "text-center rounded-md px-4 py-2 bg-gray-100 hover:bg-gray-50 font-medium" %>
-            <%= button_to "Delete", wc3stats_replay, method: :delete, class: "text-center rounded-md px-4 py-2 text-white bg-red-600 hover:bg-red-500 font-medium cursor-pointer", data: { turbo_confirm: "Are you sure?" } %>
+            <% if can? :update, wc3stats_replay %>
+              <%= link_to "Edit", edit_wc3stats_replay_path(wc3stats_replay), class: "text-center rounded-md px-4 py-2 bg-gray-100 hover:bg-gray-50 font-medium" %>
+            <% end %>
+            <% if can? :destroy, wc3stats_replay %>
+              <%= button_to "Delete", wc3stats_replay, method: :delete, class: "text-center rounded-md px-4 py-2 text-white bg-red-600 hover:bg-red-500 font-medium cursor-pointer", data: { turbo_confirm: "Are you sure?" } %>
+            <% end %>
           </div>
         </div>
       <% end %>
@@ -33,9 +39,11 @@
         </svg>
         <h3 class="mt-2 text-sm font-medium text-gray-900">No replays</h3>
         <p class="mt-1 text-sm text-gray-500">Get started by creating a new replay.</p>
-        <div class="mt-6">
-          <%= link_to "New Replay", new_wc3stats_replay_path, class: "inline-flex items-center rounded-md px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium" %>
-        </div>
+        <% if can? :create, Wc3statsReplay %>
+          <div class="mt-6">
+            <%= link_to "New Replay", new_wc3stats_replay_path, class: "inline-flex items-center rounded-md px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium" %>
+          </div>
+        <% end %>
       </div>
     <% end %>
   </div>

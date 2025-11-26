@@ -1,5 +1,5 @@
 class LobbiesController < ApplicationController
-  before_action :set_lobby, only: %i[ show edit update destroy ]
+  before_action :set_lobby, only: %i[ show edit update ]
 
   # GET /lobbies or /lobbies.json
   def index
@@ -100,16 +100,6 @@ class LobbiesController < ApplicationController
       format.turbo_stream { head :ok }
       format.html { redirect_to edit_lobby_path(@lobby), status: :see_other }
       format.json { render :show, status: :ok, location: @lobby }
-    end
-  end
-
-  # DELETE /lobbies/1 or /lobbies/1.json
-  def destroy
-    @lobby.destroy!
-
-    respond_to do |format|
-      format.html { redirect_to lobbies_path, notice: "Lobby was successfully destroyed.", status: :see_other }
-      format.json { head :no_content }
     end
   end
 

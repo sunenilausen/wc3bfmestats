@@ -1,9 +1,10 @@
 class MatchesController < ApplicationController
-  before_action :set_match, only: %i[ show edit update destroy ]
+  load_and_authorize_resource except: %i[index new create]
+  authorize_resource only: %i[new create]
 
   # GET /matches or /matches.json
   def index
-    @matches = Match.includes(appearances: [:player, :faction]).all
+    @matches = Match.includes(appearances: [ :player, :faction ]).all
   end
 
   # GET /matches/1 or /matches/1.json
@@ -88,10 +89,6 @@ class MatchesController < ApplicationController
   end
 
   private
-    # Use callbacks to share common setup or constraints between actions.
-    def set_match
-      @match = Match.find(params.expect(:id))
-    end
 
     # Only allow a list of trusted parameters through.
     def match_params
@@ -125,7 +122,7 @@ class MatchesController < ApplicationController
               appearance.unit_kills = unit_kills
             end
           end
-        rescue JSON::ParserError => e
+        rescue JSON::ParserError
           # Handle JSON parsing error (e.g., log it, notify user) if needed
         end
       end

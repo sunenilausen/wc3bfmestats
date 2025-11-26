@@ -3,6 +3,7 @@ require "test_helper"
 class MatchesControllerTest < ActionDispatch::IntegrationTest
   setup do
     @match = matches(:one)
+    @admin = users(:admin)
   end
 
   test "should get index" do
@@ -10,12 +11,19 @@ class MatchesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
-  test "should get new" do
+  test "should get new as admin" do
+    sign_in @admin
     get new_match_url
     assert_response :success
   end
 
-  test "should create match" do
+  test "should redirect new when not admin" do
+    get new_match_url
+    assert_redirected_to root_path
+  end
+
+  test "should create match as admin" do
+    sign_in @admin
     player_one_initial_elo = players(:one).elo_rating
     player_six_initial_elo = players(:six).elo_rating
 
@@ -74,12 +82,19 @@ class MatchesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
-  test "should get edit" do
+  test "should get edit as admin" do
+    sign_in @admin
     get edit_match_url(@match)
     assert_response :success
   end
 
-  test "should update match" do
+  test "should redirect edit when not admin" do
+    get edit_match_url(@match)
+    assert_redirected_to root_path
+  end
+
+  test "should update match as admin" do
+    sign_in @admin
     # Store initial ELO values and old changes before update
     players(:one).reload
     players(:six).reload
@@ -141,11 +156,25 @@ class MatchesControllerTest < ActionDispatch::IntegrationTest
     assert_equal expected_player_six_elo, players(:six).elo_rating, "Player's elo_rating should reflect properly recalculated change (old change removed, new change applied)"
   end
 
-  test "should destroy match" do
+  test "should not update match when not admin" do
+    patch match_url(@match), params: { match: { good_victory: false } }
+    assert_redirected_to root_path
+  end
+
+  test "should destroy match as admin" do
+    sign_in @admin
     assert_difference("Match.count", -1) do
       delete match_url(@match)
     end
 
     assert_redirected_to matches_url
+  end
+
+  test "should not destroy match when not admin" do
+    assert_no_difference("Match.count") do
+      delete match_url(@match)
+    end
+
+    assert_redirected_to root_path
   end
 end

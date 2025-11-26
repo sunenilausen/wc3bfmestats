@@ -1,5 +1,5 @@
 class PlayersController < ApplicationController
-  before_action :set_player, only: %i[ show edit update destroy ]
+  load_and_authorize_resource except: %i[index]
 
   # GET /players or /players.json
   def index
@@ -56,7 +56,6 @@ class PlayersController < ApplicationController
 
   # GET /players/new
   def new
-    @player = Player.new
   end
 
   # GET /players/1/edit
@@ -65,8 +64,6 @@ class PlayersController < ApplicationController
 
   # POST /players or /players.json
   def create
-    @player = Player.new(player_params)
-
     respond_to do |format|
       if @player.save
         format.html { redirect_to @player, notice: "Player was successfully created." }
@@ -102,10 +99,6 @@ class PlayersController < ApplicationController
   end
 
   private
-    # Use callbacks to share common setup or constraints between actions.
-    def set_player
-      @player = Player.find(params.expect(:id))
-    end
 
     # Only allow a list of trusted parameters through.
     def player_params

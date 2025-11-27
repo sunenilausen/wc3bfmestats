@@ -45,11 +45,13 @@ class Glicko2Recalculator
   end
 
   def recalculate_all_matches
+    # Note: Cannot use find_each here because it ignores ORDER BY and processes by ID.
+    # We need matches in chronological order for correct Glicko-2 calculation.
     matches = Match.includes(appearances: [:player, :faction])
                    .where(ignored: false)
-                   .order(Arel.sql("COALESCE(played_at, created_at)"))
+                   .order(Arel.sql("COALESCE(played_at, created_at) ASC"))
 
-    matches.find_each do |match|
+    matches.each do |match|
       process_match(match)
       @matches_processed += 1
     rescue StandardError => e

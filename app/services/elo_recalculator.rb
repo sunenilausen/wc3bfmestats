@@ -28,10 +28,12 @@ class EloRecalculator
   end
 
   def recalculate_all_matches
+    # Note: Cannot use find_each here because it ignores ORDER BY and processes by ID.
+    # We need matches in chronological order for correct ELO calculation.
     matches = Match.includes(appearances: [:player, :faction])
-                   .order(Arel.sql("COALESCE(played_at, created_at)"))
+                   .order(Arel.sql("COALESCE(played_at, created_at) ASC"))
 
-    matches.find_each do |match|
+    matches.each do |match|
       calculate_and_update_elo_ratings(match)
       @matches_processed += 1
     rescue StandardError => e

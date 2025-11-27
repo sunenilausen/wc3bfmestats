@@ -18,15 +18,6 @@ namespace :elo do
       next
     end
 
-    print "This will reset all ELO ratings to seed values. Continue? (y/N): "
-    confirmation = $stdin.gets&.strip&.downcase
-
-    unless confirmation == "y"
-      puts "Aborted."
-      next
-    end
-
-    puts
     puts "Resetting ratings and recalculating..."
     puts
 

@@ -18,15 +18,6 @@ namespace :glicko2 do
       next
     end
 
-    print "This will reset all Glicko-2 ratings to seed values. Continue? (y/N): "
-    confirmation = $stdin.gets&.strip&.downcase
-
-    unless confirmation == "y"
-      puts "Aborted."
-      next
-    end
-
-    puts
     puts "Resetting ratings and recalculating..."
     puts
 

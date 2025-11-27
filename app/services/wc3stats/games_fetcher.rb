@@ -27,7 +27,15 @@ module Wc3stats
       options.add_argument("--no-sandbox")
       options.add_argument("--disable-dev-shm-usage")
 
-      driver = Selenium::WebDriver.for :chrome, options: options
+      # Use system-installed Chromium binary if available
+      options.binary = ENV["CHROME_BIN"] if ENV["CHROME_BIN"]
+
+      # Configure service to use system ChromeDriver
+      service_options = {}
+      service_options[:path] = ENV["SE_CHROMEDRIVER"] if ENV["SE_CHROMEDRIVER"]
+      service = Selenium::WebDriver::Chrome::Service.new(**service_options)
+
+      driver = Selenium::WebDriver.for :chrome, options: options, service: service
       all_replay_ids = []
       page_count = 0
 

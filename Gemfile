@@ -67,7 +67,6 @@ end
 group :test do
   # Use system testing [https://guides.rubyonrails.org/testing.html#system-testing]
   gem "capybara"
-  gem "selenium-webdriver"
   # Mock HTTP requests in tests
   gem "webmock"
 end
@@ -78,3 +77,6 @@ gem "devise", github: "heartcombo/devise", branch: "main"
 gem "cancancan"
 gem "chronic_duration"
 gem "csv"
+
+# Selenium for web scraping (wc3stats sync)
+gem "selenium-webdriver"

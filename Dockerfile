@@ -59,6 +59,16 @@ RUN SECRET_KEY_BASE_DUMMY=1 ./bin/rails assets:precompile
 # Final stage for app image
 FROM base
 
+# Install Chromium and ChromeDriver for scraping
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y chromium chromium-driver && \
+    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+
+# Configure Selenium to use system-installed Chrome and ChromeDriver
+ENV SE_CHROMEDRIVER=/usr/bin/chromedriver \
+    CHROME_BIN=/usr/bin/chromium \
+    CHROMIUM_FLAGS="--no-sandbox --disable-dev-shm-usage"
+
 # Run and own only the runtime files as a non-root user for security
 RUN groupadd --system --gid 1000 rails && \
     useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash

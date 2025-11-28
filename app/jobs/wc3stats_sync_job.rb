@@ -2,11 +2,12 @@ class Wc3statsSyncJob < ApplicationJob
   queue_as :default
 
   # Performs a sync of WC3Stats replays
-  # @param mode [String] "recent" for last 5 matches, "full" for all matches
-  def perform(mode = "recent")
+  # @param mode [String] "recent" for last N matches, "full" for all matches
+  # @param limit [Integer] number of replays to fetch (only used in "recent" mode)
+  def perform(mode = "recent", limit = 5)
     case mode
     when "recent"
-      sync_recent
+      sync_recent(limit)
     when "full"
       sync_full
     else
@@ -16,11 +17,11 @@ class Wc3statsSyncJob < ApplicationJob
 
   private
 
-  def sync_recent
-    Rails.logger.info "Wc3statsSyncJob: Starting recent sync (last 5 replays)"
+  def sync_recent(limit = 5)
+    Rails.logger.info "Wc3statsSyncJob: Starting recent sync (last #{limit} replays)"
 
     # Fetch recent replay IDs
-    fetcher = Wc3stats::GamesFetcher.new(search_term: "BFME", limit: 5)
+    fetcher = Wc3stats::GamesFetcher.new(search_term: "BFME", limit: limit)
     replay_ids = fetcher.call
 
     if fetcher.errors.any?

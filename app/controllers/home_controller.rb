@@ -1,4 +1,6 @@
 class HomeController < ApplicationController
+  before_action :authorize_admin!, only: [:sync]
+
   def index
     @underdog_stats = calculate_underdog_stats
     @good_vs_evil_stats = calculate_good_vs_evil_stats
@@ -10,7 +12,21 @@ class HomeController < ApplicationController
     @observers_count = Player.where.not(id: players_with_valid_matches).count
   end
 
+  def sync
+    limit = params[:limit].to_i
+    limit = 5 if limit < 1
+    limit = 100 if limit > 100
+    Wc3statsSyncJob.perform_later("recent", limit)
+    redirect_to root_path, notice: "Sync job started for #{limit} replays. New matches will appear shortly."
+  end
+
   private
+
+  def authorize_admin!
+    unless current_user&.admin?
+      redirect_to root_path, alert: "You are not authorized to perform this action."
+    end
+  end
 
   def calculate_underdog_stats
     matches_with_data = Match.includes(appearances: :faction).where(ignored: false).where.not(good_victory: nil)

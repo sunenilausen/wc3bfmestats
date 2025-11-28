@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title><%= content_for(:title) || "Wc3bfmestats" %></title>
+    <title><%= content_for(:title) || "WC3BFMEStats" %><%= " (dev)" if Rails.env.development? %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="application-name" content="Wc3bfmestats">
+    <meta name="application-name" content="WC3BFMEStats">
     <meta name="mobile-web-app-capable" content="yes">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
@@ -28,7 +28,7 @@
     <p class="alert"><%= alert %></p>
     <nav class="bg-white border-b border-gray-200 fixed w-full z-10 top-0 left-0 shadow">
       <div class="container mx-auto flex flex-wrap items-center justify-between px-4 py-3">
-      <a href="/" class="text-2xl font-bold text-blue-700">Wc3bfmestats</a>
+      <a href="/" class="text-2xl font-bold text-blue-700">WC3BFMEStats<%= " (dev)" if Rails.env.development? %></a>
       <ul class="flex space-x-8">
         <li>
           <%= link_to players_path, class: "text-gray-700 hover:text-blue-600 font-semibold px-4 py-2 rounded transition-colors duration-200" do %>

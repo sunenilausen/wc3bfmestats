@@ -6,10 +6,18 @@
   <% end %>
 
   <div class="flex justify-between items-center">
-    <h1 class="font-bold text-4xl">matches</h1>
-    <% if can? :create, Match %>
-      <%= link_to "New match", new_match_path, class: "rounded-md px-3.5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white block font-medium" %>
-    <% end %>
+    <h1 class="font-bold text-4xl">Matches</h1>
+    <div class="flex items-center gap-2">
+      <% if current_user&.admin? %>
+        <%= form_with url: sync_matches_path, method: :post, class: "flex items-center gap-2" do |f| %>
+          <%= f.number_field :limit, value: 1, min: 1, max: 100, class: "w-20 rounded-md border border-gray-300 px-2 py-2 text-sm" %>
+          <%= f.submit "Sync", class: "rounded-md px-3.5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-medium cursor-pointer" %>
+        <% end %>
+      <% end %>
+      <% if can? :create, Match %>
+        <%= link_to "New match", new_match_path, class: "rounded-md px-3.5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white block font-medium" %>
+      <% end %>
+    </div>
   </div>
 
   <div class="mt-4 mb-2 flex items-center gap-4">

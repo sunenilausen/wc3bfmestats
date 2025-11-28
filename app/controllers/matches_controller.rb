@@ -1,6 +1,7 @@
 class MatchesController < ApplicationController
-  load_and_authorize_resource except: %i[index new create]
+  load_and_authorize_resource except: %i[index new create sync]
   authorize_resource only: %i[new create]
+  before_action :authorize_admin!, only: [ :sync ]
 
   # GET /matches or /matches.json
   def index
@@ -11,10 +12,10 @@ class MatchesController < ApplicationController
       direction = params[:direction] == "asc" ? "ASC" : "DESC"
       @matches = @matches.order(Arel.sql("COALESCE(seconds, 0) #{direction}"))
     when "date"
-      direction = params[:direction] == "asc" ? "ASC" : "DESC"
-      @matches = @matches.order(Arel.sql("COALESCE(played_at, created_at) #{direction}"))
+      @matches = params[:direction] == "desc" ? @matches.reverse_chronological : @matches.chronological
     else
-      @matches = @matches.order(played_at: :desc)
+      # Default to reverse chronological order (newest first)
+      @matches = @matches.reverse_chronological
     end
   end
 
@@ -98,7 +99,22 @@ class MatchesController < ApplicationController
     end
   end
 
+  # POST /matches/sync
+  def sync
+    limit = params[:limit].to_i
+    limit = 1 if limit < 1
+    limit = 100 if limit > 100
+    Wc3statsSyncJob.perform_later("recent", limit)
+    redirect_to matches_path, notice: "Sync job started for #{limit} replays. New matches will appear shortly."
+  end
+
   private
+
+  def authorize_admin!
+    unless current_user&.admin?
+      redirect_to matches_path, alert: "You are not authorized to perform this action."
+    end
+  end
 
     # Only allow a list of trusted parameters through.
     def match_params

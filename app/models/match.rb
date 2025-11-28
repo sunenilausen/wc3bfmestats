@@ -29,6 +29,19 @@ class Match < ApplicationRecord
     )
   }
 
+  scope :reverse_chronological, -> {
+    order(
+      Arel.sql(<<~SQL.squish)
+        COALESCE(matches.major_version, 0) DESC,
+        COALESCE(matches.build_version, 0) DESC,
+        COALESCE(matches.row_order, 999999) DESC,
+        matches.map_version DESC NULLS LAST,
+        matches.played_at DESC NULLS FIRST,
+        COALESCE(matches.wc3stats_replay_id, matches.id) DESC
+      SQL
+    )
+  }
+
   # Parse map version string for comparison
   # Examples:
   #   "4.5" -> [4, 5, "", ""]

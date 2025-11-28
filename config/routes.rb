@@ -2,12 +2,15 @@ Rails.application.routes.draw do
   resources :lobbies, except: [ :destroy ]
   resources :wc3stats_replays
   resources :appearances, only: [ :index, :show ]
-  resources :matches
+  resources :matches do
+    collection do
+      post :sync
+    end
+  end
   resources :factions, except: [ :new, :create, :destroy ]
   resources :players
   devise_for :users
   get "home/index"
-  post "home/sync", to: "home#sync", as: :sync
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

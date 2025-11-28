@@ -75,6 +75,12 @@ class Wc3statsReplay < ApplicationRecord
     players.select { |p| p["isWinner"] == false }
   end
 
+  # Determine if "good" team won based on replay data
+  # Team 0 = Good (Forces of Middle Earth), Team 1 = Evil (Forces of Sauron)
+  def good_victory?
+    winners.any? { |p| p["team"] == 0 }
+  end
+
   def player_by_name(name)
     players.find { |p| p["name"] == name }
   end

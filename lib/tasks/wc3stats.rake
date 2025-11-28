@@ -240,8 +240,32 @@ namespace :wc3stats do
     puts "  Failed: #{failed_count}"
     puts
 
-    # Step 3: Fix Korean/Unicode name encoding issues
-    puts "Step 3: Fixing Korean/Unicode name encoding..."
+    # Step 3: Build matches from replays
+    puts "Step 3: Building matches from replays..."
+    replays_without_matches = Wc3statsReplay.left_joins(:match).where(matches: { id: nil })
+    replays_count = replays_without_matches.count
+    matches_created = 0
+    matches_failed = 0
+
+    if replays_count > 0
+      puts "  Found #{replays_count} replays without matches"
+      replays_without_matches.find_each do |replay|
+        builder = Wc3stats::MatchBuilder.new(replay)
+        if builder.call
+          matches_created += 1
+        else
+          matches_failed += 1
+        end
+      end
+      puts "  Created: #{matches_created} matches"
+      puts "  Failed: #{matches_failed}" if matches_failed > 0
+    else
+      puts "  All replays already have matches"
+    end
+    puts
+
+    # Step 4: Fix Korean/Unicode name encoding issues
+    puts "Step 4: Fixing Korean/Unicode name encoding..."
     unicode_fixer = UnicodeNameFixer.new
     unicode_fixer.call
     if unicode_fixer.fixed_count > 0
@@ -258,8 +282,8 @@ namespace :wc3stats do
     end
     puts
 
-    # Step 4: Set ignore flags on kill stats
-    puts "Step 4: Updating ignore flags on kill stats..."
+    # Step 5: Set ignore flags on kill stats
+    puts "Step 5: Updating ignore flags on kill stats..."
     updated_unit = 0
     updated_hero = 0
 
@@ -292,8 +316,8 @@ namespace :wc3stats do
     end
     puts
 
-    # Step 5: Cleanup invalid matches
-    puts "Step 5: Cleaning up invalid matches..."
+    # Step 6: Cleanup invalid matches
+    puts "Step 6: Cleaning up invalid matches..."
     invalid_matches = Match.left_joins(:appearances)
                            .group(:id)
                            .having("COUNT(appearances.id) != 10")
@@ -307,8 +331,8 @@ namespace :wc3stats do
     end
     puts
 
-    # Step 6: Backfill ordering fields and played_at for matches
-    puts "Step 6: Backfilling ordering fields..."
+    # Step 7: Backfill ordering fields and played_at for matches
+    puts "Step 7: Backfilling ordering fields..."
     matches_needing_backfill = Match.joins(:wc3stats_replay)
                                     .where("major_version IS NULL OR played_at IS NULL")
                                     .includes(:wc3stats_replay)
@@ -335,8 +359,8 @@ namespace :wc3stats do
     puts "  Backfilled #{backfill_count} matches"
     puts
 
-    # Step 7: Recalculate ELO
-    puts "Step 7: Recalculating ELO ratings..."
+    # Step 8: Recalculate ELO
+    puts "Step 8: Recalculating ELO ratings..."
     elo_recalculator = EloRecalculator.new
     elo_recalculator.call
 
@@ -347,8 +371,8 @@ namespace :wc3stats do
     end
     puts
 
-    # Step 8: Recalculate Glicko-2
-    puts "Step 8: Recalculating Glicko-2 ratings..."
+    # Step 9: Recalculate Glicko-2
+    puts "Step 9: Recalculating Glicko-2 ratings..."
     glicko_recalculator = Glicko2Recalculator.new
     glicko_recalculator.call
 

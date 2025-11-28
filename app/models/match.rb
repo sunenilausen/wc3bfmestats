@@ -56,4 +56,10 @@ class Match < ApplicationRecord
     return played_at.strftime("%Y-%m-%d %H:%M:%S") if played_at.present?
     "Unknown"
   end
+
+  # Check if victory was manually overridden from replay data
+  def victory_overridden?
+    return false unless wc3stats_replay.present?
+    good_victory != wc3stats_replay.good_victory?
+  end
 end

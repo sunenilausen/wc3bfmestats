@@ -34,6 +34,9 @@
               <% if match.ignored? %>
                 <span class="ml-2 px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded">Ignored</span>
               <% end %>
+              <% if match.victory_overridden? %>
+                <span class="ml-2 px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded">Victory Overridden</span>
+              <% end %>
             </div>
             <% good_players = match.appearances.select { |a| a.faction&.good? }.map { |a| a.player&.nickname }.compact %>
             <% evil_players = match.appearances.select { |a| a.faction && !a.faction.good? }.map { |a| a.player&.nickname }.compact %>

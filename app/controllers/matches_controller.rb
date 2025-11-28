@@ -4,7 +4,7 @@ class MatchesController < ApplicationController
 
   # GET /matches or /matches.json
   def index
-    @matches = Match.includes(appearances: [ :player, :faction ])
+    @matches = Match.includes(appearances: [ :player, :faction ]).includes(:wc3stats_replay)
 
     case params[:sort]
     when "duration"

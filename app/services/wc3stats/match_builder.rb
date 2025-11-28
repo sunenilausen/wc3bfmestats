@@ -109,16 +109,45 @@ module Wc3stats
       battletag = player_data["name"]
       return nil if battletag.blank?
 
-      player = Player.find_by(battletag: battletag)
+      # Fix unicode encoding issues (e.g., Korean names)
+      fixed_battletag = fix_encoding(battletag)
+
+      # Try to find by both original and fixed battletag
+      player = Player.find_by(battletag: fixed_battletag) || Player.find_by(battletag: battletag)
       return player if player
 
-      nickname = battletag.split("#").first
+      nickname = fixed_battletag.split("#").first
       Player.create!(
-        battletag: battletag,
+        battletag: fixed_battletag,
         nickname: nickname,
         elo_rating: 1500,
         elo_rating_seed: 1500
       )
+    end
+
+    def fix_encoding(str)
+      return str if str.nil? || str.empty?
+
+      begin
+        # Reverse double-encoded UTF-8: decode UTF-8 to bytes via Latin-1, then interpret as UTF-8
+        bytes = str.encode("ISO-8859-1", "UTF-8").bytes
+        fixed = bytes.pack("C*").force_encoding("UTF-8")
+
+        # Only use fixed version if valid and different
+        if fixed.valid_encoding? && fixed != str && printable?(fixed)
+          fixed
+        else
+          str
+        end
+      rescue Encoding::UndefinedConversionError, Encoding::InvalidByteSequenceError
+        str
+      end
+    end
+
+    def printable?(str)
+      return false unless str.valid_encoding?
+      printable_count = str.chars.count { |c| c.match?(/[[:print:]]/) }
+      printable_count > str.length / 2
     end
 
     def set_ignore_flags(match)

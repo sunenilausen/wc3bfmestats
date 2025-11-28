@@ -199,6 +199,24 @@
               </td>
             </tr>
           <% end %>
+          <% if @base_loss_stats.present? %>
+            <tr class="border-t-2 border-gray-200 font-medium">
+              <td class="py-2">All bases lost</td>
+              <td class="text-right py-2">
+                <span class="<%= @base_loss_stats[:all_bases_lost_rate] <= 50 ? 'text-green-600' : 'text-red-600' %> font-medium">
+                  <%= @base_loss_stats[:all_bases_lost_rate] %>%
+                </span>
+                <span class="text-gray-400 text-xs">(<%= @base_loss_stats[:all_bases_lost] %>)</span>
+              </td>
+              <td class="text-right py-2 text-gray-600">
+                <% if @base_loss_stats[:avg_time_to_lose_all] %>
+                  <%= ChronicDuration.output(@base_loss_stats[:avg_time_to_lose_all], format: :short) %>
+                <% else %>
+                  -
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
         </tbody>
       </table>
     </div>
@@ -206,6 +224,7 @@
 
   <%# Hero Statistics %>
   <% if @hero_stats.any? %>
+    <% has_second_death = @hero_stats.any? { |h| h[:second_death_rate].present? } %>
     <h2 class="text-xl font-bold mb-3">Hero Statistics</h2>
     <div class="bg-gray-50 rounded-md p-3 mb-6">
       <table class="w-full text-sm">
@@ -214,17 +233,26 @@
             <th class="text-left py-2 font-semibold text-gray-700">Hero</th>
             <th class="text-right py-2 font-semibold text-gray-700">Death Rate</th>
             <th class="text-right py-2 font-semibold text-gray-700">Avg Time to Death</th>
+            <% if has_second_death %>
+              <th class="text-right py-2 font-semibold text-gray-700">2nd Death Rate</th>
+              <th class="text-right py-2 font-semibold text-gray-700">Avg Time to 2nd Death</th>
+            <% end %>
           </tr>
         </thead>
         <tbody>
           <% @hero_stats.each do |hero| %>
             <tr class="border-b border-gray-100 last:border-b-0">
-              <td class="py-2"><%= hero[:name] %></td>
+              <td class="py-2">
+                <%= hero[:name] %>
+                <% if hero[:bonus] %>
+                  <span class="text-gray-400 text-xs">(bonus)</span>
+                <% end %>
+              </td>
               <td class="text-right py-2">
                 <span class="<%= hero[:death_rate] <= 50 ? 'text-green-600' : 'text-red-600' %> font-medium">
                   <%= hero[:death_rate] %>%
                 </span>
-                <span class="text-gray-400 text-xs">(<%= hero[:deaths] %>)</span>
+                <span class="text-gray-400 text-xs">(<%= hero[:deaths] %><% if hero[:extra_deaths] > 0 %>+<%= hero[:extra_deaths] %><% end %>)</span>
               </td>
               <td class="text-right py-2 text-gray-600">
                 <% if hero[:avg_time_to_death] %>
@@ -233,6 +261,63 @@
                   -
                 <% end %>
               </td>
+              <% if has_second_death %>
+                <td class="text-right py-2">
+                  <% if hero[:second_death_rate].present? %>
+                    <span class="<%= hero[:second_death_rate] <= 50 ? 'text-green-600' : 'text-red-600' %> font-medium">
+                      <%= hero[:second_death_rate] %>%
+                    </span>
+                    <span class="text-gray-400 text-xs">(<%= hero[:second_deaths] %>)</span>
+                  <% else %>
+                    -
+                  <% end %>
+                </td>
+                <td class="text-right py-2 text-gray-600">
+                  <% if hero[:avg_time_to_second_death] %>
+                    <%= ChronicDuration.output(hero[:avg_time_to_second_death], format: :short) %>
+                  <% else %>
+                    -
+                  <% end %>
+                </td>
+              <% end %>
+            </tr>
+          <% end %>
+          <% if @hero_loss_stats.present? %>
+            <tr class="border-t-2 border-gray-200 font-medium">
+              <td class="py-2">All starting heroes lost</td>
+              <td class="text-right py-2">
+                <span class="<%= @hero_loss_stats[:all_heroes_lost_rate] <= 50 ? 'text-green-600' : 'text-red-600' %> font-medium">
+                  <%= @hero_loss_stats[:all_heroes_lost_rate] %>%
+                </span>
+                <span class="text-gray-400 text-xs">(<%= @hero_loss_stats[:all_heroes_lost] %>)</span>
+              </td>
+              <td class="text-right py-2 text-gray-600">
+                <% if @hero_loss_stats[:avg_time_to_lose_all] %>
+                  <%= ChronicDuration.output(@hero_loss_stats[:avg_time_to_lose_all], format: :short) %>
+                <% else %>
+                  -
+                <% end %>
+              </td>
+              <% if has_second_death %>
+                <% if @hero_loss_stats[:all_heroes_lost_twice_rate].present? %>
+                  <td class="text-right py-2">
+                    <span class="<%= @hero_loss_stats[:all_heroes_lost_twice_rate] <= 50 ? 'text-green-600' : 'text-red-600' %> font-medium">
+                      <%= @hero_loss_stats[:all_heroes_lost_twice_rate] %>%
+                    </span>
+                    <span class="text-gray-400 text-xs">(<%= @hero_loss_stats[:all_heroes_lost_twice] %>)</span>
+                  </td>
+                  <td class="text-right py-2 text-gray-600">
+                    <% if @hero_loss_stats[:avg_time_to_lose_all_twice] %>
+                      <%= ChronicDuration.output(@hero_loss_stats[:avg_time_to_lose_all_twice], format: :short) %>
+                    <% else %>
+                      -
+                    <% end %>
+                  </td>
+                <% else %>
+                  <td></td>
+                  <td></td>
+                <% end %>
+              <% end %>
             </tr>
           <% end %>
         </tbody>

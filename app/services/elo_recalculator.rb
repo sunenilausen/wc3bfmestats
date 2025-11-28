@@ -30,8 +30,13 @@ class EloRecalculator
   def recalculate_all_matches
     # Note: Cannot use find_each here because it ignores ORDER BY and processes by ID.
     # We need matches in chronological order for correct ELO calculation.
-    matches = Match.includes(appearances: [:player, :faction])
-                   .order(Arel.sql("COALESCE(played_at, created_at) ASC"))
+    # Uses Match.chronological scope which orders by:
+    # 1. WC3 game version (major_version, build_version)
+    # 2. Manual row_order
+    # 3. Map version
+    # 4. Played_at / created_at date
+    # 5. Replay ID (upload order)
+    matches = Match.includes(appearances: [ :player, :faction ]).chronological
 
     matches.each do |match|
       calculate_and_update_elo_ratings(match)

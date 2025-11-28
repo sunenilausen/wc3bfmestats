@@ -16,6 +16,32 @@ class Wc3statsReplay < ApplicationRecord
     body&.dig("map")
   end
 
+  # Game version from replay header (e.g., 10100)
+  def major_version
+    body&.dig("data", "header", "majorVersion")
+  end
+
+  # Build version from replay header (e.g., 6116)
+  def build_version
+    body&.dig("data", "header", "buildVersion")
+  end
+
+  # Map file name with version (e.g., "BFME4.5e.w3x")
+  def map_file_name
+    body&.dig("data", "game", "map")
+  end
+
+  # Parse map version from filename (e.g., "BFME4.5e.w3x" -> "4.5e")
+  # Returns nil if not parseable
+  def map_version
+    return nil unless map_file_name
+
+    # Match pattern like "BFME4.5e.w3x" or "BFME4.5.w3x"
+    if map_file_name =~ /BFME(\d+\.\d+[a-z]?)\.w3x/i
+      $1
+    end
+  end
+
   def game_length
     body&.dig("length")
   end

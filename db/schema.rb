@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_25_211324) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_28_111814) do
   create_table "appearances", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.integer "elo_rating"
@@ -65,13 +65,18 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_25_211324) do
   end
 
   create_table "matches", force: :cascade do |t|
+    t.integer "build_version"
     t.datetime "created_at", null: false
     t.boolean "good_victory"
     t.boolean "ignored", default: false, null: false
+    t.integer "major_version"
+    t.string "map_version"
     t.datetime "played_at"
+    t.integer "row_order"
     t.integer "seconds"
     t.datetime "updated_at", null: false
     t.integer "wc3stats_replay_id"
+    t.index ["major_version", "build_version", "row_order", "map_version", "played_at", "wc3stats_replay_id"], name: "index_matches_on_ordering"
     t.index ["wc3stats_replay_id"], name: "index_matches_on_wc3stats_replay_id"
   end
 

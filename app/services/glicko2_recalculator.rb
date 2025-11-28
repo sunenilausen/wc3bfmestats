@@ -47,9 +47,15 @@ class Glicko2Recalculator
   def recalculate_all_matches
     # Note: Cannot use find_each here because it ignores ORDER BY and processes by ID.
     # We need matches in chronological order for correct Glicko-2 calculation.
-    matches = Match.includes(appearances: [:player, :faction])
+    # Uses Match.chronological scope which orders by:
+    # 1. WC3 game version (major_version, build_version)
+    # 2. Manual row_order
+    # 3. Map version
+    # 4. Played_at / created_at date
+    # 5. Replay ID (upload order)
+    matches = Match.includes(appearances: [ :player, :faction ])
                    .where(ignored: false)
-                   .order(Arel.sql("COALESCE(played_at, created_at) ASC"))
+                   .chronological
 
     matches.each do |match|
       process_match(match)

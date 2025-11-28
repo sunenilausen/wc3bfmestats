@@ -61,7 +61,10 @@ module Wc3stats
         wc3stats_replay: wc3stats_replay,
         played_at: wc3stats_replay.played_at,
         seconds: wc3stats_replay.game_length,
-        good_victory: determine_good_victory
+        good_victory: determine_good_victory,
+        major_version: wc3stats_replay.major_version,
+        build_version: wc3stats_replay.build_version,
+        map_version: wc3stats_replay.map_version
       )
     end
 

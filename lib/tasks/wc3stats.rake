@@ -307,8 +307,32 @@ namespace :wc3stats do
     end
     puts
 
-    # Step 6: Recalculate ELO
-    puts "Step 6: Recalculating ELO ratings..."
+    # Step 6: Backfill ordering fields for new matches
+    puts "Step 6: Backfilling ordering fields..."
+    matches_needing_backfill = Match.joins(:wc3stats_replay)
+                                    .where(major_version: nil)
+                                    .includes(:wc3stats_replay)
+    backfill_count = 0
+
+    matches_needing_backfill.find_each do |match|
+      replay = match.wc3stats_replay
+      changes = {
+        major_version: replay.major_version,
+        build_version: replay.build_version,
+        map_version: replay.map_version
+      }.compact
+
+      if changes.any?
+        match.update_columns(changes)
+        backfill_count += 1
+      end
+    end
+
+    puts "  Backfilled #{backfill_count} matches"
+    puts
+
+    # Step 7: Recalculate ELO
+    puts "Step 7: Recalculating ELO ratings..."
     elo_recalculator = EloRecalculator.new
     elo_recalculator.call
 
@@ -319,8 +343,8 @@ namespace :wc3stats do
     end
     puts
 
-    # Step 7: Recalculate Glicko-2
-    puts "Step 7: Recalculating Glicko-2 ratings..."
+    # Step 8: Recalculate Glicko-2
+    puts "Step 8: Recalculating Glicko-2 ratings..."
     glicko_recalculator = Glicko2Recalculator.new
     glicko_recalculator.call
 
@@ -377,6 +401,58 @@ namespace :wc3stats do
 
     puts "Updated #{updated_unit_kills} appearances with ignore_unit_kills = true"
     puts "Updated #{updated_hero_kills} appearances with ignore_hero_kills = true"
+    puts "=" * 60
+  end
+
+  desc "Backfill ordering fields (major_version, build_version, map_version) on existing matches"
+  task backfill_ordering: :environment do
+    puts "=" * 60
+    puts "Backfilling Match Ordering Fields"
+    puts "=" * 60
+    puts
+
+    matches_with_replay = Match.joins(:wc3stats_replay).includes(:wc3stats_replay)
+    total = matches_with_replay.count
+    updated = 0
+    skipped = 0
+
+    puts "Matches with replays: #{total}"
+    puts
+
+    matches_with_replay.find_each.with_index do |match, index|
+      replay = match.wc3stats_replay
+
+      major = replay.major_version
+      build = replay.build_version
+      map_ver = replay.map_version
+
+      # Only update if we have data and it differs
+      if major || build || map_ver
+        changes = {}
+        changes[:major_version] = major if major && match.major_version != major
+        changes[:build_version] = build if build && match.build_version != build
+        changes[:map_version] = map_ver if map_ver && match.map_version != map_ver
+
+        if changes.any?
+          match.update_columns(changes)
+          updated += 1
+        else
+          skipped += 1
+        end
+      else
+        skipped += 1
+      end
+
+      print "\r  Progress: #{index + 1}/#{total} (updated: #{updated}, skipped: #{skipped})"
+    end
+
+    puts
+    puts
+    puts "=" * 60
+    puts "Summary"
+    puts "=" * 60
+    puts "  Updated: #{updated}"
+    puts "  Skipped: #{skipped}"
     puts "=" * 60
   end
 end

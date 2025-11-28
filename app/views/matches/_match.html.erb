@@ -57,4 +57,27 @@
       </div>
     <% end %>
   </div>
+
+  <div class="mt-6 pt-4 border-t border-gray-200">
+    <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-500">
+      <% if match.major_version.present? || match.build_version.present? %>
+        <span>
+          <strong>WC3:</strong>
+          <%= match.major_version %><% if match.build_version.present? %> (build <%= match.build_version %>)<% end %>
+        </span>
+      <% end %>
+      <% if match.map_version.present? %>
+        <span><strong>Map:</strong> BFME <%= match.map_version %></span>
+      <% end %>
+      <% if match.wc3stats_replay&.wc3stats_replay_id.present? %>
+        <span>
+          <strong>Replay:</strong>
+          <%= link_to "##{match.wc3stats_replay.wc3stats_replay_id}", "https://wc3stats.com/games/#{match.wc3stats_replay.wc3stats_replay_id}", target: "_blank", class: "text-blue-600 hover:underline" %>
+        </span>
+      <% end %>
+      <% if match.row_order.present? %>
+        <span><strong>Order:</strong> <%= match.row_order %></span>
+      <% end %>
+    </div>
+  </div>
 </div>

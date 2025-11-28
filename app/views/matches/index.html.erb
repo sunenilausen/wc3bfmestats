@@ -12,6 +12,12 @@
     <% end %>
   </div>
 
+  <div class="mt-4 mb-2 flex items-center gap-4">
+    <span class="text-sm text-gray-500">Sort by:</span>
+    <%= sort_link_for("date", "Date") %>
+    <%= sort_link_for("duration", "Duration") %>
+  </div>
+
   <div id="matches" class="min-w-full divide-y divide-gray-200 space-y-5">
     <% if @matches.any? %>
       <% @matches.each do |match| %>

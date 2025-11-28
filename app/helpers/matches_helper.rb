@@ -1,4 +1,19 @@
 module MatchesHelper
+  def sort_link_for(column, label)
+    current_sort = params[:sort] == column
+    current_direction = params[:direction] || "desc"
+    new_direction = current_sort && current_direction == "desc" ? "asc" : "desc"
+
+    arrow = if current_sort
+      current_direction == "asc" ? "▲" : "▼"
+    else
+      ""
+    end
+
+    link_to "#{label} #{arrow}".strip, matches_path(sort: column, direction: new_direction),
+            class: "text-sm font-medium #{current_sort ? 'text-blue-600' : 'text-gray-600'} hover:text-blue-600"
+  end
+
   def sum_unit_kills(appearances)
     appearances.to_a.sum { |appearance| appearance[:unit_kills].to_i }
   end

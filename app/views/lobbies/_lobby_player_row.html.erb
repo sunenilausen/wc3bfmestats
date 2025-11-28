@@ -87,6 +87,14 @@
         -
       <% end %>
     </td>
+    <%# Last Seen %>
+    <td class="px-4 py-2 whitespace-nowrap text-sm" title="<%= lp.player&.last_seen&.strftime('%Y-%m-%d') %>">
+      <% if lp.player&.last_seen %>
+        <%= time_ago_in_words(lp.player.last_seen) %> ago
+      <% else %>
+        -
+      <% end %>
+    </td>
     <%# 100d form %>
     <td class="px-4 py-2 whitespace-nowrap text-sm">
       <% if player_recent %>

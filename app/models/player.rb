@@ -4,6 +4,10 @@ class Player < ApplicationRecord
   has_many :lobby_players
   has_many :lobbies, through: :lobby_players
 
+  def last_seen
+    matches.maximum(:played_at)
+  end
+
   def wins
     appearances.joins(:match, :faction)
       .where(factions: { good: true }, matches: { good_victory: true })

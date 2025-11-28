@@ -309,16 +309,17 @@ namespace :wc3stats do
     end
     puts
 
-    # Step 6: Cleanup invalid matches
-    puts "Step 6: Cleaning up invalid matches..."
+    # Step 6: Mark invalid matches as ignored
+    puts "Step 6: Marking invalid matches as ignored..."
     invalid_matches = Match.left_joins(:appearances)
+                           .where(ignored: false)
                            .group(:id)
                            .having("COUNT(appearances.id) != 10")
 
     invalid_count = invalid_matches.count.size
     if invalid_count > 0
-      invalid_matches.find_each(&:destroy)
-      puts "  Deleted #{invalid_count} invalid matches"
+      invalid_matches.find_each { |m| m.update_column(:ignored, true) }
+      puts "  Marked #{invalid_count} invalid matches as ignored"
     else
       puts "  No invalid matches found"
     end
@@ -352,8 +353,48 @@ namespace :wc3stats do
     puts "  Backfilled #{backfill_count} matches"
     puts
 
-    # Step 8: Recalculate ELO
-    puts "Step 8: Recalculating ELO ratings..."
+    # Step 8: Create observer players
+    puts "Step 8: Creating observer players..."
+    observers_created = 0
+    Wc3statsReplay.find_each do |replay|
+      replay.players.each do |player_data|
+        slot = player_data["slot"]
+        next unless slot.nil? || slot > 9 || player_data["isWinner"].nil?
+
+        battletag = player_data["name"]
+        next if battletag.blank?
+
+        # Fix encoding
+        fixed_battletag = begin
+          bytes = battletag.encode("ISO-8859-1", "UTF-8").bytes
+          fixed = bytes.pack("C*").force_encoding("UTF-8")
+          if fixed.valid_encoding? && fixed != battletag
+            fixed
+          else
+            battletag
+          end
+        rescue Encoding::UndefinedConversionError, Encoding::InvalidByteSequenceError
+          battletag
+        end
+
+        # Create player if not exists
+        unless Player.exists?(battletag: fixed_battletag) || Player.exists?(battletag: battletag)
+          nickname = fixed_battletag.split("#").first
+          Player.create!(
+            battletag: fixed_battletag,
+            nickname: nickname,
+            elo_rating: 1500,
+            elo_rating_seed: 1500
+          )
+          observers_created += 1
+        end
+      end
+    end
+    puts "  Created #{observers_created} new observer players"
+    puts
+
+    # Step 9: Recalculate ELO
+    puts "Step 9: Recalculating ELO ratings..."
     elo_recalculator = EloRecalculator.new
     elo_recalculator.call
 
@@ -364,8 +405,8 @@ namespace :wc3stats do
     end
     puts
 
-    # Step 9: Recalculate Glicko-2
-    puts "Step 9: Recalculating Glicko-2 ratings..."
+    # Step 10: Recalculate Glicko-2
+    puts "Step 10: Recalculating Glicko-2 ratings..."
     glicko_recalculator = Glicko2Recalculator.new
     glicko_recalculator.call
 
@@ -381,7 +422,8 @@ namespace :wc3stats do
     puts "Sync Complete"
     puts "=" * 60
     puts "Replays in database: #{Wc3statsReplay.count}"
-    puts "Valid matches: #{Match.count}"
+    puts "Valid matches: #{Match.where(ignored: false).count}"
+    puts "Ignored matches: #{Match.where(ignored: true).count}"
     puts "Players: #{Player.count}"
     puts
     puts "=" * 60

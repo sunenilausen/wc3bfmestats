@@ -32,12 +32,12 @@
       <ul class="flex space-x-8">
         <li>
           <%= link_to players_path, class: "text-gray-700 hover:text-blue-600 font-semibold px-4 py-2 rounded transition-colors duration-200" do %>
-            Players <span class="text-xs text-gray-400">(<%= Player.joins(:matches).distinct.count %>)</span>
+            Players <span class="text-xs text-gray-400">(<%= Player.joins(:matches).where(matches: { ignored: false }).distinct.count %>)</span>
           <% end %>
         </li>
         <li>
           <%= link_to matches_path, class: "text-gray-700 hover:text-blue-600 font-semibold px-4 py-2 rounded transition-colors duration-200" do %>
-            Matches <span class="text-xs text-gray-400">(<%= Match.count %>)</span>
+            Matches <span class="text-xs text-gray-400">(<%= Match.where(ignored: false).count %>)</span>
           <% end %>
         </li>
         <li>

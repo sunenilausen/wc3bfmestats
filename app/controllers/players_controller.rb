@@ -14,7 +14,9 @@ class PlayersController < ApplicationController
     # Filter by minimum games played
     @min_games = params[:min_games].to_i
     if @min_games > 0
-      player_ids_with_min_games = Appearance.group(:player_id)
+      player_ids_with_min_games = Appearance.joins(:match)
+                                            .where(matches: { ignored: false })
+                                            .group(:player_id)
                                             .having("COUNT(DISTINCT match_id) >= ?", @min_games)
                                             .pluck(:player_id)
       @players = @players.where(id: player_ids_with_min_games)
@@ -24,7 +26,8 @@ class PlayersController < ApplicationController
     @show_inactive = params[:show_inactive] == "1"
     unless @show_inactive
       two_years_ago = 2.years.ago
-      active_player_ids = Match.where("played_at >= ?", two_years_ago)
+      active_player_ids = Match.where(ignored: false)
+                               .where("played_at >= ?", two_years_ago)
                                .joins(:appearances)
                                .select("appearances.player_id")
                                .distinct
@@ -32,12 +35,15 @@ class PlayersController < ApplicationController
       @players = @players.where(id: active_player_ids)
     end
 
-    @player_count = @players.joins(:matches).distinct.count
-    @observer_count = @players.left_joins(:matches).where(matches: { id: nil }).count
+    # Count players with valid (non-ignored) matches
+    @player_count = @players.joins(:matches).merge(Match.where(ignored: false)).distinct.count
+    # Count players who have never played a valid match (only observed or only played ignored matches)
+    players_with_valid_matches = Player.joins(:matches).merge(Match.where(ignored: false)).distinct.pluck(:id)
+    @observer_count = @players.where.not(id: players_with_valid_matches).count
 
-    # Precompute observation counts for all players
+    # Precompute observation counts for all players (only from non-ignored matches)
     @observation_counts = Hash.new(0)
-    Wc3statsReplay.find_each do |replay|
+    Wc3statsReplay.joins(:match).where(matches: { ignored: false }).find_each do |replay|
       replay.players.each do |p|
         if p["slot"].nil? || p["slot"] > 9 || p["isWinner"].nil?
           @observation_counts[p["name"]] += 1
@@ -46,7 +52,7 @@ class PlayersController < ApplicationController
     end
 
     if @sort_column == "matches_played"
-      @players = @players.left_joins(:matches).group("players.id").order(Arel.sql("COUNT(matches.id) #{@sort_direction}"))
+      @players = @players.left_joins(:matches).where(matches: { ignored: false }).or(@players.left_joins(:matches).where(matches: { id: nil })).group("players.id").order(Arel.sql("COUNT(matches.id) #{@sort_direction}"))
     elsif @sort_column == "matches_observed"
       @players = @players.includes(:matches).sort_by { |p| @observation_counts[p.battletag] }
       @players = @players.reverse if @sort_direction == "desc"
@@ -57,8 +63,10 @@ class PlayersController < ApplicationController
 
   # GET /players/1 or /players/1.json
   def show
-    # Preload all data needed for stats computation
+    # Preload all data needed for stats computation (exclude ignored matches)
     @appearances = @player.appearances
+      .joins(:match)
+      .where(matches: { ignored: false })
       .includes(:faction, match: { appearances: :faction })
       .order("matches.played_at DESC, matches.created_at DESC")
 

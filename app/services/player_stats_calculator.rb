@@ -112,9 +112,9 @@ class PlayerStatsCalculator
   def process_kill_stats(appearance, team_appearances, player_good, stats, faction_id)
     faction_stats = stats[:faction_stats][faction_id]
 
-    # Hero kills - skip if flagged to ignore
-    if appearance.hero_kills.present? && !appearance.ignore_hero_kills?
-      team_with_hero_kills = team_appearances.select { |a| a.hero_kills.present? && !a.ignore_hero_kills? }
+    # Hero kills - skip if nil or flagged to ignore
+    if !appearance.hero_kills.nil? && !appearance.ignore_hero_kills?
+      team_with_hero_kills = team_appearances.select { |a| !a.hero_kills.nil? && !a.ignore_hero_kills? }
 
       if team_with_hero_kills.any?
         max_hero_kills = team_with_hero_kills.map(&:hero_kills).max

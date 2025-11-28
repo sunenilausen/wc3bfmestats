@@ -156,7 +156,7 @@ module Wc3stats
       assert_includes builder.errors, "Replay has no players"
     end
 
-    test "skips players without definitive win/loss status" do
+    test "creates players for observers but not appearances" do
       @replay.update!(body: @replay.body.deep_merge({
         "data" => {
           "game" => {
@@ -171,9 +171,11 @@ module Wc3stats
       builder = MatchBuilder.new(@replay)
       match = builder.call
 
+      # Only active players get appearances
       assert_equal 1, match.appearances.count
       assert Player.exists?(battletag: "ActivePlayer#1234")
-      assert_not Player.exists?(battletag: "Observer#5678")
+      # Observers are now created as players (but without appearances)
+      assert Player.exists?(battletag: "Observer#5678")
     end
   end
 end

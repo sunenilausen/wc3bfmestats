@@ -5,35 +5,37 @@ class Player < ApplicationRecord
   has_many :lobbies, through: :lobby_players
 
   def last_seen
-    matches.maximum(:played_at)
+    matches.where(ignored: false).maximum(:played_at)
   end
 
   def wins
     appearances.joins(:match, :faction)
+      .where(matches: { ignored: false })
       .where(factions: { good: true }, matches: { good_victory: true })
       .or(appearances.joins(:match, :faction)
+        .where(matches: { ignored: false })
         .where(factions: { good: false }, matches: { good_victory: false }))
       .count
   end
 
   def losses
-    matches.count - wins
+    matches.where(ignored: false).count - wins
   end
 
   def recent_wins(days: 100)
     cutoff = days.days.ago
     appearances.joins(:match, :faction)
-      .where(matches: { played_at: cutoff.. })
+      .where(matches: { ignored: false, played_at: cutoff.. })
       .where(factions: { good: true }, matches: { good_victory: true })
       .or(appearances.joins(:match, :faction)
-        .where(matches: { played_at: cutoff.. })
+        .where(matches: { ignored: false, played_at: cutoff.. })
         .where(factions: { good: false }, matches: { good_victory: false }))
       .count
   end
 
   def recent_losses(days: 100)
     cutoff = days.days.ago
-    recent_matches = matches.where(played_at: cutoff..).count
+    recent_matches = matches.where(ignored: false, played_at: cutoff..).count
     recent_matches - recent_wins(days: days)
   end
 
@@ -42,7 +44,7 @@ class Player < ApplicationRecord
     won = faction.good? ? true : false
     appearances.joins(:match)
       .where(faction: faction)
-      .where(matches: { played_at: cutoff.., good_victory: won })
+      .where(matches: { ignored: false, played_at: cutoff.., good_victory: won })
       .count
   end
 
@@ -50,7 +52,7 @@ class Player < ApplicationRecord
     cutoff = days.days.ago
     recent_with_faction = appearances.joins(:match)
       .where(faction: faction)
-      .where(matches: { played_at: cutoff.. })
+      .where(matches: { ignored: false, played_at: cutoff.. })
       .count
     recent_with_faction - recent_wins_with_faction(faction, days: days)
   end
@@ -59,30 +61,30 @@ class Player < ApplicationRecord
     won = faction.good? ? true : false
     appearances.joins(:match)
       .where(faction: faction)
-      .where(matches: { good_victory: won })
+      .where(matches: { ignored: false, good_victory: won })
       .count
   end
 
   def losses_with_faction(faction)
-    total_with_faction = appearances.where(faction: faction).count
+    total_with_faction = appearances.joins(:match).where(faction: faction, matches: { ignored: false }).count
     total_with_faction - wins_with_faction(faction)
   end
 
   def win_rate_with_faction(faction)
-    total = appearances.where(faction: faction).count
+    total = appearances.joins(:match).where(faction: faction, matches: { ignored: false }).count
     return 0 if total.zero?
     (wins_with_faction(faction).to_f / total * 100).round(1)
   end
 
   def times_top_hero_kills_with_faction(faction)
     appearances.includes(:match).where(faction: faction).where(matches: { ignored: false }).count do |appearance|
-      next false unless appearance.hero_kills.present?
+      next false if appearance.hero_kills.nil? || appearance.ignore_hero_kills?
 
       match = appearance.match
       player_good = faction.good?
 
       team_appearances = match.appearances.includes(:faction).select do |a|
-        a.faction.good? == player_good && a.hero_kills.present?
+        a.faction.good? == player_good && !a.hero_kills.nil? && !a.ignore_hero_kills?
       end
 
       next false if team_appearances.empty?
@@ -94,13 +96,13 @@ class Player < ApplicationRecord
 
   def times_top_unit_kills_with_faction(faction)
     appearances.includes(:match).where(faction: faction).where(matches: { ignored: false }).count do |appearance|
-      next false unless appearance.unit_kills.present?
+      next false unless appearance.unit_kills.present? && !appearance.ignore_unit_kills?
 
       match = appearance.match
       player_good = faction.good?
 
       team_appearances = match.appearances.includes(:faction).select do |a|
-        a.faction.good? == player_good && a.unit_kills.present?
+        a.faction.good? == player_good && a.unit_kills.present? && !a.ignore_unit_kills?
       end
 
       next false if team_appearances.empty?
@@ -113,13 +115,13 @@ class Player < ApplicationRecord
   def avg_hero_kill_contribution_with_faction(faction)
     contributions = []
     appearances.includes(:match).where(faction: faction).where(matches: { ignored: false }).each do |appearance|
-      next unless appearance.hero_kills.present?
+      next if appearance.hero_kills.nil? || appearance.ignore_hero_kills?
 
       match = appearance.match
       player_good = faction.good?
 
       team_appearances = match.appearances.includes(:faction).select do |a|
-        a.faction.good? == player_good && a.hero_kills.present?
+        a.faction.good? == player_good && !a.hero_kills.nil? && !a.ignore_hero_kills?
       end
 
       team_total = team_appearances.sum(&:hero_kills)
@@ -135,13 +137,13 @@ class Player < ApplicationRecord
   def avg_unit_kill_contribution_with_faction(faction)
     contributions = []
     appearances.includes(:match).where(faction: faction).where(matches: { ignored: false }).each do |appearance|
-      next unless appearance.unit_kills.present?
+      next unless appearance.unit_kills.present? && !appearance.ignore_unit_kills?
 
       match = appearance.match
       player_good = faction.good?
 
       team_appearances = match.appearances.includes(:faction).select do |a|
-        a.faction.good? == player_good && a.unit_kills.present?
+        a.faction.good? == player_good && a.unit_kills.present? && !a.ignore_unit_kills?
       end
 
       team_total = team_appearances.sum(&:unit_kills)
@@ -192,14 +194,14 @@ class Player < ApplicationRecord
 
   def times_top_hero_kills_on_team
     appearances.includes(:match, :faction).where(matches: { ignored: false }).count do |appearance|
-      next false unless appearance.hero_kills.present?
+      next false if appearance.hero_kills.nil? || appearance.ignore_hero_kills?
 
       match = appearance.match
       player_good = appearance.faction.good?
 
       # Get teammates' appearances (same side)
       team_appearances = match.appearances.includes(:faction).select do |a|
-        a.faction.good? == player_good && a.hero_kills.present?
+        a.faction.good? == player_good && !a.hero_kills.nil? && !a.ignore_hero_kills?
       end
 
       next false if team_appearances.empty?
@@ -211,14 +213,14 @@ class Player < ApplicationRecord
 
   def times_top_unit_kills_on_team
     appearances.includes(:match, :faction).where(matches: { ignored: false }).count do |appearance|
-      next false unless appearance.unit_kills.present?
+      next false unless appearance.unit_kills.present? && !appearance.ignore_unit_kills?
 
       match = appearance.match
       player_good = appearance.faction.good?
 
       # Get teammates' appearances (same side)
       team_appearances = match.appearances.includes(:faction).select do |a|
-        a.faction.good? == player_good && a.unit_kills.present?
+        a.faction.good? == player_good && a.unit_kills.present? && !a.ignore_unit_kills?
       end
 
       next false if team_appearances.empty?
@@ -231,13 +233,13 @@ class Player < ApplicationRecord
   def avg_hero_kill_contribution
     contributions = []
     appearances.includes(:match, :faction).where(matches: { ignored: false }).each do |appearance|
-      next unless appearance.hero_kills.present?
+      next if appearance.hero_kills.nil? || appearance.ignore_hero_kills?
 
       match = appearance.match
       player_good = appearance.faction.good?
 
       team_appearances = match.appearances.includes(:faction).select do |a|
-        a.faction.good? == player_good && a.hero_kills.present?
+        a.faction.good? == player_good && !a.hero_kills.nil? && !a.ignore_hero_kills?
       end
 
       team_total = team_appearances.sum(&:hero_kills)
@@ -253,13 +255,13 @@ class Player < ApplicationRecord
   def avg_unit_kill_contribution
     contributions = []
     appearances.includes(:match, :faction).where(matches: { ignored: false }).each do |appearance|
-      next unless appearance.unit_kills.present?
+      next unless appearance.unit_kills.present? && !appearance.ignore_unit_kills?
 
       match = appearance.match
       player_good = appearance.faction.good?
 
       team_appearances = match.appearances.includes(:faction).select do |a|
-        a.faction.good? == player_good && a.unit_kills.present?
+        a.faction.good? == player_good && a.unit_kills.present? && !a.ignore_unit_kills?
       end
 
       team_total = team_appearances.sum(&:unit_kills)
@@ -276,7 +278,7 @@ class Player < ApplicationRecord
 
   def elo_differences_by_role(role)
     differences = []
-    appearances.includes(:match, :faction).each do |appearance|
+    appearances.includes(:match, :faction).where(matches: { ignored: false }).each do |appearance|
       next unless appearance.elo_rating
 
       match = appearance.match
@@ -305,7 +307,7 @@ class Player < ApplicationRecord
   end
 
   def count_matches_by_role(role, outcome)
-    appearances.includes(:match, :faction).count do |appearance|
+    appearances.includes(:match, :faction).where(matches: { ignored: false }).count do |appearance|
       next false unless appearance.elo_rating
 
       match = appearance.match

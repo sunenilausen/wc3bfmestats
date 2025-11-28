@@ -48,6 +48,7 @@ module Wc3stats
       ActiveRecord::Base.transaction do
         match = create_match
         create_appearances(match)
+        create_observers
         set_ignore_flags(match)
         match
       end
@@ -105,6 +106,20 @@ module Wc3stats
       end
     end
 
+    def observer_players
+      # Players who are observers (not in slots 0-9 or without win/loss status)
+      @observer_players ||= wc3stats_replay.players.select do |p|
+        slot = p["slot"]
+        slot.nil? || slot > 9 || p["isWinner"].nil?
+      end
+    end
+
+    def create_observers
+      observer_players.each do |player_data|
+        find_or_create_player(player_data)
+      end
+    end
+
     def find_or_create_player(player_data)
       battletag = player_data["name"]
       return nil if battletag.blank?
@@ -156,6 +171,7 @@ module Wc3stats
       # Ignore unit kills when unit_kills is 0
       appearances.each do |app|
         app.update_column(:ignore_unit_kills, true) if app.unit_kills == 0
+        app.update_column(:ignore_hero_kills, true) if app.unit_kills == 0
       end
 
       # Ignore hero kills when all players in the match have 0 hero kills

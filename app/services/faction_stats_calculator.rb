@@ -57,11 +57,11 @@ class FactionStatsCalculator
       # Get team appearances
       team_appearances = match.appearances.select { |a| a.faction.good? == player_good }
 
-      # Hero kill stats
-      if appearance.hero_kills.present?
+      # Hero kill stats - skip if nil or flagged to ignore
+      if !appearance.hero_kills.nil? && !appearance.ignore_hero_kills?
         total_hero_kills += appearance.hero_kills
 
-        team_with_hero = team_appearances.select { |a| a.hero_kills.present? }
+        team_with_hero = team_appearances.select { |a| !a.hero_kills.nil? && !a.ignore_hero_kills? }
         if team_with_hero.any?
           max_hero = team_with_hero.map(&:hero_kills).max
           if appearance.hero_kills == max_hero
@@ -76,11 +76,11 @@ class FactionStatsCalculator
         end
       end
 
-      # Unit kill stats
-      if appearance.unit_kills.present?
+      # Unit kill stats - skip if flagged to ignore
+      if appearance.unit_kills.present? && !appearance.ignore_unit_kills?
         total_unit_kills += appearance.unit_kills
 
-        team_with_unit = team_appearances.select { |a| a.unit_kills.present? }
+        team_with_unit = team_appearances.select { |a| a.unit_kills.present? && !a.ignore_unit_kills? }
         if team_with_unit.any?
           max_unit = team_with_unit.map(&:unit_kills).max
           if appearance.unit_kills == max_unit

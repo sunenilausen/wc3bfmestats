@@ -1,118 +1,131 @@
 require "test_helper"
-require "minitest/mock"
+require "webmock/minitest"
 
 module Wc3stats
   class GamesFetcherTest < ActiveSupport::TestCase
     setup do
-      @fixture_html = File.read(Rails.root.join("test/fixtures/files/wc3stats/games.html"))
+      @api_response = {
+        "status" => "OK",
+        "code" => 200,
+        "pagination" => {
+          "totalItems" => 5
+        },
+        "body" => [
+          { "id" => 231, "name" => "LOTR BFME", "map" => "BFME" },
+          { "id" => 233, "name" => "LOTR BFME RM", "map" => "BFME" },
+          { "id" => 720046, "name" => "BFME Test", "map" => "BFME" },
+          { "id" => 720371, "name" => "BFME Game", "map" => "BFME" },
+          { "id" => 719317, "name" => "BFME Match", "map" => "BFME" }
+        ]
+      }
     end
 
-    test "successfully parses replay IDs from HTML" do
-      # Mock the fetch_all_pages to return IDs from our fixture
-      fixture_html = @fixture_html
-      fetcher = GamesFetcher.new
-      fetcher.define_singleton_method(:fetch_all_pages) do
-        doc = Nokogiri::HTML(fixture_html)
-        game_links = doc.css('a.Row.clickable.Row-body')
-        game_links.map { |link| link['href'].split('/').last.to_i }.compact.uniq
-      end
+    test "successfully fetches replay IDs from API" do
+      stub_request(:get, "https://api.wc3stats.com/replays?limit=0&search=BFME")
+        .to_return(status: 200, body: @api_response.to_json, headers: { "Content-Type" => "application/json" })
 
+      fetcher = GamesFetcher.new(search_term: "BFME")
       replay_ids = fetcher.call
 
       assert replay_ids.is_a?(Array), "Expected an array of replay IDs"
-      assert replay_ids.any?, "Expected to find some replay IDs"
-
-      # Check that we found the expected IDs from the fixture
+      assert_equal 5, replay_ids.count
       assert_includes replay_ids, 720371
       assert_includes replay_ids, 720046
       assert_includes replay_ids, 719317
+      assert_empty fetcher.errors
     end
 
-    test "returns all unique replay IDs from the page" do
-      fixture_html = @fixture_html
-      fetcher = GamesFetcher.new
-      fetcher.define_singleton_method(:fetch_all_pages) do
-        doc = Nokogiri::HTML(fixture_html)
-        game_links = doc.css('a.Row.clickable.Row-body')
-        game_links.map { |link| link['href'].split('/').last.to_i }.compact.uniq
-      end
+    test "returns IDs sorted by ID (oldest first)" do
+      stub_request(:get, "https://api.wc3stats.com/replays?limit=0&search=BFME")
+        .to_return(status: 200, body: @api_response.to_json, headers: { "Content-Type" => "application/json" })
 
+      fetcher = GamesFetcher.new(search_term: "BFME")
       replay_ids = fetcher.call
 
-      # The fixture has 15 game rows
-      assert_equal 15, replay_ids.count
-      assert_equal replay_ids.uniq, replay_ids, "Should not have duplicate replay IDs"
+      assert_equal [231, 233, 719317, 720046, 720371], replay_ids
     end
 
-    test "returns empty array when fetch fails" do
-      fetcher = GamesFetcher.new
-      fetcher.define_singleton_method(:fetch_all_pages) { [] }
+    test "returns empty array when API fails" do
+      stub_request(:get, "https://api.wc3stats.com/replays?limit=0")
+        .to_return(status: 500, body: "Internal Server Error")
 
+      fetcher = GamesFetcher.new
       replay_ids = fetcher.call
 
       assert_equal [], replay_ids
+      assert fetcher.errors.any?
+      assert_match(/API request failed/, fetcher.errors.first)
     end
 
-    test "respects max_pages parameter" do
-      # This test verifies that max_pages is respected in the actual implementation
-      fetcher = GamesFetcher.new(max_pages: 2)
-      assert_equal 2, fetcher.max_pages
-    end
-
-    test "parses current page correctly" do
-      mixed_html = <<~HTML
-        <a href="/games/720371" class="Row clickable Row-body"></a>
-        <a href="/games/abc" class="Row clickable Row-body"></a>
-        <a href="/games/720046" class="Row clickable Row-body"></a>
-        <a href="/other/page" class="Row clickable Row-body"></a>
-      HTML
+    test "returns empty array when API returns error status" do
+      error_response = { "status" => "ERROR", "message" => "Something went wrong" }
+      stub_request(:get, "https://api.wc3stats.com/replays?limit=0")
+        .to_return(status: 200, body: error_response.to_json, headers: { "Content-Type" => "application/json" })
 
       fetcher = GamesFetcher.new
-      mock_driver = Minitest::Mock.new
-      mock_driver.expect(:page_source, mixed_html)
-
-      ids = fetcher.send(:parse_current_page, mock_driver)
-
-      assert_equal [720371, 720046], ids
-      mock_driver.verify
-    end
-
-    test "handles errors and returns collected IDs" do
-      fetcher = GamesFetcher.new
-      fetcher.define_singleton_method(:fetch_all_pages) do
-        @errors << "Test error"
-        [720371, 720046]
-      end
-
       replay_ids = fetcher.call
 
-      assert_equal [720371, 720046], replay_ids
-      assert_includes fetcher.errors, "Test error"
+      assert_equal [], replay_ids
+      assert fetcher.errors.any?
+      assert_match(/API returned error status/, fetcher.errors.first)
     end
 
-    test "respects limit parameter" do
-      fixture_html = @fixture_html
-      fetcher = GamesFetcher.new(limit: 5)
+    test "respects limit parameter by taking most recent IDs" do
+      stub_request(:get, "https://api.wc3stats.com/replays?limit=0&search=BFME")
+        .to_return(status: 200, body: @api_response.to_json, headers: { "Content-Type" => "application/json" })
 
-      # Mock to return first 5 IDs
-      fetcher.define_singleton_method(:fetch_all_pages) do
-        doc = Nokogiri::HTML(fixture_html)
-        game_links = doc.css('a.Row.clickable.Row-body')
-        all_ids = game_links.map { |link| link['href'].split('/').last.to_i }.compact.uniq
-        all_ids.take(@limit)
-      end
+      fetcher = GamesFetcher.new(search_term: "BFME", limit: 3)
+      replay_ids = fetcher.call
 
+      assert_equal 3, replay_ids.count
+      # Should take the 3 most recent (highest IDs)
+      assert_equal [719317, 720046, 720371], replay_ids
+    end
+
+    test "handles network errors gracefully" do
+      stub_request(:get, "https://api.wc3stats.com/replays?limit=0")
+        .to_raise(SocketError.new("Connection refused"))
+
+      fetcher = GamesFetcher.new
+      replay_ids = fetcher.call
+
+      assert_equal [], replay_ids
+      assert fetcher.errors.any?
+      assert_match(/Failed to fetch replay IDs/, fetcher.errors.first)
+    end
+
+    test "handles invalid JSON response" do
+      stub_request(:get, "https://api.wc3stats.com/replays?limit=0")
+        .to_return(status: 200, body: "not valid json", headers: { "Content-Type" => "application/json" })
+
+      fetcher = GamesFetcher.new
+      replay_ids = fetcher.call
+
+      assert_equal [], replay_ids
+      assert fetcher.errors.any?
+      assert_match(/Failed to parse API response/, fetcher.errors.first)
+    end
+
+    test "works without search term" do
+      stub_request(:get, "https://api.wc3stats.com/replays?limit=0")
+        .to_return(status: 200, body: @api_response.to_json, headers: { "Content-Type" => "application/json" })
+
+      fetcher = GamesFetcher.new
       replay_ids = fetcher.call
 
       assert_equal 5, replay_ids.count
-      assert_equal 5, fetcher.limit
+      assert_empty fetcher.errors
     end
 
-    test "limit takes precedence over pagination" do
-      # Even if there are more pages, limit should stop fetching
-      fetcher = GamesFetcher.new(limit: 10, max_pages: 100)
-      assert_equal 10, fetcher.limit
-      assert_equal 100, fetcher.max_pages
+    test "max_pages parameter is accepted for backwards compatibility" do
+      stub_request(:get, "https://api.wc3stats.com/replays?limit=0")
+        .to_return(status: 200, body: @api_response.to_json, headers: { "Content-Type" => "application/json" })
+
+      # Should not raise error even though max_pages is no longer used
+      fetcher = GamesFetcher.new(max_pages: 10)
+      replay_ids = fetcher.call
+
+      assert_equal 5, replay_ids.count
     end
   end
 end

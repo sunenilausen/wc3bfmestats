@@ -4,7 +4,6 @@ namespace :wc3stats do
     # Configuration from environment variables
     search_term = ENV.fetch("SEARCH", "BFME")
     limit = ENV["LIMIT"]&.to_i
-    max_pages = ENV["MAX_PAGES"]&.to_i
     delay = ENV.fetch("DELAY", "1").to_f
 
     puts "=" * 60
@@ -12,19 +11,16 @@ namespace :wc3stats do
     puts "=" * 60
     puts "Search term: #{search_term}"
     puts "Limit: #{limit || 'None (fetch all)'}"
-    puts "Max pages: #{max_pages || 'None (fetch all)'}"
     puts "Delay between imports: #{delay}s"
     puts "=" * 60
     puts
 
-    # Step 1: Fetch replay IDs
-    puts "🔍 Fetching replay IDs from wc3stats.com..."
-    puts "This may take a few minutes...\n"
+    # Step 1: Fetch replay IDs from API
+    puts "Fetching replay IDs from wc3stats.com API..."
 
     games_fetcher = Wc3stats::GamesFetcher.new(
       search_term: search_term,
-      limit: limit,
-      max_pages: max_pages
+      limit: limit
     )
 
     replay_ids = games_fetcher.call
@@ -40,20 +36,20 @@ namespace :wc3stats do
       exit
     end
 
-    puts "✓ Found #{replay_ids.count} replay IDs\n\n"
+    puts "Found #{replay_ids.count} replay IDs\n\n"
 
     # Step 2: Filter out already imported replays
     existing_ids = Wc3statsReplay.where(wc3stats_replay_id: replay_ids).pluck(:wc3stats_replay_id)
     new_replay_ids = replay_ids - existing_ids
 
-    puts "📊 Status:"
+    puts "Status:"
     puts "  Total found: #{replay_ids.count}"
     puts "  Already imported: #{existing_ids.count}"
     puts "  New to import: #{new_replay_ids.count}"
     puts
 
     if new_replay_ids.empty?
-      puts "✓ All replays already imported!"
+      puts "All replays already imported!"
       exit
     end
 
@@ -78,11 +74,11 @@ namespace :wc3stats do
         imported_count += 1
         game_name = replay.game_name || "Unknown"
         players_count = replay.players.count
-        puts "✓ #{game_name} (#{players_count} players)"
+        puts "OK #{game_name} (#{players_count} players)"
       else
         failed_count += 1
         error_msg = replay_fetcher.errors.first || "Unknown error"
-        puts "✗ #{error_msg}"
+        puts "FAILED #{error_msg}"
         errors << { id: replay_id, error: error_msg }
       end
 
@@ -95,8 +91,8 @@ namespace :wc3stats do
     puts "=" * 60
     puts "Import Summary"
     puts "=" * 60
-    puts "✓ Successfully imported: #{imported_count}"
-    puts "✗ Failed: #{failed_count}"
+    puts "Successfully imported: #{imported_count}"
+    puts "Failed: #{failed_count}"
     puts "=" * 60
 
     if errors.any?
@@ -154,7 +150,6 @@ namespace :wc3stats do
   task sync: :environment do
     search_term = ENV.fetch("SEARCH", "BFME")
     limit = ENV["LIMIT"]&.to_i
-    max_pages = ENV["MAX_PAGES"]&.to_i
     delay = ENV.fetch("DELAY", "0.5").to_f
     force_update = ENV["FORCE"]&.downcase == "true"
 
@@ -163,17 +158,15 @@ namespace :wc3stats do
     puts "=" * 60
     puts "Search term: #{search_term}"
     puts "Limit: #{limit || 'None (fetch all)'}"
-    puts "Max pages: #{max_pages || 'None (fetch all)'}"
     puts "Force update: #{force_update ? 'Yes (re-fetch existing)' : 'No (skip existing)'}"
     puts "=" * 60
     puts
 
-    # Step 1: Fetch replay IDs
-    puts "Step 1: Fetching replay IDs from wc3stats.com..."
+    # Step 1: Fetch replay IDs from API
+    puts "Step 1: Fetching replay IDs from wc3stats.com API..."
     games_fetcher = Wc3stats::GamesFetcher.new(
       search_term: search_term,
-      limit: limit,
-      max_pages: max_pages
+      limit: limit
     )
 
     replay_ids = games_fetcher.call

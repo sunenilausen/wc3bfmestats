@@ -4,7 +4,10 @@ class User < ApplicationRecord
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :validatable
 
-  ROLES = %w[admin uploader].freeze
+  ROLES = %w[admin uploader known unknown].freeze
+  DEFAULT_ROLE = "unknown".freeze
+
+  attribute :role, :string, default: DEFAULT_ROLE
 
   validates :role, inclusion: { in: ROLES }
 

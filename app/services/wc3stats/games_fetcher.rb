@@ -35,19 +35,24 @@ module Wc3stats
       service_options[:path] = ENV["SE_CHROMEDRIVER"] if ENV["SE_CHROMEDRIVER"]
       service = Selenium::WebDriver::Chrome::Service.new(**service_options)
 
+      puts "  Starting Chrome driver..."
       driver = Selenium::WebDriver.for :chrome, options: options, service: service
       all_replay_ids = []
       page_count = 0
+      previous_page_ids = []
 
       begin
+        puts "  Navigating to #{BASE_URL}..."
         driver.navigate.to BASE_URL
 
         # Wait for initial page load
+        puts "  Waiting for page to load..."
         wait = Selenium::WebDriver::Wait.new(timeout: 10)
         wait.until { driver.find_element(css: 'a.Row.clickable.Row-body') }
 
         # If search term is provided, enter it in the search box
         if search_term
+          puts "  Entering search term: #{search_term}..."
           search_input = driver.find_element(css: 'div.search input[type="text"]')
           search_input.clear
           search_input.send_keys(search_term)
@@ -58,18 +63,39 @@ module Wc3stats
 
         loop do
           page_count += 1
-          puts "Fetching page #{page_count}..." if Rails.env.development?
+          puts "Fetching page #{page_count}..."
 
           # Extract IDs from current page
           page_ids = parse_current_page(driver)
+
+          # Stop if we got no IDs
+          if page_ids.empty?
+            puts "  No IDs found, stopping."
+            break
+          end
+
+          # Stop if we got the same IDs as previous page (reached the end, site loops back)
+          if page_ids == previous_page_ids
+            puts "  Same IDs as previous page, reached end."
+            break
+          end
+
+          # Only add new IDs (avoid duplicates when nearing the end)
+          new_ids = page_ids - all_replay_ids
+          if new_ids.empty?
+            puts "  No new IDs found, reached end."
+            break
+          end
+
+          previous_page_ids = page_ids
 
           # If we have a limit, only add IDs up to the limit
           if limit
             remaining = limit - all_replay_ids.count
             if remaining > 0
-              ids_to_add = page_ids.take(remaining)
+              ids_to_add = new_ids.take(remaining)
               all_replay_ids.concat(ids_to_add)
-              puts "  Found #{ids_to_add.count} IDs on page #{page_count} (limit: #{all_replay_ids.count}/#{limit})" if Rails.env.development?
+              puts "  Found #{ids_to_add.count} new IDs on page #{page_count} (total: #{all_replay_ids.count}/#{limit})"
 
               # If we've reached the limit, stop
               break if all_replay_ids.count >= limit
@@ -77,8 +103,8 @@ module Wc3stats
               break
             end
           else
-            all_replay_ids.concat(page_ids)
-            puts "  Found #{page_ids.count} IDs on page #{page_count} (total: #{all_replay_ids.count})" if Rails.env.development?
+            all_replay_ids.concat(new_ids)
+            puts "  Found #{new_ids.count} new IDs on page #{page_count} (total: #{all_replay_ids.count})"
           end
 
           # Check if we've reached max pages limit
@@ -86,7 +112,10 @@ module Wc3stats
 
           # Try to find and click the next button
           next_button = find_next_button(driver)
-          break unless next_button
+          unless next_button
+            puts "  No next button found, reached end."
+            break
+          end
 
           # Click next and wait for new content
           next_button.click
@@ -99,7 +128,7 @@ module Wc3stats
               driver.find_element(css: 'a.Row.clickable.Row-body')
             end
           rescue Selenium::WebDriver::Error::TimeoutError
-            puts "  No more content found" if Rails.env.development?
+            puts "  No more content found"
             break
           end
         end

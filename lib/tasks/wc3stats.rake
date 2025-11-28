@@ -156,6 +156,7 @@ namespace :wc3stats do
     limit = ENV["LIMIT"]&.to_i
     max_pages = ENV["MAX_PAGES"]&.to_i
     delay = ENV.fetch("DELAY", "0.5").to_f
+    force_update = ENV["FORCE"]&.downcase == "true"
 
     puts "=" * 60
     puts "WC3Stats Full Sync"
@@ -163,6 +164,7 @@ namespace :wc3stats do
     puts "Search term: #{search_term}"
     puts "Limit: #{limit || 'None (fetch all)'}"
     puts "Max pages: #{max_pages || 'None (fetch all)'}"
+    puts "Force update: #{force_update ? 'Yes (re-fetch existing)' : 'No (skip existing)'}"
     puts "=" * 60
     puts
 
@@ -189,63 +191,52 @@ namespace :wc3stats do
     puts "Found #{replay_ids.count} replay IDs"
     puts
 
-    # Step 2: Import/update replays and build matches
-    puts "Step 2: Syncing replays (upsert mode)..."
+    # Step 2: Import replays
+    puts "Step 2: Importing replays..."
     existing_ids = Wc3statsReplay.where(wc3stats_replay_id: replay_ids).pluck(:wc3stats_replay_id)
-    new_ids = replay_ids - existing_ids
 
-    puts "  New replays to fetch: #{new_ids.count}"
-    puts "  Existing replays (skip fetch): #{existing_ids.count}"
+    if force_update
+      ids_to_fetch = replay_ids
+      puts "  Force mode: fetching all #{ids_to_fetch.count} replays"
+    else
+      ids_to_fetch = replay_ids - existing_ids
+      puts "  New replays to fetch: #{ids_to_fetch.count}"
+      puts "  Already in database (skipped): #{existing_ids.count}"
+    end
     puts
 
     imported_count = 0
     updated_count = 0
     failed_count = 0
-    skipped_count = 0
 
-    replay_ids.each_with_index do |replay_id, index|
-      progress = "[#{index + 1}/#{replay_ids.count}]"
-
-      # Skip fetching existing replays - just rebuild matches if needed
-      if existing_ids.include?(replay_id)
-        replay = Wc3statsReplay.find_by(wc3stats_replay_id: replay_id)
-        if replay && replay.match.nil?
-          match_builder = Wc3stats::MatchBuilder.new(replay)
-          if match_builder.call
-            print "#{progress} Replay #{replay_id}: rebuilt match\n"
-            updated_count += 1
-          else
-            print "#{progress} Replay #{replay_id}: skip (#{match_builder.errors.first})\n"
-            skipped_count += 1
-          end
-        else
-          skipped_count += 1
-        end
-        next
-      end
-
-      # Fetch new replay from API
-      print "#{progress} Fetching replay #{replay_id}... "
+    ids_to_fetch.each_with_index do |replay_id, index|
+      progress = "[#{index + 1}/#{ids_to_fetch.count}]"
+      is_update = existing_ids.include?(replay_id)
+      print "#{progress} #{is_update ? 'Updating' : 'Fetching'} replay #{replay_id}... "
 
       replay_fetcher = Wc3stats::ReplayFetcher.new(replay_id)
       replay = replay_fetcher.call
 
       if replay
-        imported_count += 1
-        puts "imported (#{replay.players.count} players)"
+        if is_update
+          updated_count += 1
+          puts "updated (#{replay.players.count} players)"
+        else
+          imported_count += 1
+          puts "imported (#{replay.players.count} players)"
+        end
       else
         failed_count += 1
         puts "failed: #{replay_fetcher.errors.first}"
       end
 
-      sleep delay if index < replay_ids.count - 1
+      sleep delay if index < ids_to_fetch.count - 1
     end
 
     puts
     puts "Import summary:"
     puts "  New imports: #{imported_count}"
-    puts "  Rebuilt matches: #{updated_count}"
-    puts "  Skipped: #{skipped_count}"
+    puts "  Updated: #{updated_count}" if force_update
     puts "  Failed: #{failed_count}"
     puts
 

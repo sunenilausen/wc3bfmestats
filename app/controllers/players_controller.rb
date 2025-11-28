@@ -20,6 +20,18 @@ class PlayersController < ApplicationController
       @players = @players.where(id: player_ids_with_min_games)
     end
 
+    # Filter out inactive players (no games in last 2 years) by default
+    @show_inactive = params[:show_inactive] == "1"
+    unless @show_inactive
+      two_years_ago = 2.years.ago
+      active_player_ids = Match.where("played_at >= ?", two_years_ago)
+                               .joins(:appearances)
+                               .select("appearances.player_id")
+                               .distinct
+                               .pluck(:player_id)
+      @players = @players.where(id: active_player_ids)
+    end
+
     @player_count = @players.joins(:matches).distinct.count
     @observer_count = @players.left_joins(:matches).where(matches: { id: nil }).count
 

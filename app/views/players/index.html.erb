@@ -16,14 +16,18 @@
   </div>
 
   <div class="mt-5">
-    <%= form_with url: players_path, method: :get, class: "flex gap-2 flex-wrap" do |f| %>
+    <%= form_with url: players_path, method: :get, class: "flex gap-2 flex-wrap items-center" do |f| %>
       <%= f.text_field :search, value: params[:search], placeholder: "Search by nickname or battletag...", class: "rounded-md border border-gray-300 px-3 py-2 flex-grow" %>
       <div class="flex items-center gap-1">
         <label for="min_games" class="text-sm text-gray-600">Min games:</label>
         <%= f.number_field :min_games, value: params[:min_games], min: 0, class: "rounded-md border border-gray-300 px-3 py-2 w-20" %>
       </div>
+      <div class="flex items-center gap-1">
+        <%= f.check_box :show_inactive, { checked: @show_inactive, class: "rounded border-gray-300" }, "1", "0" %>
+        <label for="show_inactive" class="text-sm text-gray-600">Show inactive (2+ years)</label>
+      </div>
       <%= f.submit "Filter", class: "rounded-md px-3.5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-medium cursor-pointer" %>
-      <% if params[:search].present? || params[:min_games].present? %>
+      <% if params[:search].present? || params[:min_games].present? || @show_inactive %>
         <%= link_to "Clear", players_path, class: "rounded-md px-3.5 py-2.5 bg-gray-100 hover:bg-gray-50 font-medium" %>
       <% end %>
     <% end %>
@@ -36,22 +40,22 @@
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nickname</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              <%= link_to players_path(sort: "elo_rating", direction: @sort_column == "elo_rating" && @sort_direction == "desc" ? "asc" : "desc", search: params[:search], min_games: params[:min_games]), class: "hover:text-gray-700" do %>
+              <%= link_to players_path(sort: "elo_rating", direction: @sort_column == "elo_rating" && @sort_direction == "desc" ? "asc" : "desc", search: params[:search], min_games: params[:min_games], show_inactive: @show_inactive ? "1" : nil), class: "hover:text-gray-700" do %>
                 Elo Rating <%= @sort_column == "elo_rating" ? (@sort_direction == "desc" ? "▼" : "▲") : "" %>
               <% end %>
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              <%= link_to players_path(sort: "glicko2_rating", direction: @sort_column == "glicko2_rating" && @sort_direction == "desc" ? "asc" : "desc", search: params[:search], min_games: params[:min_games]), class: "hover:text-gray-700" do %>
+              <%= link_to players_path(sort: "glicko2_rating", direction: @sort_column == "glicko2_rating" && @sort_direction == "desc" ? "asc" : "desc", search: params[:search], min_games: params[:min_games], show_inactive: @show_inactive ? "1" : nil), class: "hover:text-gray-700" do %>
                 Glicko-2 <%= @sort_column == "glicko2_rating" ? (@sort_direction == "desc" ? "▼" : "▲") : "" %>
               <% end %>
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              <%= link_to players_path(sort: "matches_played", direction: @sort_column == "matches_played" && @sort_direction == "desc" ? "asc" : "desc", search: params[:search], min_games: params[:min_games]), class: "hover:text-gray-700" do %>
+              <%= link_to players_path(sort: "matches_played", direction: @sort_column == "matches_played" && @sort_direction == "desc" ? "asc" : "desc", search: params[:search], min_games: params[:min_games], show_inactive: @show_inactive ? "1" : nil), class: "hover:text-gray-700" do %>
                 Matches Played <%= @sort_column == "matches_played" ? (@sort_direction == "desc" ? "▼" : "▲") : "" %>
               <% end %>
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              <%= link_to players_path(sort: "matches_observed", direction: @sort_column == "matches_observed" && @sort_direction == "desc" ? "asc" : "desc", search: params[:search], min_games: params[:min_games]), class: "hover:text-gray-700" do %>
+              <%= link_to players_path(sort: "matches_observed", direction: @sort_column == "matches_observed" && @sort_direction == "desc" ? "asc" : "desc", search: params[:search], min_games: params[:min_games], show_inactive: @show_inactive ? "1" : nil), class: "hover:text-gray-700" do %>
                 Matches Observed <%= @sort_column == "matches_observed" ? (@sort_direction == "desc" ? "▼" : "▲") : "" %>
               <% end %>
             </th>

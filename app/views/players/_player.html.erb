@@ -129,6 +129,81 @@
         </tbody>
       </table>
     </div>
+
+    <% if defined?(event_stats) && event_stats && event_stats[:total_games] > 0 %>
+      <%# Hero Deaths %>
+      <div class="bg-gray-50 rounded-md p-3">
+        <h3 class="font-semibold mb-2 text-gray-700">Hero Losses</h3>
+        <table class="w-full text-sm">
+          <tbody>
+            <tr>
+              <td class="py-0.5">Hero K/D Ratio</td>
+              <td class="text-right py-0.5">
+                <% if event_stats[:hero_kd_ratio] %>
+                  <%= event_stats[:hero_kills] %>/<%= event_stats[:hero_deaths] %>
+                  <span class="text-gray-500">(<%= event_stats[:hero_kd_ratio] %>)</span>
+                <% else %>
+                  <%= event_stats[:hero_kills] %>/0
+                <% end %>
+              </td>
+            </tr>
+            <tr>
+              <td class="py-0.5">Avg Heroes Survived</td>
+              <td class="text-right py-0.5"><%= event_stats[:avg_heroes_survived] %> / <%= event_stats[:avg_heroes_total] %></td>
+            </tr>
+            <tr>
+              <td class="py-0.5">Hero Uptime</td>
+              <td class="text-right py-0.5"><%= event_stats[:hero_uptime] %>%</td>
+            </tr>
+            <tr>
+              <td class="py-0.5">All Heroes Kept Alive</td>
+              <td class="text-right py-0.5">
+                <%= event_stats[:games_all_heroes_survived] %>/<%= event_stats[:games_with_hero_data] %>
+                <span class="text-gray-500">(<%= event_stats[:all_heroes_survived_rate] %>%)</span>
+              </td>
+            </tr>
+            <tr>
+              <td class="py-0.5">All Heroes Lost</td>
+              <td class="text-right py-0.5">
+                <%= event_stats[:all_heroes_lost] %>x
+                <span class="text-gray-500">(<%= event_stats[:all_heroes_lost_rate] %>%)</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <%# Base Deaths %>
+      <div class="bg-gray-50 rounded-md p-3">
+        <h3 class="font-semibold mb-2 text-gray-700">Base Losses</h3>
+        <table class="w-full text-sm">
+          <tbody>
+            <tr>
+              <td class="py-0.5">Avg Bases Survived</td>
+              <td class="text-right py-0.5"><%= event_stats[:avg_bases_survived] %> / <%= event_stats[:avg_bases_total] %></td>
+            </tr>
+            <tr>
+              <td class="py-0.5">Base Uptime</td>
+              <td class="text-right py-0.5"><%= event_stats[:base_uptime] %>%</td>
+            </tr>
+            <tr>
+              <td class="py-0.5">All Bases Kept Alive</td>
+              <td class="text-right py-0.5">
+                <%= event_stats[:games_all_bases_survived] %>/<%= event_stats[:games_with_bases] %>
+                <span class="text-gray-500">(<%= event_stats[:all_bases_survived_rate] %>%)</span>
+              </td>
+            </tr>
+            <tr>
+              <td class="py-0.5">All Bases Lost</td>
+              <td class="text-right py-0.5">
+                <%= event_stats[:all_bases_lost] %>x
+                <span class="text-gray-500">(<%= event_stats[:all_bases_lost_rate] %>%)</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    <% end %>
   </div>
 
   <% if stats[:faction_stats].any? %>

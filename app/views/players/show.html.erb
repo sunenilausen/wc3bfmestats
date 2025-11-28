@@ -7,7 +7,7 @@
 
   <h1 class="font-bold text-4xl">Showing player</h1>
 
-  <%= render partial: "player", locals: { player: @player, stats: @stats, appearances: @appearances } %>
+  <%= render partial: "player", locals: { player: @player, stats: @stats, appearances: @appearances, event_stats: @event_stats } %>
 
   <% if can? :update, @player %>
     <%= link_to "Edit this player", edit_player_path(@player), class: "w-full sm:w-auto text-center rounded-md px-3.5 py-2.5 bg-gray-100 hover:bg-gray-50 inline-block font-medium" %>

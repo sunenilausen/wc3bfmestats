@@ -72,6 +72,9 @@ class PlayersController < ApplicationController
 
     # Compute all stats in a single pass
     @stats = PlayerStatsCalculator.new(@player, @appearances).compute
+
+    # Compute hero and base death stats from replay events
+    @event_stats = PlayerEventStatsCalculator.new(@player).compute
   end
 
   # GET /players/new

@@ -36,7 +36,10 @@ class EloRecalculator
     # 3. Map version
     # 4. Played_at / created_at date
     # 5. Replay ID (upload order)
-    matches = Match.includes(appearances: [ :player, :faction ]).chronological
+    # Ignored matches are excluded from ELO calculations.
+    matches = Match.includes(appearances: [ :player, :faction ])
+                   .where(ignored: false)
+                   .chronological
 
     matches.each do |match|
       calculate_and_update_elo_ratings(match)

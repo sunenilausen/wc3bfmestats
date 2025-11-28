@@ -75,7 +75,7 @@ class Player < ApplicationRecord
   end
 
   def times_top_hero_kills_with_faction(faction)
-    appearances.includes(:match).where(faction: faction).count do |appearance|
+    appearances.includes(:match).where(faction: faction).where(matches: { ignored: false }).count do |appearance|
       next false unless appearance.hero_kills.present?
 
       match = appearance.match
@@ -93,7 +93,7 @@ class Player < ApplicationRecord
   end
 
   def times_top_unit_kills_with_faction(faction)
-    appearances.includes(:match).where(faction: faction).count do |appearance|
+    appearances.includes(:match).where(faction: faction).where(matches: { ignored: false }).count do |appearance|
       next false unless appearance.unit_kills.present?
 
       match = appearance.match
@@ -112,7 +112,7 @@ class Player < ApplicationRecord
 
   def avg_hero_kill_contribution_with_faction(faction)
     contributions = []
-    appearances.includes(:match).where(faction: faction).each do |appearance|
+    appearances.includes(:match).where(faction: faction).where(matches: { ignored: false }).each do |appearance|
       next unless appearance.hero_kills.present?
 
       match = appearance.match
@@ -134,7 +134,7 @@ class Player < ApplicationRecord
 
   def avg_unit_kill_contribution_with_faction(faction)
     contributions = []
-    appearances.includes(:match).where(faction: faction).each do |appearance|
+    appearances.includes(:match).where(faction: faction).where(matches: { ignored: false }).each do |appearance|
       next unless appearance.unit_kills.present?
 
       match = appearance.match
@@ -191,7 +191,7 @@ class Player < ApplicationRecord
   end
 
   def times_top_hero_kills_on_team
-    appearances.includes(:match, :faction).count do |appearance|
+    appearances.includes(:match, :faction).where(matches: { ignored: false }).count do |appearance|
       next false unless appearance.hero_kills.present?
 
       match = appearance.match
@@ -210,7 +210,7 @@ class Player < ApplicationRecord
   end
 
   def times_top_unit_kills_on_team
-    appearances.includes(:match, :faction).count do |appearance|
+    appearances.includes(:match, :faction).where(matches: { ignored: false }).count do |appearance|
       next false unless appearance.unit_kills.present?
 
       match = appearance.match
@@ -230,7 +230,7 @@ class Player < ApplicationRecord
 
   def avg_hero_kill_contribution
     contributions = []
-    appearances.includes(:match, :faction).each do |appearance|
+    appearances.includes(:match, :faction).where(matches: { ignored: false }).each do |appearance|
       next unless appearance.hero_kills.present?
 
       match = appearance.match
@@ -252,7 +252,7 @@ class Player < ApplicationRecord
 
   def avg_unit_kill_contribution
     contributions = []
-    appearances.includes(:match, :faction).each do |appearance|
+    appearances.includes(:match, :faction).where(matches: { ignored: false }).each do |appearance|
       next unless appearance.unit_kills.present?
 
       match = appearance.match

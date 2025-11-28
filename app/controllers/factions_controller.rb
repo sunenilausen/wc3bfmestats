@@ -9,6 +9,9 @@ class FactionsController < ApplicationController
   # GET /factions/1 or /factions/1.json
   def show
     @stats = FactionStatsCalculator.new(@faction).compute
+    @hero_stats = HeroStatsCalculator.new(@faction).compute
+    @base_stats = BaseStatsCalculator.new(@faction).compute
+    @ring_event_stats = RingEventStatsCalculator.new(@faction).compute
   end
 
   # GET /factions/1/edit

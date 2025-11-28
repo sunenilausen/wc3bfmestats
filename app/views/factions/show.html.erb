@@ -168,6 +168,130 @@
     </div>
   </div>
 
+  <%# Base Statistics %>
+  <% if @base_stats.any? %>
+    <h2 class="text-xl font-bold mb-3">Base Statistics</h2>
+    <div class="bg-gray-50 rounded-md p-3 mb-6">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-gray-200">
+            <th class="text-left py-2 font-semibold text-gray-700">Base</th>
+            <th class="text-right py-2 font-semibold text-gray-700">Death Rate</th>
+            <th class="text-right py-2 font-semibold text-gray-700">Avg Time to Death</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @base_stats.each do |base| %>
+            <tr class="border-b border-gray-100 last:border-b-0">
+              <td class="py-2"><%= base[:name] %></td>
+              <td class="text-right py-2">
+                <span class="<%= base[:death_rate] <= 50 ? 'text-green-600' : 'text-red-600' %> font-medium">
+                  <%= base[:death_rate] %>%
+                </span>
+                <span class="text-gray-400 text-xs">(<%= base[:deaths] %>)</span>
+              </td>
+              <td class="text-right py-2 text-gray-600">
+                <% if base[:avg_time_to_death] %>
+                  <%= ChronicDuration.output(base[:avg_time_to_death], format: :short) %>
+                <% else %>
+                  -
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% end %>
+
+  <%# Hero Statistics %>
+  <% if @hero_stats.any? %>
+    <h2 class="text-xl font-bold mb-3">Hero Statistics</h2>
+    <div class="bg-gray-50 rounded-md p-3 mb-6">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-gray-200">
+            <th class="text-left py-2 font-semibold text-gray-700">Hero</th>
+            <th class="text-right py-2 font-semibold text-gray-700">Death Rate</th>
+            <th class="text-right py-2 font-semibold text-gray-700">Avg Time to Death</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @hero_stats.each do |hero| %>
+            <tr class="border-b border-gray-100 last:border-b-0">
+              <td class="py-2"><%= hero[:name] %></td>
+              <td class="text-right py-2">
+                <span class="<%= hero[:death_rate] <= 50 ? 'text-green-600' : 'text-red-600' %> font-medium">
+                  <%= hero[:death_rate] %>%
+                </span>
+                <span class="text-gray-400 text-xs">(<%= hero[:deaths] %>)</span>
+              </td>
+              <td class="text-right py-2 text-gray-600">
+                <% if hero[:avg_time_to_death] %>
+                  <%= ChronicDuration.output(hero[:avg_time_to_death], format: :short) %>
+                <% else %>
+                  -
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% end %>
+
+  <%# Ring Event Statistics %>
+  <% if @ring_event_stats.present? %>
+    <h2 class="text-xl font-bold mb-3">Ring Events</h2>
+    <div class="bg-gray-50 rounded-md p-3 mb-6">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-gray-200">
+            <th class="text-left py-2 font-semibold text-gray-700">Event</th>
+            <th class="text-right py-2 font-semibold text-gray-700">Occurrence Rate</th>
+            <th class="text-right py-2 font-semibold text-gray-700">Avg Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="<%= @ring_event_stats[:sauron_death_rate] ? 'border-b border-gray-100' : '' %>">
+            <td class="py-2"><%= @ring_event_stats[:name] %></td>
+            <td class="text-right py-2">
+              <span class="<%= @faction.good? ? (@ring_event_stats[:occurrence_rate] <= 50 ? 'text-green-600' : 'text-red-600') : (@ring_event_stats[:occurrence_rate] >= 50 ? 'text-green-600' : 'text-red-600') %> font-medium">
+                <%= @ring_event_stats[:occurrence_rate] %>%
+              </span>
+              <span class="text-gray-400 text-xs">(<%= @ring_event_stats[:occurrences] %>)</span>
+            </td>
+            <td class="text-right py-2 text-gray-600">
+              <% if @ring_event_stats[:avg_time] %>
+                <%= ChronicDuration.output(@ring_event_stats[:avg_time], format: :short) %>
+              <% else %>
+                -
+              <% end %>
+            </td>
+          </tr>
+          <% if @ring_event_stats[:sauron_death_rate] %>
+            <tr>
+              <td class="py-2 pl-4 text-gray-600">↳ Sauron dies after</td>
+              <td class="text-right py-2">
+                <span class="<%= @ring_event_stats[:sauron_death_rate] <= 50 ? 'text-green-600' : 'text-red-600' %> font-medium">
+                  <%= @ring_event_stats[:sauron_death_rate] %>%
+                </span>
+                <span class="text-gray-400 text-xs">(<%= @ring_event_stats[:sauron_deaths] %>)</span>
+              </td>
+              <td class="text-right py-2 text-gray-600">
+                <% if @ring_event_stats[:sauron_avg_time_to_death] %>
+                  <%= ChronicDuration.output(@ring_event_stats[:sauron_avg_time_to_death], format: :short) %>
+                <% else %>
+                  -
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% end %>
+
   <div class="flex gap-2">
     <% if can? :update, @faction %>
       <%= link_to "Edit", edit_faction_path(@faction), class: "rounded-md px-3 py-2 bg-gray-100 hover:bg-gray-50 text-sm font-medium" %>

@@ -8,6 +8,8 @@ class FactionStatsCalculator
 
   def compute
     appearances = faction.appearances
+      .joins(:match)
+      .where(matches: { ignored: false })
       .includes(:player, :match, match: { appearances: :faction })
 
     stats = {

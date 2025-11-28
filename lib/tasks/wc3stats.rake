@@ -307,20 +307,24 @@ namespace :wc3stats do
     end
     puts
 
-    # Step 6: Backfill ordering fields for new matches
+    # Step 6: Backfill ordering fields and played_at for matches
     puts "Step 6: Backfilling ordering fields..."
     matches_needing_backfill = Match.joins(:wc3stats_replay)
-                                    .where(major_version: nil)
+                                    .where("major_version IS NULL OR played_at IS NULL")
                                     .includes(:wc3stats_replay)
     backfill_count = 0
 
     matches_needing_backfill.find_each do |match|
       replay = match.wc3stats_replay
-      changes = {
-        major_version: replay.major_version,
-        build_version: replay.build_version,
-        map_version: replay.map_version
-      }.compact
+      changes = {}
+
+      # Backfill version fields if missing
+      changes[:major_version] = replay.major_version if match.major_version.nil? && replay.major_version
+      changes[:build_version] = replay.build_version if match.build_version.nil? && replay.build_version
+      changes[:map_version] = replay.map_version if match.map_version.nil? && replay.map_version
+
+      # Backfill played_at from replay if missing
+      changes[:played_at] = replay.played_at if match.played_at.nil? && replay.played_at
 
       if changes.any?
         match.update_columns(changes)
@@ -404,7 +408,7 @@ namespace :wc3stats do
     puts "=" * 60
   end
 
-  desc "Backfill ordering fields (major_version, build_version, map_version) on existing matches"
+  desc "Backfill ordering fields (major_version, build_version, map_version, played_at) on existing matches"
   task backfill_ordering: :environment do
     puts "=" * 60
     puts "Backfilling Match Ordering Fields"
@@ -425,13 +429,15 @@ namespace :wc3stats do
       major = replay.major_version
       build = replay.build_version
       map_ver = replay.map_version
+      played = replay.played_at
 
       # Only update if we have data and it differs
-      if major || build || map_ver
+      if major || build || map_ver || played
         changes = {}
         changes[:major_version] = major if major && match.major_version != major
         changes[:build_version] = build if build && match.build_version != build
         changes[:map_version] = map_ver if map_ver && match.map_version != map_ver
+        changes[:played_at] = played if played && match.played_at != played
 
         if changes.any?
           match.update_columns(changes)

@@ -31,13 +31,17 @@ class Wc3statsReplay < ApplicationRecord
     body&.dig("data", "game", "map")
   end
 
-  # Parse map version from filename (e.g., "BFME4.5e.w3x" -> "4.5e")
+  # Parse map version from filename
+  # Examples:
+  #   "BFME4.5e.w3x" -> "4.5e"
+  #   "BFME4.3gObs.w3x" -> "4.3gObs"
+  #   "BFME4.1Test3.w3x" -> "4.1Test3"
   # Returns nil if not parseable
   def map_version
     return nil unless map_file_name
 
-    # Match pattern like "BFME4.5e.w3x" or "BFME4.5.w3x"
-    if map_file_name =~ /BFME(\d+\.\d+[a-z]?)\.w3x/i
+    # Match pattern: BFME + major.minor + optional suffix (letter, Obs, Test#, etc.)
+    if map_file_name =~ /BFME(\d+\.\d+\S*)\.w3x/i
       $1
     end
   end

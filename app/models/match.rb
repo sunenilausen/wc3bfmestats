@@ -29,14 +29,27 @@ class Match < ApplicationRecord
     )
   }
 
-  # Parse map version string for comparison (e.g., "4.5e" -> [4, 5, "e"])
+  # Parse map version string for comparison
+  # Examples:
+  #   "4.5" -> [4, 5, "", ""]
+  #   "4.5e" -> [4, 5, "e", ""]
+  #   "4.3gObs" -> [4, 3, "g", "obs"]
+  #   "4.1Test3" -> [4, 1, "", "test3"]
+  # Sorting: major, minor, letter, suffix (alphabetically)
   def parsed_map_version
     return nil unless map_version
 
-    match = map_version.match(/(\d+)\.(\d+)([a-z])?/i)
-    return nil unless match
+    # Match: major.minor + optional lowercase letter + optional suffix (Obs, Test#, etc.)
+    # The lowercase letter is only captured if followed by uppercase or end of string
+    match_data = map_version.match(/(\d+)\.(\d+)([a-z](?=[A-Z]|$))?(.+)?/)
+    return nil unless match_data
 
-    [ match[1].to_i, match[2].to_i, match[3]&.downcase || "" ]
+    [
+      match_data[1].to_i,
+      match_data[2].to_i,
+      match_data[3] || "",
+      match_data[4]&.downcase || ""
+    ]
   end
 
   def played_at_formatted

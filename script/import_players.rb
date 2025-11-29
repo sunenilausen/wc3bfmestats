@@ -19,7 +19,7 @@ require 'csv'
 CSV.generate do |csv|
   csv << [ "nickname", "elo_rating", "appearances_count", "last appearance", "wins", "losses" ]
   Player.find_each do |player|
-    csv << [ player.nickname, player.elo_rating, player.appearances.count, player.matches.by_played_at(:desc).first.played_at_formatted, player.wins, player.losses ]
+    csv << [ player.nickname, player.elo_rating, player.appearances.count, player.matches.by_uploaded_at(:desc).first.uploaded_at_formatted, player.wins, player.losses ]
   end
 end
 

@@ -32,7 +32,7 @@
         <div class="flex flex-col sm:flex-row justify-between items-start pb-5 sm:pb-0 gap-2">
           <div class="flex-1">
             <div class="mb-1">
-              <%= match.played_at&.strftime("%Y-%m-%d") || match.created_at.strftime("%Y-%m-%d") %>
+              <%= match.uploaded_at&.strftime("%Y-%m-%d") || match.created_at.strftime("%Y-%m-%d") %>
               <span class="ml-2 <%= match.good_victory ? 'text-green-600' : 'text-red-600' %> font-medium">
                 <%= match.good_victory ? "Good Victory" : "Evil Victory" %>
               </span>

@@ -38,8 +38,8 @@ class PlayersCsvExporter
   end
 
   def last_appearance(player)
-    last_match = player.matches.by_played_at(:desc).first
-    last_match&.played_at_formatted || "N/A"
+    last_match = player.matches.by_uploaded_at(:desc).first
+    last_match&.uploaded_at_formatted || "N/A"
   end
 
   def win_rate(player)

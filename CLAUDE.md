@@ -10,7 +10,7 @@ This is a Rails 8.1 application for tracking Warcraft 3 Battle for Middle Earth 
 
 The application uses a join-table architecture for many-to-many relationships:
 
-- **Match**: Represents a game with `played_at`, `seconds` (duration), and `good_victory` (boolean)
+- **Match**: Represents a game with `uploaded_at` (wc3stats upload date), `seconds` (duration), and `good_victory` (boolean)
 - **Player**: Battle.net user with `nickname`, `battletag`, `elo_rating`, and `elo_rating_seed`
 - **Faction**: One of 10 BfME factions (Gondor, Rohan, Mordor, etc.) with a `color` and `good` boolean
 - **Appearance**: Join table linking Player + Faction + Match, storing `hero_kills`, `unit_kills`, `elo_rating`, and `elo_rating_change`

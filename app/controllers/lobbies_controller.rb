@@ -14,7 +14,7 @@ class LobbiesController < ApplicationController
   # GET /lobbies/new - creates lobby instantly with previous match players
   def new
     @lobby = Lobby.new
-    latest_match = Match.order(played_at: :desc).first
+    latest_match = Match.order(uploaded_at: :desc).first
 
     Faction.order(:id).each do |faction|
       # Find player from latest match who played this faction
@@ -153,7 +153,7 @@ class LobbiesController < ApplicationController
       end.sort_by { |p| -p[:games] } # Sort by most games first
 
       # Get unique players from last 5 matches (players and observers)
-      recent_match_ids = Match.order(played_at: :desc).limit(5).pluck(:id)
+      recent_match_ids = Match.order(uploaded_at: :desc).limit(5).pluck(:id)
       recent_player_ids = Appearance.where(match_id: recent_match_ids).distinct.pluck(:player_id)
       @recent_players = recent_player_ids.map do |pid|
         @players_search_data.find { |p| p[:id] == pid }
@@ -178,7 +178,7 @@ class LobbiesController < ApplicationController
       appearances_by_player = Appearance
         .includes(:faction, match: { appearances: :faction })
         .where(player_id: player_ids)
-        .order("matches.played_at DESC")
+        .order("matches.uploaded_at DESC")
         .group_by(&:player_id)
 
       # Calculate recent stats cutoffs
@@ -195,7 +195,7 @@ class LobbiesController < ApplicationController
         @lobby_player_stats[player_id] = PlayerStatsCalculator.new(player, appearances).compute
 
         # Calculate recent stats from preloaded appearances (avoid N+1)
-        recent_100d = appearances.select { |a| a.match.played_at && a.match.played_at >= cutoff_100d }
+        recent_100d = appearances.select { |a| a.match.uploaded_at && a.match.uploaded_at >= cutoff_100d }
         recent_100d_wins = recent_100d.count do |a|
           (a.faction.good? && a.match.good_victory?) || (!a.faction.good? && !a.match.good_victory?)
         end
@@ -216,7 +216,7 @@ class LobbiesController < ApplicationController
         # Calculate 1-year faction-specific stats
         appearances = appearances_by_player[lp.player_id] || []
         faction_apps_1y = appearances.select do |a|
-          a.faction_id == lp.faction_id && a.match.played_at && a.match.played_at >= cutoff_1y
+          a.faction_id == lp.faction_id && a.match.uploaded_at && a.match.uploaded_at >= cutoff_1y
         end
         faction_wins_1y = faction_apps_1y.count do |a|
           (a.faction.good? && a.match.good_victory?) || (!a.faction.good? && !a.match.good_victory?)

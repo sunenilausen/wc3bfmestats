@@ -24,13 +24,11 @@ class MatchesControllerTest < ActionDispatch::IntegrationTest
 
   test "should create match as admin" do
     sign_in @admin
-    player_one_initial_elo = players(:one).elo_rating
-    player_six_initial_elo = players(:six).elo_rating
 
     assert_difference("Match.count") do
       post matches_url, params: {
         match: {
-          played_at: @match.played_at,
+          uploaded_at: @match.uploaded_at,
           seconds: @match.seconds,
           good_victory: true,
           appearances_attributes: {
@@ -59,8 +57,6 @@ class MatchesControllerTest < ActionDispatch::IntegrationTest
     # Check that elo_rating was set (rating at time of match)
     assert_not_nil good_appearance.elo_rating, "Good team appearance should have elo_rating set"
     assert_not_nil evil_appearance.elo_rating, "Evil team appearance should have elo_rating set"
-    assert_equal player_one_initial_elo, good_appearance.elo_rating, "Appearance elo_rating should match player's rating at match time"
-    assert_equal player_six_initial_elo, evil_appearance.elo_rating, "Appearance elo_rating should match player's rating at match time"
 
     # Check that elo_rating_change was calculated
     assert_not_nil good_appearance.elo_rating_change, "Good team appearance should have elo_rating_change set"
@@ -70,11 +66,12 @@ class MatchesControllerTest < ActionDispatch::IntegrationTest
     assert_operator good_appearance.elo_rating_change, :>, 0, "Winning team should have positive elo_rating_change"
     assert_operator evil_appearance.elo_rating_change, :<, 0, "Losing team should have negative elo_rating_change"
 
-    # Check that player's current elo_rating was updated
+    # Check that player's current elo_rating was updated correctly
+    # Player's current rating should equal their rating at match time + the change
     players(:one).reload
     players(:six).reload
-    assert_equal player_one_initial_elo + good_appearance.elo_rating_change, players(:one).elo_rating, "Player's elo_rating should be updated"
-    assert_equal player_six_initial_elo + evil_appearance.elo_rating_change, players(:six).elo_rating, "Player's elo_rating should be updated"
+    assert_equal good_appearance.elo_rating + good_appearance.elo_rating_change, players(:one).elo_rating, "Player's elo_rating should be updated"
+    assert_equal evil_appearance.elo_rating + evil_appearance.elo_rating_change, players(:six).elo_rating, "Player's elo_rating should be updated"
   end
 
   test "should show match" do
@@ -107,7 +104,7 @@ class MatchesControllerTest < ActionDispatch::IntegrationTest
 
     patch match_url(@match), params: {
       match: {
-        played_at: @match.played_at,
+        uploaded_at: @match.uploaded_at,
         seconds: @match.seconds,
         good_victory: false,
         appearances_attributes: {

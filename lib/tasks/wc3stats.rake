@@ -140,7 +140,7 @@ namespace :wc3stats do
     latest = Wc3statsReplay.order(created_at: :desc).first
     if latest
       puts "  #{latest.game_name} (ID: #{latest.wc3stats_replay_id})"
-      puts "  Played: #{latest.played_at&.strftime('%Y-%m-%d %H:%M')}"
+      puts "  Uploaded: #{latest.played_at&.strftime('%Y-%m-%d %H:%M')}"
       puts "  Imported: #{latest.created_at.strftime('%Y-%m-%d %H:%M')}"
     end
     puts "=" * 60
@@ -325,10 +325,10 @@ namespace :wc3stats do
     end
     puts
 
-    # Step 7: Backfill ordering fields and played_at for matches
+    # Step 7: Backfill ordering fields and uploaded_at for matches
     puts "Step 7: Backfilling ordering fields..."
     matches_needing_backfill = Match.joins(:wc3stats_replay)
-                                    .where("major_version IS NULL OR played_at IS NULL")
+                                    .where("major_version IS NULL OR uploaded_at IS NULL")
                                     .includes(:wc3stats_replay)
     backfill_count = 0
 
@@ -341,8 +341,8 @@ namespace :wc3stats do
       changes[:build_version] = replay.build_version if match.build_version.nil? && replay.build_version
       changes[:map_version] = replay.map_version if match.map_version.nil? && replay.map_version
 
-      # Backfill played_at from replay if missing
-      changes[:played_at] = replay.played_at if match.played_at.nil? && replay.played_at
+      # Backfill uploaded_at from replay if missing
+      changes[:uploaded_at] = replay.played_at if match.uploaded_at.nil? && replay.played_at
 
       if changes.any?
         match.update_columns(changes)
@@ -467,7 +467,7 @@ namespace :wc3stats do
     puts "=" * 60
   end
 
-  desc "Backfill ordering fields (major_version, build_version, map_version, played_at) on existing matches"
+  desc "Backfill ordering fields (major_version, build_version, map_version, uploaded_at) on existing matches"
   task backfill_ordering: :environment do
     puts "=" * 60
     puts "Backfilling Match Ordering Fields"
@@ -488,15 +488,16 @@ namespace :wc3stats do
       major = replay.major_version
       build = replay.build_version
       map_ver = replay.map_version
-      played = replay.played_at
+      # replay.played_at returns the earliest upload timestamp
+      earliest_upload = replay.played_at
 
       # Only update if we have data and it differs
-      if major || build || map_ver || played
+      if major || build || map_ver || earliest_upload
         changes = {}
         changes[:major_version] = major if major && match.major_version != major
         changes[:build_version] = build if build && match.build_version != build
         changes[:map_version] = map_ver if map_ver && match.map_version != map_ver
-        changes[:played_at] = played if played && match.played_at != played
+        changes[:uploaded_at] = earliest_upload if earliest_upload && match.uploaded_at != earliest_upload
 
         if changes.any?
           match.update_columns(changes)
@@ -518,6 +519,46 @@ namespace :wc3stats do
     puts "=" * 60
     puts "  Updated: #{updated}"
     puts "  Skipped: #{skipped}"
+    puts "=" * 60
+  end
+
+  desc "Fix uploaded_at to use earliest upload timestamp from wc3stats (for correct chronological ordering)"
+  task fix_uploaded_at: :environment do
+    puts "=" * 60
+    puts "Fixing uploaded_at to use earliest upload timestamp"
+    puts "=" * 60
+    puts
+
+    matches_with_replay = Match.joins(:wc3stats_replay).includes(:wc3stats_replay)
+    total = matches_with_replay.count
+    updated = 0
+    skipped = 0
+
+    puts "Matches with replays: #{total}"
+    puts
+
+    matches_with_replay.find_each.with_index do |match, index|
+      replay = match.wc3stats_replay
+      # replay.played_at returns the earliest upload timestamp from all uploads
+      earliest_upload = replay.played_at
+
+      if earliest_upload && match.uploaded_at != earliest_upload
+        match.update_column(:uploaded_at, earliest_upload)
+        updated += 1
+      else
+        skipped += 1
+      end
+
+      print "\r  Progress: #{index + 1}/#{total} (updated: #{updated}, skipped: #{skipped})"
+    end
+
+    puts
+    puts
+    puts "=" * 60
+    puts "Summary"
+    puts "=" * 60
+    puts "  Updated: #{updated}"
+    puts "  Already correct: #{skipped}"
     puts "=" * 60
   end
 end

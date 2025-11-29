@@ -1,4 +1,4 @@
-<% content_for :title, "Match ##{@match.id} - #{@match.played_at&.strftime('%Y-%m-%d') || 'Unknown date'}" %>
+<% content_for :title, "Match ##{@match.id} - #{@match.uploaded_at&.strftime('%Y-%m-%d') || 'Unknown date'}" %>
 
 <div class="w-full">
   <% if notice.present? %>

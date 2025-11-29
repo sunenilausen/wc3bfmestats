@@ -1,7 +1,7 @@
 <div id="<%= dom_id match %>" class="w-full my-5">
   <div>
-    <strong class="inline font-medium">Played:</strong>
-    <%= match.played_at&.strftime("%Y-%m-%d") || match.created_at.strftime("%Y-%m-%d") %>
+    <strong class="inline font-medium">Uploaded:</strong>
+    <%= match.uploaded_at&.strftime("%Y-%m-%d") || match.created_at.strftime("%Y-%m-%d") %>
     <% if match.seconds.present? && match.seconds > 0 %>
       <span class="text-gray-500">(<%= ChronicDuration.output(match.seconds, format: :short) %>)</span>
     <% end %>

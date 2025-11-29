@@ -27,7 +27,7 @@ class PlayersController < ApplicationController
     unless @show_inactive
       two_years_ago = 2.years.ago
       active_player_ids = Match.where(ignored: false)
-                               .where("played_at >= ?", two_years_ago)
+                               .where("uploaded_at >= ?", two_years_ago)
                                .joins(:appearances)
                                .select("appearances.player_id")
                                .distinct

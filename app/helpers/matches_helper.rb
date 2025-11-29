@@ -37,7 +37,7 @@ module MatchesHelper
       match_a.build_version || 0,
       match_a.row_order || 999999,
       match_a.map_version || "",
-      match_a.played_at || Time.at(0),
+      match_a.uploaded_at || Time.at(0),
       match_a.wc3stats_replay_id || match_a.id
     ]
     b_vals = [
@@ -45,7 +45,7 @@ module MatchesHelper
       match_b.build_version || 0,
       match_b.row_order || 999999,
       match_b.map_version || "",
-      match_b.played_at || Time.at(0),
+      match_b.uploaded_at || Time.at(0),
       match_b.wc3stats_replay_id || match_b.id
     ]
 

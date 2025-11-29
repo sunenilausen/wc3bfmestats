@@ -60,7 +60,7 @@ module Wc3stats
     def create_match
       Match.create!(
         wc3stats_replay: wc3stats_replay,
-        played_at: wc3stats_replay.played_at,
+        uploaded_at: wc3stats_replay.played_at,
         seconds: wc3stats_replay.game_length,
         good_victory: determine_good_victory,
         major_version: wc3stats_replay.major_version,

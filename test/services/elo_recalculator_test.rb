@@ -33,11 +33,11 @@ class EloRecalculatorTest < ActiveSupport::TestCase
 
   test "processes matches in chronological order" do
     # Create two matches - player1 wins first, player2 wins second
-    match1 = Match.create!(played_at: 1.day.ago, good_victory: true, seconds: 1800)
+    match1 = Match.create!(uploaded_at: 1.day.ago, good_victory: true, seconds: 1800)
     match1.appearances.create!(player: @player1, faction: @gondor)
     match1.appearances.create!(player: @player2, faction: @mordor)
 
-    match2 = Match.create!(played_at: Time.current, good_victory: false, seconds: 1800)
+    match2 = Match.create!(uploaded_at: Time.current, good_victory: false, seconds: 1800)
     match2.appearances.create!(player: @player1, faction: @gondor)
     match2.appearances.create!(player: @player2, faction: @mordor)
 
@@ -59,7 +59,7 @@ class EloRecalculatorTest < ActiveSupport::TestCase
   end
 
   test "clears appearance elo data before recalculating" do
-    match = Match.create!(played_at: Time.current, good_victory: true, seconds: 1800)
+    match = Match.create!(uploaded_at: Time.current, good_victory: true, seconds: 1800)
     app1 = match.appearances.create!(player: @player1, faction: @gondor, elo_rating: 1600, elo_rating_change: 20)
     app2 = match.appearances.create!(player: @player2, faction: @mordor, elo_rating: 1400, elo_rating_change: -20)
 
@@ -76,9 +76,9 @@ class EloRecalculatorTest < ActiveSupport::TestCase
     assert_equal(-16, app2.elo_rating_change)
   end
 
-  test "includes matches without played_at using created_at for ordering" do
-    Match.create!(played_at: nil, good_victory: true, seconds: 1800)
-    Match.create!(played_at: Time.current, good_victory: true, seconds: 1800)
+  test "includes matches without uploaded_at using created_at for ordering" do
+    Match.create!(uploaded_at: nil, good_victory: true, seconds: 1800)
+    Match.create!(uploaded_at: Time.current, good_victory: true, seconds: 1800)
 
     recalculator = EloRecalculator.new
     recalculator.call

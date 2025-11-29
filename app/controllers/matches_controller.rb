@@ -54,6 +54,10 @@ class MatchesController < ApplicationController
 
     respond_to do |format|
       if @match.save
+        # Recalculate ratings when match is created
+        EloRecalculator.new.call
+        Glicko2Recalculator.new.call
+
         format.html { redirect_to @match, notice: "Match was successfully created." }
         format.json { render :show, status: :created, location: @match }
       else
@@ -124,6 +128,6 @@ class MatchesController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def match_params
-      params.expect(match: [ :played_at, :seconds, :good_victory, :ignored, appearances_attributes: [ :id, :hero_kills, :player_id, :unit_kills ] ])
+      params.expect(match: [ :uploaded_at, :seconds, :good_victory, :ignored, appearances_attributes: [ :id, :hero_kills, :player_id, :unit_kills ] ])
     end
 end

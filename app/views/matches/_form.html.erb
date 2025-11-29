@@ -4,7 +4,7 @@
 
   <div class="form-inputs">
     <div class="mb-2">
-      <%= f.input :played_at, as: :string, input_html: { type: "datetime-local", class: "form-control py-1 text-sm h-8", value: (@match.played_at || Time.current).strftime("%Y-%m-%dT%H:%M") }, label: "Played At", wrapper_html: { class: "flex items-center" }, label_html: { class: "mr-2 min-w-[80px] text-sm" } %>
+      <%= f.input :uploaded_at, as: :string, input_html: { type: "datetime-local", class: "form-control py-1 text-sm h-8", value: (@match.uploaded_at || Time.current).strftime("%Y-%m-%dT%H:%M") }, label: "Uploaded At", wrapper_html: { class: "flex items-center" }, label_html: { class: "mr-2 min-w-[80px] text-sm" } %>
     </div>
 
     <div class="mb-2">

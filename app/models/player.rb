@@ -5,7 +5,7 @@ class Player < ApplicationRecord
   has_many :lobbies, through: :lobby_players
 
   def last_seen
-    matches.where(ignored: false).maximum(:played_at)
+    matches.where(ignored: false).maximum(:uploaded_at)
   end
 
   def wins
@@ -25,17 +25,17 @@ class Player < ApplicationRecord
   def recent_wins(days: 100)
     cutoff = days.days.ago
     appearances.joins(:match, :faction)
-      .where(matches: { ignored: false, played_at: cutoff.. })
+      .where(matches: { ignored: false, uploaded_at: cutoff.. })
       .where(factions: { good: true }, matches: { good_victory: true })
       .or(appearances.joins(:match, :faction)
-        .where(matches: { ignored: false, played_at: cutoff.. })
+        .where(matches: { ignored: false, uploaded_at: cutoff.. })
         .where(factions: { good: false }, matches: { good_victory: false }))
       .count
   end
 
   def recent_losses(days: 100)
     cutoff = days.days.ago
-    recent_matches = matches.where(ignored: false, played_at: cutoff..).count
+    recent_matches = matches.where(ignored: false, uploaded_at: cutoff..).count
     recent_matches - recent_wins(days: days)
   end
 
@@ -44,7 +44,7 @@ class Player < ApplicationRecord
     won = faction.good? ? true : false
     appearances.joins(:match)
       .where(faction: faction)
-      .where(matches: { ignored: false, played_at: cutoff.., good_victory: won })
+      .where(matches: { ignored: false, uploaded_at: cutoff.., good_victory: won })
       .count
   end
 
@@ -52,7 +52,7 @@ class Player < ApplicationRecord
     cutoff = days.days.ago
     recent_with_faction = appearances.joins(:match)
       .where(faction: faction)
-      .where(matches: { ignored: false, played_at: cutoff.. })
+      .where(matches: { ignored: false, uploaded_at: cutoff.. })
       .count
     recent_with_faction - recent_wins_with_faction(faction, days: days)
   end

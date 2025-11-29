@@ -6,7 +6,12 @@ class MatchesController < ApplicationController
 
   # GET /matches or /matches.json
   def index
-    @matches = Match.includes(appearances: [ :player, :faction ]).includes(:wc3stats_replay)
+    @per_page = 50
+    @page = [ params[:page].to_i, 1 ].max
+    @total_count = Match.count
+    @total_pages = (@total_count.to_f / @per_page).ceil
+
+    @matches = Match.includes(appearances: [ :player, :faction ])
 
     case params[:sort]
     when "duration"
@@ -18,6 +23,8 @@ class MatchesController < ApplicationController
       # Default to reverse chronological order (newest first)
       @matches = @matches.reverse_chronological
     end
+
+    @matches = @matches.limit(@per_page).offset((@page - 1) * @per_page)
   end
 
   # GET /matches/1 or /matches/1.json

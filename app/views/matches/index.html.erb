@@ -6,7 +6,7 @@
   <% end %>
 
   <div class="flex justify-between items-center">
-    <h1 class="font-bold text-4xl">Matches</h1>
+    <h1 class="font-bold text-4xl">Matches <span class="text-gray-500 text-2xl font-normal">(<%= @total_count %>)</span></h1>
     <div class="flex items-center gap-2">
       <% if current_user&.admin? %>
         <%= form_with url: sync_matches_path, method: :post, class: "flex items-center gap-2" do |f| %>
@@ -67,6 +67,24 @@
       <% end %>
     <% else %>
       <p class="text-center my-10">No matches found.</p>
+    <% end %>
+
+    <% if @total_pages > 1 %>
+      <div class="flex justify-center items-center gap-2 mt-6 pt-4 border-t border-gray-200">
+        <% if @page > 1 %>
+          <%= link_to "First", matches_path(page: 1, sort: params[:sort], direction: params[:direction]), class: "px-3 py-1.5 rounded bg-gray-100 hover:bg-gray-200 text-sm" %>
+          <%= link_to "Prev", matches_path(page: @page - 1, sort: params[:sort], direction: params[:direction]), class: "px-3 py-1.5 rounded bg-gray-100 hover:bg-gray-200 text-sm" %>
+        <% end %>
+
+        <span class="px-4 py-1.5 text-sm text-gray-600">
+          Page <%= @page %> of <%= @total_pages %>
+        </span>
+
+        <% if @page < @total_pages %>
+          <%= link_to "Next", matches_path(page: @page + 1, sort: params[:sort], direction: params[:direction]), class: "px-3 py-1.5 rounded bg-gray-100 hover:bg-gray-200 text-sm" %>
+          <%= link_to "Last", matches_path(page: @total_pages, sort: params[:sort], direction: params[:direction]), class: "px-3 py-1.5 rounded bg-gray-100 hover:bg-gray-200 text-sm" %>
+        <% end %>
+      </div>
     <% end %>
   </div>
 </div>

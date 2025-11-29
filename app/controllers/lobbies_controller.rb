@@ -243,10 +243,8 @@ class LobbiesController < ApplicationController
       @event_stats = {}
       return if player_ids.empty?
 
-      # Compute event stats for each player
-      Player.where(id: player_ids).each do |player|
-        @event_stats[player.id] = PlayerEventStatsCalculator.new(player).compute
-      end
+      # Use batch calculator for all players at once (single pass through replays)
+      @event_stats = BatchPlayerEventStatsCalculator.new(player_ids).compute
     end
 
     def compute_score_prediction

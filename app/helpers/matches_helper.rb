@@ -1,4 +1,57 @@
 module MatchesHelper
+  # Calculate win/loss record for a player before this match
+  def previous_record_for_appearance(appearance)
+    match = appearance.match
+    player = appearance.player
+
+    # Get all matches before this one in chronological order
+    previous_appearances = player.appearances
+      .joins(:match)
+      .where(matches: { ignored: false })
+      .merge(Match.chronological)
+      .includes(:faction, :match)
+      .select { |a| match_is_before?(a.match, match) }
+
+    wins = 0
+    losses = 0
+
+    previous_appearances.each do |a|
+      player_won = (a.faction.good? && a.match.good_victory?) || (!a.faction.good? && !a.match.good_victory?)
+      if player_won
+        wins += 1
+      else
+        losses += 1
+      end
+    end
+
+    "<span class=\"text-green-600\">#{wins}W</span>-<span class=\"text-red-600\">#{losses}L</span>".html_safe
+  end
+
+  # Check if match_a comes before match_b chronologically
+  def match_is_before?(match_a, match_b)
+    return false if match_a.id == match_b.id
+
+    # Compare using the same criteria as the chronological scope
+    a_vals = [
+      match_a.major_version || 0,
+      match_a.build_version || 0,
+      match_a.row_order || 999999,
+      match_a.map_version || "",
+      match_a.played_at || Time.at(0),
+      match_a.wc3stats_replay_id || match_a.id
+    ]
+    b_vals = [
+      match_b.major_version || 0,
+      match_b.build_version || 0,
+      match_b.row_order || 999999,
+      match_b.map_version || "",
+      match_b.played_at || Time.at(0),
+      match_b.wc3stats_replay_id || match_b.id
+    ]
+
+    (a_vals <=> b_vals) < 0
+  end
+
   def sort_link_for(column, label)
     current_sort = params[:sort] == column
     current_direction = params[:direction] || "desc"

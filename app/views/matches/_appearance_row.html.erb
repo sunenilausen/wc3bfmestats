@@ -4,6 +4,9 @@
     <%= link_to appearance.player.nickname, player_path(appearance.player) %>
   </td>
   <td class="px-2 py-1">
+    <%= previous_record_for_appearance(appearance) %>
+  </td>
+  <td class="px-2 py-1">
     <%= appearance.unit_kills %>
   </td>
   <td class="px-2 py-1">

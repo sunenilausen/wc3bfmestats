@@ -15,6 +15,11 @@ class FactionsController < ApplicationController
     @base_stats = event_stats[:base_stats]
     @base_loss_stats = event_stats[:base_loss_stats]
     @ring_event_stats = event_stats[:ring_event_stats]
+    @hero_uptime = event_stats[:hero_uptime]
+    @base_uptime = event_stats[:base_uptime]
+    @hero_kills = event_stats[:hero_kills]
+    @hero_deaths = event_stats[:hero_deaths]
+    @hero_kd_ratio = event_stats[:hero_kd_ratio]
   end
 
   # GET /factions/1/edit

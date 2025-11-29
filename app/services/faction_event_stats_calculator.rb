@@ -55,6 +55,16 @@ class FactionEventStatsCalculator
     all_heroes_lost_twice_times = [] # For Minas Morgul
     total_games = 0
 
+    # Uptime tracking
+    total_hero_seconds_alive = 0
+    total_hero_seconds_possible = 0
+    total_base_seconds_alive = 0
+    total_base_seconds_possible = 0
+
+    # Hero K/D tracking
+    total_hero_kills = 0
+    total_hero_deaths = 0
+
     # Single pass through all replays
     Wc3statsReplay.includes(:match).find_each do |replay|
       next unless replay.match.present?
@@ -68,6 +78,11 @@ class FactionEventStatsCalculator
       next unless faction_appearance
 
       total_games += 1
+
+      # Track hero kills from appearance (for K/D ratio)
+      if !faction_appearance.hero_kills.nil? && !faction_appearance.ignore_hero_kills?
+        total_hero_kills += faction_appearance.hero_kills
+      end
 
       # Get all events categorized, filtering out post-game deaths
       hero_death_events = replay.events.select do |e|
@@ -94,10 +109,15 @@ class FactionEventStatsCalculator
           base_stats[base_name][:deaths] << death_time if death_time
           base_stats[base_name][:total_games] += 1
           base_death_times[base_name] = death_time
+          # Track uptime: time alive before death
+          total_base_seconds_alive += death_time if death_time
         else
           base_stats[base_name][:survivals] += 1
           base_stats[base_name][:total_games] += 1
+          # Base survived entire match
+          total_base_seconds_alive += match_length
         end
+        total_base_seconds_possible += match_length
       end
 
       # Track all bases lost
@@ -152,10 +172,24 @@ class FactionEventStatsCalculator
           # Track core hero deaths for "all heroes lost" (exclude bonus heroes)
           if core_hero_names.include?(hero_name) && first_death_time
             core_hero_death_times[hero_name] = first_death_time
+            total_hero_deaths += 1
+          end
+
+          # Track uptime for core heroes only
+          if core_hero_names.include?(hero_name)
+            total_hero_seconds_alive += first_death_time if first_death_time
+            total_hero_seconds_alive += match_length unless first_death_time
+            total_hero_seconds_possible += match_length
           end
         else
           hero_stats[hero_name][:survivals] += 1
           hero_stats[hero_name][:total_games] += 1
+
+          # Track uptime for core heroes only (survived entire match)
+          if core_hero_names.include?(hero_name)
+            total_hero_seconds_alive += match_length
+            total_hero_seconds_possible += match_length
+          end
         end
       end
 
@@ -202,7 +236,12 @@ class FactionEventStatsCalculator
       base_loss_stats: build_base_loss_results(base_names, total_games, all_bases_lost_times),
       hero_stats: build_hero_results(display_hero_names, hero_stats),
       hero_loss_stats: build_hero_loss_results(core_hero_names, total_games, all_heroes_lost_times, all_heroes_lost_twice_times),
-      ring_event_stats: build_ring_results(ring_event, total_games, ring_occurrences, sauron_deaths_after_ring)
+      ring_event_stats: build_ring_results(ring_event, total_games, ring_occurrences, sauron_deaths_after_ring),
+      hero_uptime: total_hero_seconds_possible > 0 ? (total_hero_seconds_alive.to_f / total_hero_seconds_possible * 100).round(1) : 0,
+      base_uptime: total_base_seconds_possible > 0 ? (total_base_seconds_alive.to_f / total_base_seconds_possible * 100).round(1) : 0,
+      hero_kills: total_hero_kills,
+      hero_deaths: total_hero_deaths,
+      hero_kd_ratio: total_hero_deaths > 0 ? (total_hero_kills.to_f / total_hero_deaths).round(2) : nil
     }
   end
 

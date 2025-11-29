@@ -78,7 +78,7 @@
           <tr>
             <td class="py-0.5">Top Hero Kills</td>
             <td class="text-right py-0.5">
-              <%= stats[:times_top_hero_kills] %>x
+              <%= number_with_precision(stats[:times_top_hero_kills], precision: 1) %>x
               <% if stats[:total_matches] > 0 %>
                 <span class="text-gray-500">(<%= number_with_precision(stats[:times_top_hero_kills].to_f / stats[:total_matches] * 100, precision: 1) %>%)</span>
               <% end %>
@@ -87,7 +87,7 @@
           <tr>
             <td class="py-0.5">Top Unit Kills</td>
             <td class="text-right py-0.5">
-              <%= stats[:times_top_unit_kills] %>x
+              <%= number_with_precision(stats[:times_top_unit_kills], precision: 1) %>x
               <% if stats[:total_matches] > 0 %>
                 <span class="text-gray-500">(<%= number_with_precision(stats[:times_top_unit_kills].to_f / stats[:total_matches] * 100, precision: 1) %>%)</span>
               <% end %>
@@ -250,8 +250,8 @@
                   <td class="text-center py-1"><%= efs&.dig(:hero_kd_ratio) || "-" %></td>
                   <td class="text-center py-1"><%= efs ? "#{efs[:hero_uptime]}%" : "-" %></td>
                   <td class="text-center py-1"><%= efs&.dig(:games_with_bases).to_i > 0 ? "#{efs[:base_uptime]}%" : "-" %></td>
-                  <td class="text-center py-1"><%= fs[:times_top_hero_kills] %></td>
-                  <td class="text-center py-1"><%= fs[:times_top_unit_kills] %></td>
+                  <td class="text-center py-1"><%= number_with_precision(fs[:times_top_hero_kills], precision: 1) %></td>
+                  <td class="text-center py-1"><%= number_with_precision(fs[:times_top_unit_kills], precision: 1) %></td>
                 </tr>
               <% end %>
             </tbody>
@@ -296,8 +296,8 @@
                   <td class="text-center py-1"><%= efs&.dig(:hero_kd_ratio) || "-" %></td>
                   <td class="text-center py-1"><%= efs ? "#{efs[:hero_uptime]}%" : "-" %></td>
                   <td class="text-center py-1"><%= efs&.dig(:games_with_bases).to_i > 0 ? "#{efs[:base_uptime]}%" : "-" %></td>
-                  <td class="text-center py-1"><%= fs[:times_top_hero_kills] %></td>
-                  <td class="text-center py-1"><%= fs[:times_top_unit_kills] %></td>
+                  <td class="text-center py-1"><%= number_with_precision(fs[:times_top_hero_kills], precision: 1) %></td>
+                  <td class="text-center py-1"><%= number_with_precision(fs[:times_top_unit_kills], precision: 1) %></td>
                 </tr>
               <% end %>
             </tbody>

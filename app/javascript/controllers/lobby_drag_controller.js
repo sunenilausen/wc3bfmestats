@@ -44,6 +44,14 @@ export default class extends Controller {
 
     if (!targetSelect) return
 
+    // Handle "new player" drop specially
+    if (data.isNew || data.playerId === 'new') {
+      if (typeof window.setNewPlayerSlot === "function") {
+        window.setNewPlayerSlot(targetIndex)
+      }
+      return
+    }
+
     // Get existing player in target slot for potential swap
     const existingPlayerId = targetSelect.value
     const existingPlayerName = targetSelect.options[targetSelect.selectedIndex]?.text

@@ -75,4 +75,23 @@ class Match < ApplicationRecord
     return false unless wc3stats_replay.present?
     good_victory != wc3stats_replay.good_victory?
   end
+
+  # Use checksum as URL param instead of id
+  def to_param
+    checksum || id.to_s
+  end
+
+  def checksum
+    wc3stats_replay&.replay_hash
+  end
+
+  # Find by checksum or id
+  def self.find_by_checksum_or_id(param)
+    # First try to find by checksum (via wc3stats_replay)
+    replay = Wc3statsReplay.find_by("body->>'hash' = ?", param)
+    return replay.match if replay&.match
+
+    # If not found by checksum, try by id
+    find_by(id: param) if param.to_s =~ /\A\d+\z/
+  end
 end

@@ -1,6 +1,7 @@
 class MatchesController < ApplicationController
-  load_and_authorize_resource except: %i[index new create sync]
-  authorize_resource only: %i[new create]
+  load_and_authorize_resource except: %i[index show new create sync edit update destroy]
+  before_action :set_match, only: %i[show edit update destroy]
+  authorize_resource only: %i[new create show edit update destroy]
   before_action :authorize_admin!, only: [ :sync ]
 
   # GET /matches or /matches.json
@@ -26,8 +27,8 @@ class MatchesController < ApplicationController
     current_index = ordered_ids.index(@match.id)
 
     if current_index
-      @previous_match = current_index > 0 ? Match.find(ordered_ids[current_index - 1]) : nil
-      @next_match = current_index < ordered_ids.length - 1 ? Match.find(ordered_ids[current_index + 1]) : nil
+      @previous_match = current_index > 0 ? Match.includes(:wc3stats_replay).find(ordered_ids[current_index - 1]) : nil
+      @next_match = current_index < ordered_ids.length - 1 ? Match.includes(:wc3stats_replay).find(ordered_ids[current_index + 1]) : nil
     end
   end
 
@@ -114,6 +115,11 @@ class MatchesController < ApplicationController
     unless current_user&.admin?
       redirect_to matches_path, alert: "You are not authorized to perform this action."
     end
+  end
+
+  def set_match
+    @match = Match.find_by_checksum_or_id(params[:id])
+    raise ActiveRecord::RecordNotFound, "Match not found" unless @match
   end
 
     # Only allow a list of trusted parameters through.

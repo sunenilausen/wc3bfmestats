@@ -32,14 +32,20 @@ class Wc3statsReplay < ApplicationRecord
   end
 
   # Parse map version from filename (e.g., "BFME4.5e.w3x" -> "4.5e", "BFME4.3gObs.w3x" -> "4.3gObs")
-  # Returns nil if not parseable
+  # Also handles: "BFME3.8Beta3.w3x" -> "3.8Beta3", "BFME4.1Test3.w3x" -> "4.1Test3"
+  # Returns nil if not parseable or for .w3m files
   def map_version
     return nil unless map_file_name
 
-    # Match pattern like "BFME4.5e.w3x", "BFME4.5.w3x", or "BFME4.3gObs.w3x"
-    if map_file_name =~ /BFME(\d+\.\d+[a-z]?(?:Obs)?)\.w3x/i
+    # Only match .w3x files (exclude .w3m like BFME7.4_GFINALFOREVERDONE.w3m)
+    # Captures everything after "BFME" and before ".w3x"
+    if map_file_name =~ /BFME(\d+\.\d+[^.]*)\.(w3x)/i
       $1
     end
+  end
+
+  def test_map?
+    map_file_name&.match?(/test/i)
   end
 
   def game_length

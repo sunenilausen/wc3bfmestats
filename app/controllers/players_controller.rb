@@ -64,11 +64,12 @@ class PlayersController < ApplicationController
   # GET /players/1 or /players/1.json
   def show
     # Preload all data needed for stats computation (exclude ignored matches)
+    # Order by reverse chronological (newest first) using same ordering as matches index
     @appearances = @player.appearances
       .joins(:match)
       .where(matches: { ignored: false })
-      .includes(:faction, match: { appearances: :faction })
-      .order("matches.played_at DESC, matches.created_at DESC")
+      .includes(:faction, :match, match: { appearances: :faction, wc3stats_replay: {} })
+      .merge(Match.reverse_chronological)
 
     # Compute all stats in a single pass
     @stats = PlayerStatsCalculator.new(@player, @appearances).compute

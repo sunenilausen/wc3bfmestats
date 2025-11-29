@@ -81,6 +81,9 @@
       <% if match.row_order.present? %>
         <span><strong>Order:</strong> <%= match.row_order %></span>
       <% end %>
+      <% if match.wc3stats_replay&.replay_hash.present? %>
+        <span><strong>Checksum:</strong> <%= match.wc3stats_replay.replay_hash %></span>
+      <% end %>
     </div>
   </div>
 </div>

@@ -16,11 +16,21 @@
   <div class="flex flex-col md:flex-row gap-6 mt-4">
     <div class="md:w-2/3">
       <strong class="block font-medium mb-1">Appearances:</strong>
+      <% good_appearances = match.appearances.select { |a| a.faction&.good? } %>
+      <% evil_appearances = match.appearances.select { |a| a.faction && !a.faction.good? } %>
       <ul class="list-disc pl-5">
         <li class="font-semibold mb-2">Forces of Middle Earth (<%= match.good_victory ? "Victory" : "Defeat" %>) </li>
-        <%= render partial: "matches/team_table", locals: { appearances: match.appearances[0..4] } %>
+        <% if good_appearances.any? %>
+          <%= render partial: "matches/team_table", locals: { appearances: good_appearances, match: match } %>
+        <% else %>
+          <p class="text-gray-500 italic ml-4">No players</p>
+        <% end %>
         <li class="font-semibold mb-2">Forces of Sauron (<%= match.good_victory ? "Defeat" : "Victory" %>) </li>
-        <%= render partial: "matches/team_table", locals: { appearances: match.appearances[5..9] } %>
+        <% if evil_appearances.any? %>
+          <%= render partial: "matches/team_table", locals: { appearances: evil_appearances, match: match } %>
+        <% else %>
+          <p class="text-gray-500 italic ml-4">No players</p>
+        <% end %>
       </ul>
     </div>
 

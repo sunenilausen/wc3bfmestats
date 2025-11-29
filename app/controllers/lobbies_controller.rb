@@ -3,7 +3,7 @@ class LobbiesController < ApplicationController
 
   # GET /lobbies or /lobbies.json
   def index
-    @lobbies = Lobby.all
+    @lobbies = Lobby.includes(lobby_players: [:faction, :player]).order(updated_at: :desc)
   end
 
   # GET /lobbies/1 or /lobbies/1.json

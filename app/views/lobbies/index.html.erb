@@ -10,19 +10,30 @@
     <%= link_to "New lobby", new_lobby_path, class: "rounded-md px-3.5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white block font-medium" %>
   </div>
 
-  <div id="lobbies" class="min-w-full divide-y divide-gray-200 space-y-5">
+  <div id="lobbies" class="mt-4 space-y-3">
     <% if @lobbies.any? %>
       <% @lobbies.each do |lobby| %>
-        <div class="flex flex-col sm:flex-row justify-between items-center pb-5 sm:pb-0">
-          <%= render lobby %>
-          <div class="w-full sm:w-auto flex flex-col sm:flex-row space-x-2 space-y-2">
-            <%= link_to "Show", lobby, class: "w-full sm:w-auto text-center rounded-md px-3.5 py-2.5 bg-gray-100 hover:bg-gray-50 inline-block font-medium" %>
-            <%= link_to "Edit", edit_lobby_path(lobby), class: "w-full sm:w-auto text-center rounded-md px-3.5 py-2.5 bg-gray-100 hover:bg-gray-50 inline-block font-medium" %>
+        <% good_players = lobby.lobby_players.select { |lp| lp.faction&.good? && lp.player }.map { |lp| lp.player.nickname } %>
+        <% evil_players = lobby.lobby_players.select { |lp| lp.faction && !lp.faction.good? && lp.player }.map { |lp| lp.player.nickname } %>
+        <div class="bg-white rounded-lg shadow border border-gray-200 p-4">
+          <div class="flex justify-between items-start gap-4">
+            <div class="flex-1">
+              <p class="text-xs text-gray-500 mb-1">Updated <%= time_ago_in_words(lobby.updated_at) %> ago</p>
+              <div class="text-sm">
+                <span class="text-green-700"><%= good_players.any? ? good_players.join(", ") : "No players" %></span>
+                <span class="text-gray-400 mx-1">vs</span>
+                <span class="text-red-700"><%= evil_players.any? ? evil_players.join(", ") : "No players" %></span>
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <%= link_to "Show", lobby, class: "text-sm rounded-md px-3 py-1.5 bg-gray-100 hover:bg-gray-50 font-medium" %>
+              <%= link_to "Edit", edit_lobby_path(lobby), class: "text-sm rounded-md px-3 py-1.5 bg-gray-100 hover:bg-gray-50 font-medium" %>
+            </div>
           </div>
         </div>
       <% end %>
     <% else %>
-      <p class="text-center my-10">No lobbies found.</p>
+      <p class="text-center my-10 text-gray-500">No lobbies found.</p>
     <% end %>
   </div>
 </div>

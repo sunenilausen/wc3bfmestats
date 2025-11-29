@@ -1,7 +1,13 @@
 <tr>
   <td class="px-2 py-1 font-medium">
-    <span style="display: inline-block; width: 14px; height: 14px; background-color: <%= appearance.faction.color %>; border-radius: 3px; margin-right: 6px; vertical-align: middle;"></span>
-    <%= link_to appearance.player.nickname, player_path(appearance.player) %>
+    <% if appearance.faction %>
+      <span style="display: inline-block; width: 14px; height: 14px; background-color: <%= appearance.faction.color %>; border-radius: 3px; margin-right: 6px; vertical-align: middle;"></span>
+    <% end %>
+    <% if appearance.player %>
+      <%= link_to appearance.player.nickname, player_path(appearance.player) %>
+    <% else %>
+      <span class="text-gray-400">Unknown</span>
+    <% end %>
   </td>
   <td class="px-2 py-1">
     <%= previous_record_for_appearance(appearance) %>
@@ -28,6 +34,6 @@
     <%= appearance.elo_rating_change&.round %>
   </td>
   <td class="px-2 py-1">
-    <%= appearance.player.elo_rating&.round %>
+    <%= appearance.player&.elo_rating&.round %>
   </td>
 </tr>

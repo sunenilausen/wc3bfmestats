@@ -9,6 +9,7 @@ class LobbiesController < ApplicationController
   # GET /lobbies/1 or /lobbies/1.json
   def show
     preload_lobby_player_stats
+    preload_event_stats
   end
 
   # GET /lobbies/new - creates lobby instantly with previous match players
@@ -226,6 +227,21 @@ class LobbiesController < ApplicationController
           wins: faction_wins_1y,
           losses: faction_apps_1y.size - faction_wins_1y
         }
+      end
+    end
+
+    def preload_event_stats
+      # Get all player IDs from this lobby (players + observers)
+      player_ids = @lobby.lobby_players.map(&:player_id).compact
+      player_ids += @lobby.observer_ids
+      player_ids.uniq!
+
+      @event_stats = {}
+      return if player_ids.empty?
+
+      # Compute event stats for each player
+      Player.where(id: player_ids).each do |player|
+        @event_stats[player.id] = PlayerEventStatsCalculator.new(player).compute
       end
     end
 end

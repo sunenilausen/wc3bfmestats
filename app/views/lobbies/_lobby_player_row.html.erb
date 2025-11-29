@@ -2,6 +2,7 @@
 <% player_stats = lobby_player_stats[lp.player_id] if lp.player_id %>
 <% fac_stats = faction_specific_stats[lp.id] %>
 <% player_recent = recent_stats[lp.player_id] if defined?(recent_stats) && lp.player_id %>
+<% player_event_stats = event_stats[lp.player_id] if defined?(event_stats) && lp.player_id %>
 <tr class="nested-fields" data-team="<%= team_number %>"
     <%= "data-lobby-drag-target=playerSlot data-slot-index=#{index}" if editable %>>
   <td class="px-4 py-2 whitespace-nowrap text-sm">
@@ -79,31 +80,9 @@
     <% end %>
   </td>
   <% unless editable %>
-    <%# Win% column %>
-    <td class="px-4 py-2 whitespace-nowrap text-sm">
-      <% if player_stats && player_stats[:total_matches] > 0 %>
-        <%= number_with_precision(player_stats[:wins].to_f / player_stats[:total_matches] * 100, precision: 0) %>%
-      <% else %>
-        -
-      <% end %>
-    </td>
-    <%# Last Seen %>
+    <%# Last Played %>
     <td class="px-4 py-2 whitespace-nowrap text-sm" title="<%= lp.player&.last_seen&.strftime('%Y-%m-%d') %>">
-      <% if lp.player&.last_seen %>
-        <%= time_ago_in_words(lp.player.last_seen) %> ago
-      <% else %>
-        -
-      <% end %>
-    </td>
-    <%# 100d form %>
-    <td class="px-4 py-2 whitespace-nowrap text-sm">
-      <% if player_recent %>
-        <span class="text-green-600"><%= player_recent[:recent_wins] %></span>/<span class="text-red-600"><%= player_recent[:recent_losses] %></span>
-      <% elsif lp.player %>
-        <span class="text-green-600"><%= lp.player.recent_wins %></span>/<span class="text-red-600"><%= lp.player.recent_losses %></span>
-      <% else %>
-        -
-      <% end %>
+      <%= short_time_ago(lp.player&.last_seen) %>
     </td>
     <%# 1y faction %>
     <td class="px-4 py-2 whitespace-nowrap text-sm">
@@ -116,10 +95,26 @@
         -
       <% end %>
     </td>
-    <%# Top HK% %>
+    <%# Hero K/D %>
     <td class="px-4 py-2 whitespace-nowrap text-sm">
-      <% if player_stats && player_stats[:total_matches] > 0 %>
-        <%= number_with_precision(player_stats[:times_top_hero_kills].to_f / player_stats[:total_matches] * 100, precision: 0) %>%
+      <% if player_event_stats && player_event_stats[:hero_kd_ratio] %>
+        <%= player_event_stats[:hero_kd_ratio] %>
+      <% else %>
+        -
+      <% end %>
+    </td>
+    <%# Hero Uptime %>
+    <td class="px-4 py-2 whitespace-nowrap text-sm">
+      <% if player_event_stats && player_event_stats[:hero_uptime] %>
+        <%= player_event_stats[:hero_uptime] %>%
+      <% else %>
+        -
+      <% end %>
+    </td>
+    <%# Base Uptime %>
+    <td class="px-4 py-2 whitespace-nowrap text-sm">
+      <% if player_event_stats && player_event_stats[:base_uptime] %>
+        <%= player_event_stats[:base_uptime] %>%
       <% else %>
         -
       <% end %>
@@ -128,14 +123,6 @@
     <td class="px-4 py-2 whitespace-nowrap text-sm">
       <% if player_stats %>
         <%= player_stats[:avg_hero_kill_contribution] %>%
-      <% else %>
-        -
-      <% end %>
-    </td>
-    <%# Top UK% %>
-    <td class="px-4 py-2 whitespace-nowrap text-sm">
-      <% if player_stats && player_stats[:total_matches] > 0 %>
-        <%= number_with_precision(player_stats[:times_top_unit_kills].to_f / player_stats[:total_matches] * 100, precision: 0) %>%
       <% else %>
         -
       <% end %>

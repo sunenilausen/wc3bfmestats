@@ -8,6 +8,10 @@ class HomeController < ApplicationController
     # Players who have never played a valid match (only observed or only played ignored matches)
     players_with_valid_matches = Player.joins(:matches).where(matches: { ignored: false }).distinct.pluck(:id)
     @observers_count = Player.where.not(id: players_with_valid_matches).count
+
+    # Most recent lobby and match
+    @recent_lobby = Lobby.order(updated_at: :desc).first
+    @recent_match = Match.where(ignored: false).order(uploaded_at: :desc).includes(appearances: [:player, :faction]).first
   end
 
   private

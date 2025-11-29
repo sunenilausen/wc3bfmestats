@@ -10,8 +10,9 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_29_130918) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_29_173720) do
   create_table "appearances", force: :cascade do |t|
+    t.integer "castles_razed"
     t.datetime "created_at", null: false
     t.integer "elo_rating"
     t.integer "elo_rating_change"
@@ -56,6 +57,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_29_130918) do
   create_table "lobby_players", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.integer "faction_id", null: false
+    t.boolean "is_new_player", default: false
     t.integer "lobby_id", null: false
     t.integer "player_id"
     t.datetime "updated_at", null: false
@@ -91,8 +93,27 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_29_130918) do
     t.float "glicko2_rating_deviation", default: 350.0
     t.float "glicko2_rating_seed"
     t.float "glicko2_volatility", default: 0.06
+    t.float "ml_score", default: 50.0
     t.string "nickname"
     t.string "region"
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "prediction_weights", force: :cascade do |t|
+    t.float "accuracy", default: 0.0
+    t.float "base_uptime_weight", default: 0.0
+    t.float "bias", default: 0.0
+    t.float "castle_raze_contribution_weight", default: 0.02
+    t.datetime "created_at", null: false
+    t.float "elo_weight", default: 1.0
+    t.float "enemy_elo_diff_weight", default: 0.0
+    t.float "games_played_weight", default: 0.0
+    t.integer "games_trained_on", default: 0
+    t.float "hero_kd_weight", default: 0.0
+    t.float "hero_kill_contribution_weight", default: 0.0
+    t.float "hero_uptime_weight", default: 0.0
+    t.datetime "last_trained_at"
+    t.float "unit_kill_contribution_weight", default: 0.0
     t.datetime "updated_at", null: false
   end
 

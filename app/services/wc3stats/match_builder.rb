@@ -92,7 +92,8 @@ module Wc3stats
           player: player,
           faction: faction,
           hero_kills: player_data.dig("variables", "heroKills") || 0,
-          unit_kills: player_data.dig("variables", "unitKills") || 0
+          unit_kills: player_data.dig("variables", "unitKills") || 0,
+          castles_razed: player_data.dig("variables", "castlesRazed")
         )
       end
     end

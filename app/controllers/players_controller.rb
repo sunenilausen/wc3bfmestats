@@ -3,7 +3,7 @@ class PlayersController < ApplicationController
 
   # GET /players or /players.json
   def index
-    @sort_column = %w[elo_rating glicko2_rating matches_played matches_observed].include?(params[:sort]) ? params[:sort] : "elo_rating"
+    @sort_column = %w[elo_rating glicko2_rating matches_played matches_observed ml_score].include?(params[:sort]) ? params[:sort] : "elo_rating"
     @sort_direction = %w[asc desc].include?(params[:direction]) ? params[:direction] : "desc"
 
     @players = Player.all
@@ -56,6 +56,8 @@ class PlayersController < ApplicationController
     elsif @sort_column == "matches_observed"
       @players = @players.includes(:matches).sort_by { |p| @observation_counts[p.battletag] }
       @players = @players.reverse if @sort_direction == "desc"
+    elsif @sort_column == "ml_score"
+      @players = @players.includes(:matches).order(ml_score: @sort_direction)
     else
       @players = @players.includes(:matches).order(@sort_column => @sort_direction)
     end

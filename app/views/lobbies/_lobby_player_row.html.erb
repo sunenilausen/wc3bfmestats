@@ -3,6 +3,7 @@
 <% fac_stats = faction_specific_stats[lp.id] %>
 <% player_recent = recent_stats[lp.player_id] if defined?(recent_stats) && lp.player_id %>
 <% player_event_stats = event_stats[lp.player_id] if defined?(event_stats) && lp.player_id %>
+<% player_score_data = player_scores[lp.player_id] if defined?(player_scores) && lp.player_id %>
 <tr class="nested-fields" data-team="<%= team_number %>"
     <%= "data-lobby-drag-target=playerSlot data-slot-index=#{index}" if editable %>>
   <td class="px-4 py-2 whitespace-nowrap text-sm">
@@ -15,6 +16,7 @@
       <% if lp.persisted? %>
         <input type="hidden" name="lobby[lobby_players_attributes][<%= index %>][id]" value="<%= lp.id %>">
       <% end %>
+      <input type="hidden" name="lobby[lobby_players_attributes][<%= index %>][is_new_player]" id="is-new-player-<%= index %>" value="<%= lp.is_new_player? ? '1' : '0' %>">
       <select name="lobby[lobby_players_attributes][<%= index %>][player_id]"
               class="hidden player-select"
               id="player-select-<%= index %>"
@@ -51,16 +53,26 @@
       <% end %>
     <% elsif lp.player %>
       <%= link_to lp.player.nickname, player_path(lp.player), class: "text-blue-600 hover:underline" %>
+    <% elsif lp.is_new_player? %>
+      <span class="text-green-700">New Player</span>
     <% else %>
       -
     <% end %>
   </td>
   <td class="px-4 py-2 whitespace-nowrap text-sm" id="elo-<%= index %>">
-    <%= lp.player&.elo_rating&.round || "-" %>
+    <% if lp.player %>
+      <%= lp.player.elo_rating&.round || "-" %>
+    <% elsif lp.is_new_player? %>
+      <%= NewPlayerDefaults.elo %>
+    <% else %>
+      -
+    <% end %>
   </td>
   <td class="px-4 py-2 whitespace-nowrap text-sm" id="glicko-<%= index %>">
     <% if lp.player&.glicko2_rating %>
       <%= lp.player.glicko2_rating.round %><span class="text-gray-400 text-xs">&plusmn;<%= lp.player.glicko2_rating_deviation&.round || "-" %></span>
+    <% elsif lp.is_new_player? %>
+      <%= NewPlayerDefaults.glicko %>
     <% else %>
       -
     <% end %>
@@ -75,11 +87,27 @@
       <% else %>
         <span class="text-green-600"><%= lp.player.wins %>W</span>/<span class="text-red-600"><%= lp.player.losses %>L</span>
       <% end %>
+    <% elsif lp.is_new_player? %>
+      <span class="text-green-600">0W</span>/<span class="text-red-600">0L</span>
     <% else %>
       -
     <% end %>
   </td>
   <% unless editable %>
+    <%# Score %>
+    <td class="px-4 py-2 whitespace-nowrap text-sm">
+      <% if player_score_data %>
+        <% score = player_score_data[:score] %>
+        <% color_class = score >= 55 ? 'text-green-600' : (score <= 45 ? 'text-red-600' : 'text-gray-600') %>
+        <span class="<%= color_class %> font-medium" title="Raw score: <%= player_score_data[:raw_score] %>"><%= score %></span>
+        <%= tier_badge(score) %>
+      <% elsif lp.is_new_player? %>
+        <span class="text-red-600 font-medium"><%= NewPlayerDefaults.ml_score %></span>
+        <%= tier_badge(NewPlayerDefaults.ml_score) %>
+      <% else %>
+        -
+      <% end %>
+    </td>
     <%# Last Played %>
     <td class="px-4 py-2 whitespace-nowrap text-sm" title="<%= lp.player&.last_seen&.strftime('%Y-%m-%d') %>">
       <%= short_time_ago(lp.player&.last_seen) %>
@@ -107,14 +135,6 @@
     <td class="px-4 py-2 whitespace-nowrap text-sm">
       <% if player_event_stats && player_event_stats[:hero_uptime] %>
         <%= player_event_stats[:hero_uptime] %>%
-      <% else %>
-        -
-      <% end %>
-    </td>
-    <%# Base Uptime %>
-    <td class="px-4 py-2 whitespace-nowrap text-sm">
-      <% if player_event_stats && player_event_stats[:base_uptime] %>
-        <%= player_event_stats[:base_uptime] %>%
       <% else %>
         -
       <% end %>

@@ -417,6 +417,32 @@ namespace :wc3stats do
     end
     puts
 
+    # Step 11: Train prediction model
+    puts "Step 11: Training ML prediction model..."
+    trainer = PredictionModelTrainer.new
+    model = trainer.train
+    if model
+      puts "  Model trained on #{model.games_trained_on} games"
+      puts "  Accuracy: #{model.accuracy}%"
+      puts "  Weights:"
+      puts "    ELO: #{model.elo_weight.round(4)}"
+      puts "    Hero K/D: #{model.hero_kd_weight.round(4)}"
+      puts "    HK%: #{model.hero_kill_contribution_weight.round(4)}"
+      puts "    UK%: #{model.unit_kill_contribution_weight.round(4)}"
+      puts "    CK%: #{model.castle_raze_contribution_weight.round(4)}"
+      puts "    Enemy ELO Diff: #{model.enemy_elo_diff_weight.round(4)}"
+      puts "    Games: #{model.games_played_weight.round(4)}"
+    else
+      puts "  No training data available"
+    end
+    puts
+
+    # Step 12: Recalculate ML scores for all players
+    puts "Step 12: Recalculating ML scores for all players..."
+    MlScoreRecalculator.new.call
+    puts "  Updated ML scores for #{Player.count} players"
+    puts
+
     # Final summary
     puts "=" * 60
     puts "Sync Complete"
@@ -559,6 +585,104 @@ namespace :wc3stats do
     puts "=" * 60
     puts "  Updated: #{updated}"
     puts "  Already correct: #{skipped}"
+    puts "=" * 60
+  end
+
+  desc "Train/retrain the ML prediction model"
+  task train_prediction_model: :environment do
+    puts "=" * 60
+    puts "Training ML Prediction Model"
+    puts "=" * 60
+    puts
+
+    puts "Analyzing #{Match.where(ignored: false).count} matches..."
+    puts
+
+    trainer = PredictionModelTrainer.new
+    model = trainer.train
+
+    if model
+      puts "Model trained successfully!"
+      puts
+      puts "Results:"
+      puts "  Games trained on: #{model.games_trained_on}"
+      puts "  Accuracy: #{model.accuracy}%"
+      puts
+      puts "Learned weights:"
+      puts "  ELO:           #{model.elo_weight.round(6)}"
+      puts "  Hero K/D:      #{model.hero_kd_weight.round(6)}"
+      puts "  HK%:           #{model.hero_kill_contribution_weight.round(6)}"
+      puts "  UK%:           #{model.unit_kill_contribution_weight.round(6)}"
+      puts "  CK%:           #{model.castle_raze_contribution_weight.round(6)}"
+      puts "  Enemy ELO Diff:#{model.enemy_elo_diff_weight.round(6)}"
+      puts "  Games Played:  #{model.games_played_weight.round(6)}"
+      puts "  Bias:          #{model.bias.round(6)}"
+      puts
+      puts "=" * 60
+
+      # Show comparison with previous model
+      previous = PredictionWeight.order(created_at: :desc).second
+      if previous
+        puts "Comparison with previous model:"
+        puts "  Accuracy change: #{(model.accuracy - previous.accuracy).round(1)}%"
+        puts "  Games increase: #{model.games_trained_on - previous.games_trained_on}"
+        puts "=" * 60
+      end
+    else
+      puts "ERROR: No training data available"
+      puts "Make sure you have matches in the database"
+    end
+  end
+
+  desc "Backfill castles_razed from replay data"
+  task backfill_castles_razed: :environment do
+    puts "=" * 60
+    puts "Backfilling Castles Razed"
+    puts "=" * 60
+    puts
+
+    appearances_with_replay = Appearance.joins(match: :wc3stats_replay)
+      .includes({ match: :wc3stats_replay }, :player, :faction)
+    total = appearances_with_replay.count
+    updated = 0
+    skipped = 0
+
+    puts "Appearances with replays: #{total}"
+    puts
+
+    appearances_with_replay.find_each.with_index do |appearance, index|
+      replay = appearance.match.wc3stats_replay
+      player = appearance.player
+
+      # Find the player's data in the replay
+      player_data = replay.players.find do |p|
+        battletag = p["name"]
+        fixed_battletag = replay.fix_encoding(battletag&.gsub("\\", "") || "")
+        player.battletag == fixed_battletag || player.battletag == battletag
+      end
+
+      if player_data
+        castles_razed = player_data.dig("variables", "castlesRazed")
+        if castles_razed && appearance.castles_razed != castles_razed
+          appearance.update_column(:castles_razed, castles_razed)
+          updated += 1
+        else
+          skipped += 1
+        end
+      else
+        skipped += 1
+      end
+
+      print "\r  Progress: #{index + 1}/#{total} (updated: #{updated}, skipped: #{skipped})"
+    end
+
+    puts
+    puts
+    puts "=" * 60
+    puts "Summary"
+    puts "=" * 60
+    puts "  Updated: #{updated}"
+    puts "  Skipped: #{skipped}"
     puts "=" * 60
   end
 end

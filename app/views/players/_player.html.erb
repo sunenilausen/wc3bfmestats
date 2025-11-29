@@ -18,6 +18,7 @@
     <div><strong>Battlenet:</strong> <%= player.battlenet_name %></div>
     <div><strong>ELO:</strong> <%= player.elo_rating&.round || "-" %></div>
     <div><strong>Glicko-2:</strong> <%= player.glicko2_rating&.round || "-" %> <span class="text-gray-400 text-xs" title="Rating Deviation (uncertainty)">&plusmn;<%= player.glicko2_rating_deviation&.round || "-" %></span></div>
+    <div><strong>ML Score:</strong> <span class="<%= ml_score_color_class(player.ml_score) %> font-medium"><%= player.ml_score %></span> <%= tier_badge(player.ml_score) %></div>
     <div><strong>Region:</strong> <%= player.region %></div>
     <div><strong>Highest ELO:</strong> <%= highest_elo || "-" %></div>
     <div><strong>Lowest ELO:</strong> <%= lowest_elo || "-" %></div>
@@ -66,6 +67,32 @@
               <span class="text-gray-500">(avg <%= stats[:avg_favorite_elo_diff] %> adv)</span>
             </td>
           </tr>
+          <tr>
+            <td class="py-0.5" title="Player's ELO vs enemy team average. Positive = playing weaker opponents">Avg vs Enemy</td>
+            <td class="text-right py-0.5">
+              <% enemy_diff = stats[:avg_enemy_elo_diff] %>
+              <% if enemy_diff > 0 %>
+                <span class="text-green-600">+<%= enemy_diff %></span>
+              <% elsif enemy_diff < 0 %>
+                <span class="text-red-600"><%= enemy_diff %></span>
+              <% else %>
+                <span class="text-gray-500">0</span>
+              <% end %>
+            </td>
+          </tr>
+          <tr>
+            <td class="py-0.5" title="Player's ELO vs own team average (excluding self). Positive = carrying weaker teammates">Avg vs Allies</td>
+            <td class="text-right py-0.5">
+              <% ally_diff = stats[:avg_ally_elo_diff] %>
+              <% if ally_diff > 0 %>
+                <span class="text-green-600">+<%= ally_diff %></span>
+              <% elsif ally_diff < 0 %>
+                <span class="text-red-600"><%= ally_diff %></span>
+              <% else %>
+                <span class="text-gray-500">0</span>
+              <% end %>
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -101,6 +128,10 @@
             <td class="py-0.5">Avg Unit Kill Contrib</td>
             <td class="text-right py-0.5"><%= stats[:avg_unit_kill_contribution] %>%</td>
           </tr>
+          <tr>
+            <td class="py-0.5">Avg Castle Raze Contrib</td>
+            <td class="text-right py-0.5"><%= stats[:avg_castle_raze_contribution] %>%</td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -125,6 +156,10 @@
           <tr>
             <td class="py-0.5">Unit Kills/min</td>
             <td class="text-right py-0.5"><%= number_with_precision(kills_per_min, precision: 2) %></td>
+          </tr>
+          <tr>
+            <td class="py-0.5">Castles Razed</td>
+            <td class="text-right py-0.5"><%= number_with_precision(stats[:avg_castles_razed], precision: 2) %></td>
           </tr>
         </tbody>
       </table>
@@ -225,7 +260,7 @@
                 <th class="text-center py-1">Games</th>
                 <th class="text-center py-1" title="Hero Kill/Death ratio">H K/D</th>
                 <th class="text-center py-1" title="Hero Uptime %">H Up%</th>
-                <th class="text-center py-1" title="Base Uptime %">B Up%</th>
+                <th class="text-center py-1" title="Average Castles Razed">CK</th>
                 <th class="text-center py-1" title="Times top hero killer on team">Top HK</th>
                 <th class="text-center py-1" title="Times top unit killer on team">Top UK</th>
               </tr>
@@ -249,7 +284,7 @@
                   <td class="text-center py-1 text-gray-500"><%= fs[:games] %></td>
                   <td class="text-center py-1"><%= efs&.dig(:hero_kd_ratio) || "-" %></td>
                   <td class="text-center py-1"><%= efs ? "#{efs[:hero_uptime]}%" : "-" %></td>
-                  <td class="text-center py-1"><%= efs&.dig(:games_with_bases).to_i > 0 ? "#{efs[:base_uptime]}%" : "-" %></td>
+                  <td class="text-center py-1"><%= fs[:avg_castles_razed] > 0 ? number_with_precision(fs[:avg_castles_razed], precision: 2) : "-" %></td>
                   <td class="text-center py-1"><%= number_with_precision(fs[:times_top_hero_kills], precision: 1) %></td>
                   <td class="text-center py-1"><%= number_with_precision(fs[:times_top_unit_kills], precision: 1) %></td>
                 </tr>
@@ -271,7 +306,7 @@
                 <th class="text-center py-1">Games</th>
                 <th class="text-center py-1" title="Hero Kill/Death ratio">H K/D</th>
                 <th class="text-center py-1" title="Hero Uptime %">H Up%</th>
-                <th class="text-center py-1" title="Base Uptime %">B Up%</th>
+                <th class="text-center py-1" title="Average Castles Razed">CK</th>
                 <th class="text-center py-1" title="Times top hero killer on team">Top HK</th>
                 <th class="text-center py-1" title="Times top unit killer on team">Top UK</th>
               </tr>
@@ -295,7 +330,7 @@
                   <td class="text-center py-1 text-gray-500"><%= fs[:games] %></td>
                   <td class="text-center py-1"><%= efs&.dig(:hero_kd_ratio) || "-" %></td>
                   <td class="text-center py-1"><%= efs ? "#{efs[:hero_uptime]}%" : "-" %></td>
-                  <td class="text-center py-1"><%= efs&.dig(:games_with_bases).to_i > 0 ? "#{efs[:base_uptime]}%" : "-" %></td>
+                  <td class="text-center py-1"><%= fs[:avg_castles_razed] > 0 ? number_with_precision(fs[:avg_castles_razed], precision: 2) : "-" %></td>
                   <td class="text-center py-1"><%= number_with_precision(fs[:times_top_hero_kills], precision: 1) %></td>
                   <td class="text-center py-1"><%= number_with_precision(fs[:times_top_unit_kills], precision: 1) %></td>
                 </tr>
@@ -322,6 +357,7 @@
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Unit Kills">UK</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Heroes Lost">HL</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Bases Lost">BL</th>
+            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Castles Razed">CK</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="ELO change">+/-</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="ELO after match">ELO</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Glicko-2 change">G+/-</th>
@@ -356,6 +392,7 @@
               <td class="px-2 py-1 text-center whitespace-nowrap"><%= appearance.unit_kills || '-' %></td>
               <td class="px-2 py-1 text-center whitespace-nowrap"><%= heroes_lost_for_appearance(appearance) || '-' %></td>
               <td class="px-2 py-1 text-center whitespace-nowrap"><%= bases_lost_for_appearance(appearance) || '-' %></td>
+              <td class="px-2 py-1 text-center whitespace-nowrap"><%= appearance.castles_razed || '-' %></td>
               <td class="px-2 py-1 text-center whitespace-nowrap">
                 <% if appearance.elo_rating_change %>
                   <% if appearance.elo_rating_change > 0 %>

@@ -10,6 +10,7 @@ class LobbiesController < ApplicationController
   def show
     preload_lobby_player_stats
     preload_event_stats
+    compute_score_prediction
   end
 
   # GET /lobbies/new - creates lobby instantly with previous match players
@@ -43,6 +44,7 @@ class LobbiesController < ApplicationController
     end
 
     preload_player_stats
+    @new_player_defaults = NewPlayerDefaults.all
   end
 
   # POST /lobbies or /lobbies.json
@@ -88,6 +90,8 @@ class LobbiesController < ApplicationController
 
         # Keep the slot but clear the player if blank
         lobby_player.player_id = attrs[:player_id].presence
+        # Handle is_new_player flag
+        lobby_player.is_new_player = attrs[:is_new_player] == "true" || attrs[:is_new_player] == "1"
         lobby_player.save
       end
     end
@@ -243,5 +247,17 @@ class LobbiesController < ApplicationController
       Player.where(id: player_ids).each do |player|
         @event_stats[player.id] = PlayerEventStatsCalculator.new(player).compute
       end
+    end
+
+    def compute_score_prediction
+      predictor = LobbyScorePredictor.new(
+        @lobby,
+        event_stats: @event_stats,
+        lobby_player_stats: @lobby_player_stats
+      )
+      @score_prediction = predictor.predict
+      @feature_contributions = predictor.feature_contributions
+      @prediction_weights = PredictionWeight.current
+      @player_scores = predictor.player_scores
     end
 end

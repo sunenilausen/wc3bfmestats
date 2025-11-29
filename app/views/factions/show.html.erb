@@ -35,6 +35,10 @@
             <td class="py-0.5">Unit Kills/min</td>
             <td class="text-right py-0.5"><%= @stats[:avg_unit_kills_per_min] %></td>
           </tr>
+          <tr>
+            <td class="py-0.5">Castles Razed/game</td>
+            <td class="text-right py-0.5"><%= @stats[:avg_castles_razed] %></td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -58,6 +62,10 @@
           <tr>
             <td class="py-0.5">Top Unit Killer</td>
             <td class="text-right py-0.5"><%= number_with_precision(@stats[:times_top_unit_kills], precision: 1) %>x (<%= @stats[:top_unit_kills_pct] %>%)</td>
+          </tr>
+          <tr>
+            <td class="py-0.5">Avg Castle Raze Share</td>
+            <td class="text-right py-0.5"><%= @stats[:avg_castle_raze_contribution] %>%</td>
           </tr>
         </tbody>
       </table>

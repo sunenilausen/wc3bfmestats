@@ -75,6 +75,10 @@ module MatchesHelper
     appearances.to_a.sum { |appearance| appearance[:hero_kills].to_i }
   end
 
+  def sum_castles_razed(appearances)
+    appearances.to_a.sum { |appearance| appearance[:castles_razed].to_i }
+  end
+
   def avg_unit_kills(appearances)
     (sum_unit_kills(appearances).to_f / appearances.size).round(2)
   end

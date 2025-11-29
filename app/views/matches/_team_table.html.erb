@@ -5,6 +5,7 @@
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Prev. Games</th>
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Unit Kills</th>
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Hero Kills</th>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Castles Razed</th>
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Heroes Lost</th>
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Bases Lost</th>
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Elo rating</th>
@@ -21,6 +22,7 @@
             <td class="px-4 py-2"></td>
             <td class="px-4 py-2"><%= sum_unit_kills(appearances) %></td>
             <td class="px-4 py-2"><%= sum_hero_kills(appearances) %></td>
+            <td class="px-4 py-2"><%= sum_castles_razed(appearances) %></td>
             <td class="px-4 py-2"></td>
             <td class="px-4 py-2"></td>
             <td class="px-4 py-2"></td>
@@ -37,12 +39,14 @@
             <td class="px-4 py-2"></td>
             <td class="px-4 py-2"></td>
             <td class="px-4 py-2"></td>
+            <td class="px-4 py-2"></td>
         </tr>
         <tr class="font-bold bg-gray-50">
             <td class="px-4 py-2">Average</td>
             <td class="px-4 py-2"></td>
             <td class="px-4 py-2"><%= avg_unit_kills(appearances) %></td>
             <td class="px-4 py-2"><%= avg_hero_kills(appearances) %></td>
+            <td class="px-4 py-2"></td>
             <td class="px-4 py-2"></td>
             <td class="px-4 py-2"></td>
             <td class="px-4 py-2"><%= avg_elo_rating(appearances) %></td>

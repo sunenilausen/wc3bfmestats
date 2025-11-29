@@ -58,6 +58,9 @@ class MatchesController < ApplicationController
         EloRecalculator.new.call
         Glicko2Recalculator.new.call
 
+        # Retrain prediction model if enough new matches
+        PredictionWeight.retrain_if_needed!
+
         format.html { redirect_to @match, notice: "Match was successfully created." }
         format.json { render :show, status: :created, location: @match }
       else

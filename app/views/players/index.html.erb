@@ -59,6 +59,11 @@
                 Matches Observed <%= @sort_column == "matches_observed" ? (@sort_direction == "desc" ? "▼" : "▲") : "" %>
               <% end %>
             </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="ML-based player score (0-100)">
+              <%= link_to players_path(sort: "ml_score", direction: @sort_column == "ml_score" && @sort_direction == "desc" ? "asc" : "desc", search: params[:search], min_games: params[:min_games], show_inactive: @show_inactive ? "1" : nil), class: "hover:text-gray-700" do %>
+                ML Score <%= @sort_column == "ml_score" ? (@sort_direction == "desc" ? "▼" : "▲") : "" %>
+              <% end %>
+            </th>
             <th class="px-6 py-3"></th>
           </tr>
         </thead>
@@ -76,6 +81,10 @@
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-gray-900"><%= player.matches.size %></td>
               <td class="px-6 py-4 whitespace-nowrap text-gray-900"><%= @observation_counts[player.battletag] %></td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="<%= ml_score_color_class(player.ml_score) %> font-medium"><%= player.ml_score %></span>
+                <%= tier_badge(player.ml_score) %>
+              </td>
               <td class="px-6 py-4 whitespace-nowrap flex space-x-2">
                 <%= link_to "Show", player, class: "rounded-md px-3.5 py-2.5 bg-gray-100 hover:bg-gray-50 font-medium" %>
                 <% if can? :update, player %>

@@ -48,6 +48,43 @@ The `uploaded_at` field on Match represents when the replay was **first uploaded
 - On match update (MatchesController#update)
 - Via rake task: `bin/rails wc3stats:sync`
 
+### ML Score
+- Stored on Player model as `ml_score` (0-100 scale, 50 = average)
+- Computed by `MlScoreRecalculator` service using logistic regression weights
+- Weights are learned from historical match data by `PredictionModelTrainer`
+- Stored in `PredictionWeight` model, retrained every 20 new matches
+
+**Features used:**
+- ELO rating (relative to 1500 baseline)
+- Hero K/D ratio (hero kills / hero deaths)
+- Hero kill contribution % (player's share of team hero kills)
+- Unit kill contribution % (player's share of team unit kills)
+- Castle raze contribution % (player's share of team castles razed)
+- Enemy ELO diff (player's ELO vs enemy team average - accounts for lobby strength)
+- Games played (experience factor)
+
+**Confidence adjustment:**
+Players with few games have their score pulled toward 50 to prevent inflated scores from small sample sizes:
+```
+confidence = 1 - e^(-games_played / 10)
+final_score = 50 + (raw_score - 50) * confidence
+```
+- 1 game: ~10% confidence (score ≈ 50)
+- 10 games: ~63% confidence
+- 20 games: ~86% confidence
+- 50+ games: ~99% confidence (full score)
+
+**Lobby prediction:**
+`LobbyScorePredictor` uses the same weights to predict match outcomes by comparing team averages. Shows win probability for Good vs Evil teams.
+
+**New player defaults:**
+When adding an unknown player to a lobby (via "New Player" option), the defaults are:
+- ELO: 1300
+- Glicko-2: 1200
+- ML Score: 35
+
+These values are defined in `NewPlayerDefaults` model.
+
 ## Match Chronological Ordering
 
 Matches are ordered for rating calculations using multiple criteria (see `Match.chronological` scope):

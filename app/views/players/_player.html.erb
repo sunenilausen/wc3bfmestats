@@ -223,16 +223,18 @@
                 <th class="text-center py-1">W/L</th>
                 <th class="text-center py-1">Win%</th>
                 <th class="text-center py-1">Games</th>
+                <th class="text-center py-1" title="Hero Kill/Death ratio">H K/D</th>
+                <th class="text-center py-1" title="Hero Uptime %">H Up%</th>
+                <th class="text-center py-1" title="Base Uptime %">B Up%</th>
                 <th class="text-center py-1" title="Times top hero killer on team">Top HK</th>
                 <th class="text-center py-1" title="Times top unit killer on team">Top UK</th>
-                <th class="text-center py-1" title="Average hero kill contribution vs team">Avg HK%</th>
-                <th class="text-center py-1" title="Average unit kill contribution vs team">Avg UK%</th>
               </tr>
             </thead>
             <tbody>
               <% good_factions.each do |faction| %>
                 <% fs = stats[:faction_stats][faction.id] %>
                 <% next unless fs && fs[:games] > 0 %>
+                <% efs = event_stats&.dig(:faction_stats, faction.id) %>
                 <tr class="border-b border-gray-100">
                   <td class="py-1">
                     <span class="inline-flex items-center gap-1.5">
@@ -245,10 +247,11 @@
                   </td>
                   <td class="text-center py-1"><%= fs[:win_rate] %>%</td>
                   <td class="text-center py-1 text-gray-500"><%= fs[:games] %></td>
+                  <td class="text-center py-1"><%= efs&.dig(:hero_kd_ratio) || "-" %></td>
+                  <td class="text-center py-1"><%= efs ? "#{efs[:hero_uptime]}%" : "-" %></td>
+                  <td class="text-center py-1"><%= efs&.dig(:games_with_bases).to_i > 0 ? "#{efs[:base_uptime]}%" : "-" %></td>
                   <td class="text-center py-1"><%= fs[:times_top_hero_kills] %></td>
                   <td class="text-center py-1"><%= fs[:times_top_unit_kills] %></td>
-                  <td class="text-center py-1"><%= fs[:avg_hero_kill_contribution] %>%</td>
-                  <td class="text-center py-1"><%= fs[:avg_unit_kill_contribution] %>%</td>
                 </tr>
               <% end %>
             </tbody>
@@ -266,16 +269,18 @@
                 <th class="text-center py-1">W/L</th>
                 <th class="text-center py-1">Win%</th>
                 <th class="text-center py-1">Games</th>
+                <th class="text-center py-1" title="Hero Kill/Death ratio">H K/D</th>
+                <th class="text-center py-1" title="Hero Uptime %">H Up%</th>
+                <th class="text-center py-1" title="Base Uptime %">B Up%</th>
                 <th class="text-center py-1" title="Times top hero killer on team">Top HK</th>
                 <th class="text-center py-1" title="Times top unit killer on team">Top UK</th>
-                <th class="text-center py-1" title="Average hero kill contribution vs team">Avg HK%</th>
-                <th class="text-center py-1" title="Average unit kill contribution vs team">Avg UK%</th>
               </tr>
             </thead>
             <tbody>
               <% evil_factions.each do |faction| %>
                 <% fs = stats[:faction_stats][faction.id] %>
                 <% next unless fs && fs[:games] > 0 %>
+                <% efs = event_stats&.dig(:faction_stats, faction.id) %>
                 <tr class="border-b border-gray-100">
                   <td class="py-1">
                     <span class="inline-flex items-center gap-1.5">
@@ -288,10 +293,11 @@
                   </td>
                   <td class="text-center py-1"><%= fs[:win_rate] %>%</td>
                   <td class="text-center py-1 text-gray-500"><%= fs[:games] %></td>
+                  <td class="text-center py-1"><%= efs&.dig(:hero_kd_ratio) || "-" %></td>
+                  <td class="text-center py-1"><%= efs ? "#{efs[:hero_uptime]}%" : "-" %></td>
+                  <td class="text-center py-1"><%= efs&.dig(:games_with_bases).to_i > 0 ? "#{efs[:base_uptime]}%" : "-" %></td>
                   <td class="text-center py-1"><%= fs[:times_top_hero_kills] %></td>
                   <td class="text-center py-1"><%= fs[:times_top_unit_kills] %></td>
-                  <td class="text-center py-1"><%= fs[:avg_hero_kill_contribution] %>%</td>
-                  <td class="text-center py-1"><%= fs[:avg_unit_kill_contribution] %>%</td>
                 </tr>
               <% end %>
             </tbody>
@@ -314,6 +320,8 @@
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase">Result</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Hero Kills">HK</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Unit Kills">UK</th>
+            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Heroes Lost">HL</th>
+            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Bases Lost">BL</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="ELO change">+/-</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="ELO after match">ELO</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Glicko-2 change">G+/-</th>
@@ -346,6 +354,8 @@
               </td>
               <td class="px-2 py-1 text-center whitespace-nowrap"><%= appearance.hero_kills || '-' %></td>
               <td class="px-2 py-1 text-center whitespace-nowrap"><%= appearance.unit_kills || '-' %></td>
+              <td class="px-2 py-1 text-center whitespace-nowrap"><%= heroes_lost_for_appearance(appearance) || '-' %></td>
+              <td class="px-2 py-1 text-center whitespace-nowrap"><%= bases_lost_for_appearance(appearance) || '-' %></td>
               <td class="px-2 py-1 text-center whitespace-nowrap">
                 <% if appearance.elo_rating_change %>
                   <% if appearance.elo_rating_change > 0 %>

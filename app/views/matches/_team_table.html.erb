@@ -4,6 +4,8 @@
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" style="width: 180px;">Player</th>
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Unit Kills</th>
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Hero Kills</th>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Heroes Lost</th>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Bases Lost</th>
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Elo rating</th>
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Elo rating change</th>
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Live elo rating</th>
@@ -20,6 +22,8 @@
             <td class="px-4 py-2"></td>
             <td class="px-4 py-2"></td>
             <td class="px-4 py-2"></td>
+            <td class="px-4 py-2"></td>
+            <td class="px-4 py-2"></td>
         </tr>
         <tr class="font-bold bg-gray-100">
             <td class="px-4 py-2">Per minute</td>
@@ -28,11 +32,15 @@
             <td class="px-4 py-2"></td>
             <td class="px-4 py-2"></td>
             <td class="px-4 py-2"></td>
+            <td class="px-4 py-2"></td>
+            <td class="px-4 py-2"></td>
         </tr>
         <tr class="font-bold bg-gray-50">
             <td class="px-4 py-2">Average</td>
             <td class="px-4 py-2"><%= avg_unit_kills(appearances) %></td>
             <td class="px-4 py-2"><%= avg_hero_kills(appearances) %></td>
+            <td class="px-4 py-2"></td>
+            <td class="px-4 py-2"></td>
             <td class="px-4 py-2"><%= avg_elo_rating(appearances) %></td>
             <td class="px-4 py-2"></td>
             <td class="px-4 py-2"></td>

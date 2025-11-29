@@ -30,6 +30,21 @@ class PlayerEventStatsCalculator
     games_with_bases = 0
     games_with_hero_data = 0
     total_hero_kills = 0
+    total_hero_deaths = 0
+
+    # Per-faction stats
+    faction_stats = Hash.new do |h, k|
+      h[k] = {
+        hero_kills: 0,
+        hero_deaths: 0,
+        hero_seconds_alive: 0,
+        hero_seconds_possible: 0,
+        base_seconds_alive: 0,
+        base_seconds_possible: 0,
+        games_with_hero_data: 0,
+        games_with_bases: 0
+      }
+    end
 
     # Get all replays where this player participated in non-ignored matches
     Wc3statsReplay.includes(match: :appearances).find_each do |replay|
@@ -70,6 +85,8 @@ class PlayerEventStatsCalculator
       # Only process hero deaths if hero kills data is available (skip games where hero kills aren't working)
       if has_hero_kills_data
         games_with_hero_data += 1
+        faction_stats[faction.id][:games_with_hero_data] += 1
+        faction_stats[faction.id][:hero_kills] += hero_kills
 
         # Get hero death events for this faction's heroes
         hero_death_events = replay.events.select do |e|
@@ -89,11 +106,16 @@ class PlayerEventStatsCalculator
             death_time = hero_events.map { |e| e["time"] }.compact.min
             hero_death_times << death_time if death_time
             total_hero_seconds_alive += death_time if death_time
+            faction_stats[faction.id][:hero_seconds_alive] += death_time if death_time
             core_heroes_died += 1
+            total_hero_deaths += 1
+            faction_stats[faction.id][:hero_deaths] += 1
           else
             total_hero_seconds_alive += match_length
+            faction_stats[faction.id][:hero_seconds_alive] += match_length
           end
           total_hero_seconds_possible += match_length
+          faction_stats[faction.id][:hero_seconds_possible] += match_length
         end
 
         games_all_heroes_survived += 1 if core_heroes_died == 0 && core_hero_names.any?
@@ -118,6 +140,7 @@ class PlayerEventStatsCalculator
       next if base_names.empty?
 
       games_with_bases += 1
+      faction_stats[faction.id][:games_with_bases] += 1
       bases_died = 0
 
       base_names.each do |base_name|
@@ -130,11 +153,14 @@ class PlayerEventStatsCalculator
           death_time = base_events.map { |e| e["time"] }.compact.min
           base_death_times << death_time if death_time
           total_base_seconds_alive += death_time if death_time
+          faction_stats[faction.id][:base_seconds_alive] += death_time if death_time
           bases_died += 1
         else
           total_base_seconds_alive += match_length
+          faction_stats[faction.id][:base_seconds_alive] += match_length
         end
         total_base_seconds_possible += match_length
+        faction_stats[faction.id][:base_seconds_possible] += match_length
       end
 
       games_all_bases_survived += 1 if bases_died == 0 && base_names.any?
@@ -146,6 +172,20 @@ class PlayerEventStatsCalculator
     end
 
     hero_deaths_count = hero_death_times.size
+
+    # Compute per-faction derived stats
+    computed_faction_stats = {}
+    faction_stats.each do |faction_id, fs|
+      computed_faction_stats[faction_id] = {
+        hero_kills: fs[:hero_kills],
+        hero_deaths: fs[:hero_deaths],
+        hero_kd_ratio: fs[:hero_deaths] > 0 ? (fs[:hero_kills].to_f / fs[:hero_deaths]).round(2) : nil,
+        hero_uptime: fs[:hero_seconds_possible] > 0 ? (fs[:hero_seconds_alive].to_f / fs[:hero_seconds_possible] * 100).round(1) : 0,
+        base_uptime: fs[:base_seconds_possible] > 0 ? (fs[:base_seconds_alive].to_f / fs[:base_seconds_possible] * 100).round(1) : 0,
+        games_with_hero_data: fs[:games_with_hero_data],
+        games_with_bases: fs[:games_with_bases]
+      }
+    end
 
     {
       total_games: total_games,
@@ -170,7 +210,8 @@ class PlayerEventStatsCalculator
       all_bases_lost_rate: games_with_bases > 0 ? (all_bases_lost_count.to_f / games_with_bases * 100).round(1) : 0,
       avg_bases_survived: bases_survived_per_game.any? ? (bases_survived_per_game.sum.to_f / bases_survived_per_game.size).round(1) : 0,
       avg_bases_total: bases_total_per_game.any? ? (bases_total_per_game.sum.to_f / bases_total_per_game.size).round(1) : 0,
-      base_uptime: total_base_seconds_possible > 0 ? (total_base_seconds_alive.to_f / total_base_seconds_possible * 100).round(1) : 0
+      base_uptime: total_base_seconds_possible > 0 ? (total_base_seconds_alive.to_f / total_base_seconds_possible * 100).round(1) : 0,
+      faction_stats: computed_faction_stats
     }
   end
 

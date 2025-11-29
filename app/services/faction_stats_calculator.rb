@@ -31,14 +31,14 @@ class FactionStatsCalculator
     return stats if appearances.empty?
 
     # Collect data in single pass
-    player_stats = Hash.new { |h, k| h[k] = { player: nil, wins: 0, games: 0, top_hero: 0, top_unit: 0 } }
+    player_stats = Hash.new { |h, k| h[k] = { player: nil, wins: 0, games: 0, top_hero: 0.0, top_unit: 0.0 } }
     hero_contributions = []
     unit_contributions = []
     total_unit_kills = 0
     total_hero_kills = 0
     total_minutes = 0.0
-    times_top_hero = 0
-    times_top_unit = 0
+    times_top_hero = 0.0
+    times_top_unit = 0.0
 
     appearances.each do |appearance|
       match = appearance.match
@@ -65,8 +65,11 @@ class FactionStatsCalculator
         if team_with_hero.any?
           max_hero = team_with_hero.map(&:hero_kills).max
           if appearance.hero_kills == max_hero
-            times_top_hero += 1
-            ps[:top_hero] += 1
+            # Share credit when tied - if 2 players tied, each gets 0.5
+            tied_count = team_with_hero.count { |a| a.hero_kills == max_hero }
+            share = 1.0 / tied_count
+            times_top_hero += share
+            ps[:top_hero] += share
           end
 
           team_total = team_with_hero.sum(&:hero_kills)
@@ -84,8 +87,11 @@ class FactionStatsCalculator
         if team_with_unit.any?
           max_unit = team_with_unit.map(&:unit_kills).max
           if appearance.unit_kills == max_unit
-            times_top_unit += 1
-            ps[:top_unit] += 1
+            # Share credit when tied - if 2 players tied, each gets 0.5
+            tied_count = team_with_unit.count { |a| a.unit_kills == max_unit }
+            share = 1.0 / tied_count
+            times_top_unit += share
+            ps[:top_unit] += share
           end
 
           team_total = team_with_unit.sum(&:unit_kills)

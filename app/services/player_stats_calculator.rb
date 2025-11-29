@@ -119,8 +119,11 @@ class PlayerStatsCalculator
       if team_with_hero_kills.any?
         max_hero_kills = team_with_hero_kills.map(&:hero_kills).max
         if appearance.hero_kills == max_hero_kills
-          stats[:times_top_hero_kills] += 1
-          faction_stats[:times_top_hero_kills] += 1
+          # Share credit when tied - if 2 players tied, each gets 0.5
+          tied_count = team_with_hero_kills.count { |a| a.hero_kills == max_hero_kills }
+          share = 1.0 / tied_count
+          stats[:times_top_hero_kills] += share
+          faction_stats[:times_top_hero_kills] += share
         end
 
         team_total = team_with_hero_kills.sum(&:hero_kills)
@@ -139,8 +142,11 @@ class PlayerStatsCalculator
       if team_with_unit_kills.any?
         max_unit_kills = team_with_unit_kills.map(&:unit_kills).max
         if appearance.unit_kills == max_unit_kills
-          stats[:times_top_unit_kills] += 1
-          faction_stats[:times_top_unit_kills] += 1
+          # Share credit when tied - if 2 players tied, each gets 0.5
+          tied_count = team_with_unit_kills.count { |a| a.unit_kills == max_unit_kills }
+          share = 1.0 / tied_count
+          stats[:times_top_unit_kills] += share
+          faction_stats[:times_top_unit_kills] += share
         end
 
         team_total = team_with_unit_kills.sum(&:unit_kills)

@@ -1,5 +1,7 @@
 class PlayersController < ApplicationController
-  load_and_authorize_resource except: %i[index]
+  load_and_authorize_resource except: %i[index show edit update destroy]
+  before_action :set_player, only: %i[show edit update destroy]
+  authorize_resource only: %i[show edit update destroy]
 
   # GET /players or /players.json
   def index
@@ -144,6 +146,11 @@ class PlayersController < ApplicationController
   end
 
   private
+
+    def set_player
+      @player = Player.find_by_battletag_or_id(params[:id])
+      raise ActiveRecord::RecordNotFound, "Player not found" unless @player
+    end
 
     # Only allow a list of trusted parameters through.
     def player_params

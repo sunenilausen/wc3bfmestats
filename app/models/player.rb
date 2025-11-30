@@ -4,6 +4,17 @@ class Player < ApplicationRecord
   has_many :lobby_players
   has_many :lobbies, through: :lobby_players
 
+  # Use battletag as URL param instead of id
+  def to_param
+    battletag.presence || id.to_s
+  end
+
+  # Find by battletag or id
+  def self.find_by_battletag_or_id(param)
+    return find_by(id: param) if param.to_s.match?(/\A\d+\z/)
+    find_by(battletag: param) || find_by(id: param)
+  end
+
   # Returns the player's rank by custom rating (1 = highest)
   # Only counts players who have played at least one non-ignored match
   def cr_rank

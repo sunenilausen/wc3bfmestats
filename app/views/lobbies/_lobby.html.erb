@@ -11,7 +11,9 @@
 <% evil_rds = evil_with_players.map { |lp| lp.player.glicko2_rating_deviation.to_f } %>
 <% good_pooled_rd = good_rds.any? ? Math.sqrt(good_rds.map { |r| r**2 }.sum / good_rds.size) : 350 %>
 <% evil_pooled_rd = evil_rds.any? ? Math.sqrt(evil_rds.map { |r| r**2 }.sum / evil_rds.size) : 350 %>
-<% col_count = editable ? 5 : 13 %>
+<% good_avg_ml = good_with_players.any? ? (good_with_players.sum { |lp| lp.player.ml_score.to_f } / good_with_players.size).round(1) : 0 %>
+<% evil_avg_ml = evil_with_players.any? ? (evil_with_players.sum { |lp| lp.player.ml_score.to_f } / evil_with_players.size).round(1) : 0 %>
+<% col_count = editable ? 4 : 13 %>
 
 <div id="<%= dom_id lobby %>" class="w-full sm:w-auto my-5 space-y-5" data-controller="<%= 'auto-submit' if editable %>">
   <%= simple_form_for(lobby, data: editable ? { auto_submit_target: "form", turbo_action: "replace" } : {}) do |f| %>
@@ -25,10 +27,13 @@
         <tr>
           <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Faction</th>
           <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Player</th>
-          <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ELO</th>
-          <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Glicko-2 rating (uncertainty)">Glicko</th>
-          <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">W/L</th>
-          <% unless editable %>
+          <% if editable %>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="ML-based player score (0-100)">ML Score</th>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">W/L</th>
+          <% else %>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ELO</th>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Glicko-2 rating (uncertainty)">Glicko</th>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">W/L</th>
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="ML-based player score (0-100)">ML Score</th>
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Last game played">Last Played</th>
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="1 year with this faction">1y Fac</th>
@@ -47,9 +52,14 @@
         <tr class="bg-gray-50">
           <td class="px-4 py-2 font-bold text-sm">Average</td>
           <td class="px-4 py-2"></td>
-          <td class="px-4 py-2 font-bold text-sm"><span data-average-elo-target="value"><%= good_avg_elo %></span></td>
-          <td class="px-4 py-2 font-bold text-sm"><span data-average-elo-target="glickoValue"><%= good_avg_glicko.round %></span><span class="text-gray-400 text-xs">&plusmn;<span data-average-elo-target="glickoRd"><%= good_pooled_rd.round %></span></span></td>
-          <% if col_count > 4 %><td class="px-4 py-2" colspan="<%= col_count - 4 %>"></td><% end %>
+          <% if editable %>
+            <td class="px-4 py-2 font-bold text-sm"><span data-average-elo-target="mlValue"><%= good_avg_ml %></span></td>
+            <td class="px-4 py-2"></td>
+          <% else %>
+            <td class="px-4 py-2 font-bold text-sm"><span data-average-elo-target="value"><%= good_avg_elo %></span></td>
+            <td class="px-4 py-2 font-bold text-sm"><span data-average-elo-target="glickoValue"><%= good_avg_glicko.round %></span><span class="text-gray-400 text-xs">&plusmn;<span data-average-elo-target="glickoRd"><%= good_pooled_rd.round %></span></span></td>
+            <% if col_count > 4 %><td class="px-4 py-2" colspan="<%= col_count - 4 %>"></td><% end %>
+          <% end %>
         </tr>
       </tbody>
       <tbody class="bg-white divide-y divide-gray-200" data-controller="average-elo">
@@ -60,9 +70,14 @@
         <tr class="bg-gray-50">
           <td class="px-4 py-2 font-bold text-sm">Average</td>
           <td class="px-4 py-2"></td>
-          <td class="px-4 py-2 font-bold text-sm"><span data-average-elo-target="value"><%= evil_avg_elo %></span></td>
-          <td class="px-4 py-2 font-bold text-sm"><span data-average-elo-target="glickoValue"><%= evil_avg_glicko.round %></span><span class="text-gray-400 text-xs">&plusmn;<span data-average-elo-target="glickoRd"><%= evil_pooled_rd.round %></span></span></td>
-          <% if col_count > 4 %><td class="px-4 py-2" colspan="<%= col_count - 4 %>"></td><% end %>
+          <% if editable %>
+            <td class="px-4 py-2 font-bold text-sm"><span data-average-elo-target="mlValue"><%= evil_avg_ml %></span></td>
+            <td class="px-4 py-2"></td>
+          <% else %>
+            <td class="px-4 py-2 font-bold text-sm"><span data-average-elo-target="value"><%= evil_avg_elo %></span></td>
+            <td class="px-4 py-2 font-bold text-sm"><span data-average-elo-target="glickoValue"><%= evil_avg_glicko.round %></span><span class="text-gray-400 text-xs">&plusmn;<span data-average-elo-target="glickoRd"><%= evil_pooled_rd.round %></span></span></td>
+            <% if col_count > 4 %><td class="px-4 py-2" colspan="<%= col_count - 4 %>"></td><% end %>
+          <% end %>
         </tr>
       </tbody>
       <% if editable %>

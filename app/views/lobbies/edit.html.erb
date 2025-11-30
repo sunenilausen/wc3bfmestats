@@ -97,7 +97,7 @@
   const newPlayerDefaults = JSON.parse(document.getElementById('new-player-defaults').textContent);
 
   // Special "New Player" option with bottom 5% ratings
-  const NEW_PLAYER = { id: 'new', nickname: `New Player (${newPlayerDefaults.elo})`, elo: newPlayerDefaults.elo, glicko: newPlayerDefaults.glicko, mlScore: newPlayerDefaults.ml_score, wins: 0, losses: 0, games: 0, isNew: true };
+  const NEW_PLAYER = { id: 'new', nickname: `New Player (${newPlayerDefaults.ml_score})`, elo: newPlayerDefaults.elo, glicko: newPlayerDefaults.glicko, mlScore: newPlayerDefaults.ml_score, wins: 0, losses: 0, games: 0, isNew: true };
 
   function getAssignedPlayerIds() {
     const assignedIds = new Set();
@@ -243,13 +243,13 @@
       <div class="player-card p-2 bg-green-50 border border-green-300 rounded transition-colors cursor-pointer hover:bg-green-100"
            draggable="true"
            data-player-id="new"
-           data-player-name="New Player (${newPlayerDefaults.elo})"
+           data-player-name="New Player (${newPlayerDefaults.ml_score})"
            ondragstart="handleNewPlayerDragStart(event)"
            ondragend="handlePlayerDragEnd(event)"
            onclick="assignNewPlayer(this)">
         <div class="flex justify-between items-center">
           <span class="font-medium text-sm text-green-700">+ New Player</span>
-          <span class="text-xs text-green-600">${newPlayerDefaults.elo}</span>
+          <span class="text-xs text-green-600">${newPlayerDefaults.ml_score}</span>
         </div>
         <div class="text-xs text-green-600">Add unknown player</div>
       </div>
@@ -349,11 +349,11 @@
         <span class="slot-player cursor-move px-2 py-1 bg-green-50 border border-green-300 rounded inline-flex items-center gap-2"
               draggable="true"
               data-player-id="new"
-              data-player-name="New Player (${newPlayerDefaults.elo})"
+              data-player-name="New Player (${newPlayerDefaults.ml_score})"
               data-slot-index="${slotIndex}"
               data-is-new="true"
               data-ml-score="${newPlayerDefaults.ml_score}"
-              ondragstart="handleSlotDragStart(event, 'new', 'New Player (${newPlayerDefaults.elo})', ${slotIndex})"
+              ondragstart="handleSlotDragStart(event, 'new', 'New Player (${newPlayerDefaults.ml_score})', ${slotIndex})"
               ondragend="handlePlayerDragEnd(event)">
           <span class="text-green-700">New Player</span>
           <button type="button" onclick="clearSlot(${slotIndex})" class="text-gray-400 hover:text-red-500 text-sm leading-none">&times;</button>
@@ -367,14 +367,12 @@
       }
     }
 
-    // Set ELO, Glicko to bottom 5% values, and W/L to 0/0
-    const eloCell = document.getElementById('elo-' + slotIndex);
+    // Set ML Score and W/L to new player defaults
+    const mlScoreCell = document.getElementById('ml-score-' + slotIndex);
     const wlCell = document.getElementById('wl-' + slotIndex);
-    const glickoCell = document.getElementById('glicko-' + slotIndex);
 
-    if (eloCell) eloCell.textContent = newPlayerDefaults.elo;
+    if (mlScoreCell) mlScoreCell.innerHTML = `<span class="text-red-600 font-medium">${newPlayerDefaults.ml_score}</span>`;
     if (wlCell) wlCell.innerHTML = '<span class="text-green-600">0W</span>/<span class="text-red-600">0L</span>';
-    if (glickoCell) glickoCell.textContent = newPlayerDefaults.glicko;
 
     // Mark this slot as a new player for prediction calculations
     const row = cell.closest('tr');
@@ -392,7 +390,7 @@
   function handleNewPlayerDragStart(e) {
     e.dataTransfer.setData('text/plain', JSON.stringify({
       playerId: 'new',
-      playerName: `New Player (${newPlayerDefaults.elo})`,
+      playerName: `New Player (${newPlayerDefaults.ml_score})`,
       sourceType: 'new',
       isNew: true
     }));
@@ -446,16 +444,20 @@
     const option = select.options[select.selectedIndex];
     const wins = option.dataset.wins;
     const losses = option.dataset.losses;
-    const elo = option.dataset.elo;
+    const mlScore = option.dataset.mlScore;
     const wlTarget = document.getElementById(targetId);
-    const eloTarget = document.getElementById(targetId.replace('wl-', 'elo-'));
+    const mlScoreTarget = document.getElementById(targetId.replace('wl-', 'ml-score-'));
     if (wins && losses) {
       wlTarget.innerHTML = '<span class="text-green-600">' + wins + 'W</span>/<span class="text-red-600">' + losses + 'L</span>';
     } else {
       wlTarget.innerHTML = '-';
     }
-    if (eloTarget) {
-      eloTarget.innerHTML = elo || '-';
+    if (mlScoreTarget && mlScore) {
+      const score = parseFloat(mlScore);
+      const colorClass = score >= 55 ? 'text-green-600' : (score <= 45 ? 'text-red-600' : 'text-gray-600');
+      mlScoreTarget.innerHTML = `<span class="${colorClass} font-medium">${mlScore}</span>`;
+    } else if (mlScoreTarget) {
+      mlScoreTarget.innerHTML = '-';
     }
     updateAverageElos();
     updatePrediction();
@@ -465,61 +467,84 @@
   }
 
   function updateAverageElos() {
-    // Recalculate average ELO for each team
+    // Recalculate average ML Score for each team
     [1, 2].forEach(teamNumber => {
-      const selects = document.querySelectorAll(`tr.nested-fields[data-team="${teamNumber}"] select`);
-      let totalElo = 0;
+      const rows = document.querySelectorAll(`tr.nested-fields[data-team="${teamNumber}"]`);
+      let totalMlScore = 0;
       let count = 0;
-      selects.forEach(select => {
-        const selectedOption = select.options[select.selectedIndex];
-        if (selectedOption && selectedOption.dataset.elo) {
-          const elo = parseInt(selectedOption.dataset.elo, 10);
-          if (!isNaN(elo)) {
-            totalElo += elo;
-            count++;
+      rows.forEach(row => {
+        const select = row.querySelector('select');
+        const isNewPlayer = row.dataset.isNewPlayer === 'true';
+
+        if (isNewPlayer) {
+          totalMlScore += newPlayerDefaults.ml_score;
+          count++;
+        } else if (select) {
+          const selectedOption = select.options[select.selectedIndex];
+          if (selectedOption && selectedOption.dataset.mlScore) {
+            const mlScore = parseFloat(selectedOption.dataset.mlScore);
+            if (!isNaN(mlScore)) {
+              totalMlScore += mlScore;
+              count++;
+            }
           }
         }
       });
-      const averageElo = count > 0 ? Math.round(totalElo / count) : 0;
+      const averageMlScore = count > 0 ? (totalMlScore / count).toFixed(1) : 0;
 
-      // Find the average ELO display for this team's tbody
+      // Find the average ML Score display for this team's tbody
       const tbody = document.querySelector(`tbody[data-controller="average-elo"]:nth-of-type(${teamNumber})`);
       if (tbody) {
-        const valueTarget = tbody.querySelector('[data-average-elo-target="value"]');
-        if (valueTarget) {
-          valueTarget.textContent = averageElo;
+        const mlValueTarget = tbody.querySelector('[data-average-elo-target="mlValue"]');
+        if (mlValueTarget) {
+          mlValueTarget.textContent = averageMlScore;
         }
       }
     });
   }
 
   function updatePrediction() {
-    const allEloCells = document.querySelectorAll('[id^="elo-"]');
-    let goodElos = [];
-    let evilElos = [];
+    const rows = document.querySelectorAll('tr.nested-fields');
+    let goodScores = [];
+    let evilScores = [];
 
-    allEloCells.forEach(cell => {
-      const row = cell.closest('tr');
-      if (!row) return;
+    rows.forEach(row => {
       const team = row.dataset.team;
+      if (!team) return;
 
-      // Check if this is a new player slot or has a value
       const isNewPlayer = row.dataset.isNewPlayer === 'true';
-      const elo = isNewPlayer ? newPlayerDefaults.elo : parseInt(cell.textContent);
+      let mlScore = null;
 
-      if (!isNaN(elo)) {
+      if (isNewPlayer) {
+        mlScore = newPlayerDefaults.ml_score;
+      } else {
+        const select = row.querySelector('select');
+        if (select) {
+          const selectedOption = select.options[select.selectedIndex];
+          if (selectedOption && selectedOption.dataset.mlScore) {
+            mlScore = parseFloat(selectedOption.dataset.mlScore);
+          }
+        }
+      }
+
+      if (mlScore !== null && !isNaN(mlScore)) {
         if (team === '1') {
-          goodElos.push(elo);
+          goodScores.push(mlScore);
         } else if (team === '2') {
-          evilElos.push(elo);
+          evilScores.push(mlScore);
         }
       }
     });
 
-    const goodAvg = goodElos.length > 0 ? goodElos.reduce((a, b) => a + b, 0) / goodElos.length : 1500;
-    const evilAvg = evilElos.length > 0 ? evilElos.reduce((a, b) => a + b, 0) / evilElos.length : 1500;
+    // Calculate prediction based on average ML scores
+    // Higher ML score = better player, so we compare averages
+    const goodAvg = goodScores.length > 0 ? goodScores.reduce((a, b) => a + b, 0) / goodScores.length : 50;
+    const evilAvg = evilScores.length > 0 ? evilScores.reduce((a, b) => a + b, 0) / evilScores.length : 50;
 
-    const goodExpected = 1 / (1 + Math.pow(10, (evilAvg - goodAvg) / 400));
+    // Use logistic function to convert score difference to win probability
+    // A 10-point ML score difference gives roughly 65/35 odds
+    const scoreDiff = goodAvg - evilAvg;
+    const goodExpected = 1 / (1 + Math.exp(-scoreDiff / 15));
     const goodPct = Math.round(goodExpected * 100);
     const evilPct = 100 - goodPct;
 
@@ -651,15 +676,21 @@
       }
     }
 
-    // Update ELO and W/L display
+    // Update ML Score and W/L display
     const select = document.getElementById('player-select-' + slotIndex);
     if (select) {
       const option = select.options[select.selectedIndex];
-      const eloCell = document.getElementById('elo-' + slotIndex);
+      const mlScoreCell = document.getElementById('ml-score-' + slotIndex);
       const wlCell = document.getElementById('wl-' + slotIndex);
 
-      if (eloCell) {
-        eloCell.textContent = option && option.dataset.elo ? option.dataset.elo : '-';
+      if (mlScoreCell) {
+        if (option && option.dataset.mlScore) {
+          const score = parseFloat(option.dataset.mlScore);
+          const colorClass = score >= 55 ? 'text-green-600' : (score <= 45 ? 'text-red-600' : 'text-gray-600');
+          mlScoreCell.innerHTML = `<span class="${colorClass} font-medium">${option.dataset.mlScore}</span>`;
+        } else {
+          mlScoreCell.textContent = '-';
+        }
       }
       if (wlCell) {
         if (option && option.dataset.wins && option.dataset.losses) {

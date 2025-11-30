@@ -1,19 +1,11 @@
 class RecalculateMlScoresWithTeamHeal < ActiveRecord::Migration[8.1]
-  disable_ddl_transaction!
-
+  # This was a data migration that has already run.
+  # Made into a no-op to avoid issues with changing service class APIs.
   def up
-    say "Training prediction model with team heal contribution..."
-    PredictionModelTrainer.new.train
-
-    weights = PredictionWeight.current
-    say "Model trained with accuracy: #{weights.accuracy}%, team_heal weight: #{weights.team_heal_contribution_weight}"
-
-    say "Recalculating ML scores..."
-    MlScoreRecalculator.new.call
-    say "ML scores recalculated for #{Player.count} players"
+    # Previously called PredictionModelTrainer and MlScoreRecalculator
+    # Run `bin/rails ml:train` after deployment if needed
   end
 
   def down
-    # No-op: scores will be recalculated with current weights
   end
 end

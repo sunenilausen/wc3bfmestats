@@ -32,6 +32,7 @@ class PredictionWeight < ApplicationRecord
       unit_kill_contribution: unit_kill_contribution_weight,
       castle_raze_contribution: castle_raze_contribution_weight,
       team_heal_contribution: team_heal_contribution_weight || 0.0,
+      hero_uptime: hero_uptime_weight || 0.0,
       games_played: games_played_weight,
       elo: elo_weight,
       enemy_elo_diff: enemy_elo_diff_weight,

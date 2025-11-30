@@ -137,6 +137,7 @@ class MlScoreRecalculator
 
       es = event_stats[player.id] || {}
       hero_kd = es[:hero_kd_ratio] || 1.0
+      hero_uptime = es[:hero_uptime] || 80.0
 
       elo = player.elo_rating || 1500
 
@@ -144,15 +145,21 @@ class MlScoreRecalculator
       # log(1) = 0, log(10) ≈ 2.3, log(50) ≈ 3.9, log(100) ≈ 4.6
       games_played_log = total_matches > 0 ? Math.log(total_matches + 1) : 0
 
+      # Minimum weights to ensure all features contribute positively
+      elo_weight = [weights[:elo], 0.001].max
+      hero_kill_weight = [weights[:hero_kill_contribution], 0.005].max
+      unit_kill_weight = [weights[:unit_kill_contribution], 0.005].max
+      castle_raze_weight = [weights[:castle_raze_contribution], 0.005].max
+      team_heal_weight = [weights[:team_heal_contribution], 0.005].max
+      hero_uptime_weight = [weights[:hero_uptime], 0.005].max
+
       raw_score = 0.0
-      raw_score += weights[:elo] * (elo - 1500)
-      raw_score += weights[:hero_kd] * (hero_kd - 1.0)
-      raw_score += weights[:hero_kill_contribution] * (avg_hk - 20.0)
-      raw_score += weights[:unit_kill_contribution] * (avg_uk - 20.0)
-      raw_score += weights[:castle_raze_contribution] * (avg_cr - 20.0)
-      raw_score += weights[:team_heal_contribution] * (avg_th - 20.0)
-      raw_score += weights[:games_played] * games_played_log
-      raw_score += weights[:enemy_elo_diff] * avg_enemy_elo_diff
+      raw_score += elo_weight * (elo - 1500)
+      raw_score += hero_kill_weight * (avg_hk - 20.0)
+      raw_score += unit_kill_weight * (avg_uk - 20.0)
+      raw_score += castle_raze_weight * (avg_cr - 20.0)
+      raw_score += team_heal_weight * (avg_th - 20.0)
+      raw_score += hero_uptime_weight * (hero_uptime - 80.0)
 
       sigmoid_value = 1.0 / (1.0 + Math.exp(-raw_score.clamp(-500, 500) * 0.5))
       raw_ml_score = sigmoid_value * 100

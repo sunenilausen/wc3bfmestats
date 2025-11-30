@@ -92,6 +92,11 @@ module MatchesHelper
     (total_elo.to_f / appearances.size).round
   end
 
+  def avg_custom_rating(appearances)
+    total = appearances.to_a.sum { |appearance| appearance.custom_rating.to_i }
+    (total.to_f / appearances.size).round
+  end
+
   def per_minute_unit_kills(appearances)
     total_seconds = appearances.first.match.seconds.to_f
     return 0 if total_seconds.zero?

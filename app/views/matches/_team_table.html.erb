@@ -15,7 +15,8 @@
             <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Team Heal Contribution %">TH%</th>
             <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="ELO Rating">ELO</th>
             <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="ELO Rating Change">+/-</th>
-            <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Current ELO Rating">Live</th>
+            <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Custom Rating">CR</th>
+            <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Custom Rating Change">C+/-</th>
         </tr>
     </thead>
     <tbody class="bg-white divide-y divide-gray-100">
@@ -38,12 +39,14 @@
             <td class="px-2 py-1"></td>
             <td class="px-2 py-1"></td>
             <td class="px-2 py-1"></td>
+            <td class="px-2 py-1"></td>
         </tr>
         <tr class="font-bold bg-gray-100">
             <td class="px-2 py-1">/min</td>
             <td class="px-2 py-1"></td>
             <td class="px-2 py-1"><%= per_minute_unit_kills(appearances) %></td>
             <td class="px-2 py-1"><%= per_minute_hero_kills(appearances) %></td>
+            <td class="px-2 py-1"></td>
             <td class="px-2 py-1"></td>
             <td class="px-2 py-1"></td>
             <td class="px-2 py-1"></td>
@@ -71,6 +74,7 @@
             <td class="px-2 py-1"></td>
             <td class="px-2 py-1"><%= avg_elo_rating(appearances) %></td>
             <td class="px-2 py-1"></td>
+            <td class="px-2 py-1"><%= avg_custom_rating(appearances) %></td>
             <td class="px-2 py-1"></td>
         </tr>
     </tbody>

@@ -29,6 +29,7 @@
           <% stats = @player_stats[player.id] || { wins: 0, losses: 0 } %>
           <option value="<%= player.id %>"
                   data-elo="<%= player.elo_rating.round %>"
+                  data-custom-rating="<%= player.custom_rating&.round || 1300 %>"
                   data-glicko="<%= player.glicko2_rating&.round || 1500 %>"
                   data-glicko-rd="<%= player.glicko2_rating_deviation&.round || 350 %>"
                   data-ml-score="<%= player.ml_score || 50 %>"
@@ -74,13 +75,32 @@
         -
       <% end %>
     </td>
+    <%# Custom Rating column for editable mode %>
+    <td class="px-4 py-2 whitespace-nowrap text-sm" id="cr-<%= index %>">
+      <% if lp.player %>
+        <%= lp.player.custom_rating&.round || "-" %>
+      <% elsif lp.is_new_player? %>
+        <%= NewPlayerDefaults.custom_rating %>
+      <% else %>
+        -
+      <% end %>
+    </td>
   <% else %>
-    <%# ELO and Glicko columns for show mode %>
+    <%# ELO, Custom Rating, and Glicko columns for show mode %>
     <td class="px-4 py-2 whitespace-nowrap text-sm" id="elo-<%= index %>">
       <% if lp.player %>
         <%= lp.player.elo_rating&.round || "-" %>
       <% elsif lp.is_new_player? %>
         <%= NewPlayerDefaults.elo %>
+      <% else %>
+        -
+      <% end %>
+    </td>
+    <td class="px-4 py-2 whitespace-nowrap text-sm" id="cr-<%= index %>">
+      <% if lp.player %>
+        <%= lp.player.custom_rating&.round || "-" %>
+      <% elsif lp.is_new_player? %>
+        1300
       <% else %>
         -
       <% end %>

@@ -375,12 +375,14 @@
       }
     }
 
-    // Set ML Score and W/L to new player defaults
+    // Set ML Score, CR, and W/L to new player defaults
     const mlScoreCell = document.getElementById('ml-score-' + slotIndex);
+    const crCell = document.getElementById('cr-' + slotIndex);
     const wlCell = document.getElementById('wl-' + slotIndex);
     const facWlCell = document.getElementById('fac-wl-' + slotIndex);
 
     if (mlScoreCell) mlScoreCell.innerHTML = `<span class="text-red-600 font-medium">${newPlayerDefaults.ml_score}</span>`;
+    if (crCell) crCell.textContent = newPlayerDefaults.custom_rating || 1300;
     if (wlCell) wlCell.innerHTML = '<span class="text-gray-400">0/0</span>';
     if (facWlCell) facWlCell.innerHTML = '<span class="text-gray-400">0/0</span>';
 
@@ -493,10 +495,11 @@
   }
 
   function updateAverageElos() {
-    // Recalculate average ML Score for each team
+    // Recalculate average ML Score and CR for each team
     [1, 2].forEach(teamNumber => {
       const rows = document.querySelectorAll(`tr.nested-fields[data-team="${teamNumber}"]`);
       let totalMlScore = 0;
+      let totalCR = 0;
       let count = 0;
       rows.forEach(row => {
         const select = row.querySelector('select');
@@ -504,26 +507,34 @@
 
         if (isNewPlayer) {
           totalMlScore += newPlayerDefaults.ml_score;
+          totalCR += newPlayerDefaults.custom_rating || 1300;
           count++;
         } else if (select) {
           const selectedOption = select.options[select.selectedIndex];
           if (selectedOption && selectedOption.dataset.mlScore) {
             const mlScore = parseFloat(selectedOption.dataset.mlScore);
+            const cr = parseFloat(selectedOption.dataset.customRating) || 1300;
             if (!isNaN(mlScore)) {
               totalMlScore += mlScore;
+              totalCR += cr;
               count++;
             }
           }
         }
       });
       const averageMlScore = count > 0 ? (totalMlScore / count).toFixed(1) : 0;
+      const averageCR = count > 0 ? Math.round(totalCR / count) : 0;
 
-      // Find the average ML Score display for this team's tbody
+      // Find the average display for this team's tbody
       const tbody = document.querySelector(`tbody[data-controller="average-elo"]:nth-of-type(${teamNumber})`);
       if (tbody) {
         const mlValueTarget = tbody.querySelector('[data-average-elo-target="mlValue"]');
         if (mlValueTarget) {
           mlValueTarget.textContent = averageMlScore;
+        }
+        const crValueTarget = tbody.querySelector('[data-average-elo-target="crValue"]');
+        if (crValueTarget) {
+          crValueTarget.textContent = averageCR;
         }
       }
     });
@@ -533,6 +544,8 @@
     const rows = document.querySelectorAll('tr.nested-fields');
     let goodScores = [];
     let evilScores = [];
+    let goodCRs = [];
+    let evilCRs = [];
 
     rows.forEach(row => {
       const team = row.dataset.team;
@@ -540,15 +553,18 @@
 
       const isNewPlayer = row.dataset.isNewPlayer === 'true';
       let mlScore = null;
+      let cr = null;
 
       if (isNewPlayer) {
         mlScore = newPlayerDefaults.ml_score;
+        cr = newPlayerDefaults.custom_rating || 1300;
       } else {
         const select = row.querySelector('select');
         if (select) {
           const selectedOption = select.options[select.selectedIndex];
           if (selectedOption && selectedOption.dataset.mlScore) {
             mlScore = parseFloat(selectedOption.dataset.mlScore);
+            cr = parseFloat(selectedOption.dataset.customRating) || 1300;
           }
         }
       }
@@ -556,19 +572,19 @@
       if (mlScore !== null && !isNaN(mlScore)) {
         if (team === '1') {
           goodScores.push(mlScore);
+          goodCRs.push(cr);
         } else if (team === '2') {
           evilScores.push(mlScore);
+          evilCRs.push(cr);
         }
       }
     });
 
-    // Calculate prediction based on average ML scores
-    // Higher ML score = better player, so we compare averages
+    // Calculate ML score prediction
     const goodAvg = goodScores.length > 0 ? goodScores.reduce((a, b) => a + b, 0) / goodScores.length : 50;
     const evilAvg = evilScores.length > 0 ? evilScores.reduce((a, b) => a + b, 0) / evilScores.length : 50;
 
     // Use logistic function to convert score difference to win probability
-    // A 10-point ML score difference gives roughly 65/35 odds
     const scoreDiff = goodAvg - evilAvg;
     const goodExpected = 1 / (1 + Math.exp(-scoreDiff / 15));
     const goodPct = Math.round(goodExpected * 100);
@@ -577,10 +593,34 @@
     const goodBar = document.getElementById('good-win-bar');
     const goodPctEl = document.getElementById('good-win-pct');
     const evilPctEl = document.getElementById('evil-win-pct');
+    const mlGoodAvgEl = document.getElementById('ml-good-avg');
+    const mlEvilAvgEl = document.getElementById('ml-evil-avg');
 
     if (goodBar) goodBar.style.width = goodPct + '%';
     if (goodPctEl) goodPctEl.textContent = goodPct + '%';
     if (evilPctEl) evilPctEl.textContent = evilPct + '%';
+    if (mlGoodAvgEl) mlGoodAvgEl.textContent = goodAvg.toFixed(1);
+    if (mlEvilAvgEl) mlEvilAvgEl.textContent = evilAvg.toFixed(1);
+
+    // Calculate CR prediction using ELO formula
+    const goodCRAvg = goodCRs.length > 0 ? goodCRs.reduce((a, b) => a + b, 0) / goodCRs.length : 1300;
+    const evilCRAvg = evilCRs.length > 0 ? evilCRs.reduce((a, b) => a + b, 0) / evilCRs.length : 1300;
+
+    const crGoodExpected = 1 / (1 + Math.pow(10, (evilCRAvg - goodCRAvg) / 400));
+    const crGoodPct = Math.round(crGoodExpected * 100);
+    const crEvilPct = 100 - crGoodPct;
+
+    const crGoodBar = document.getElementById('cr-good-win-bar');
+    const crGoodPctEl = document.getElementById('cr-good-win-pct');
+    const crEvilPctEl = document.getElementById('cr-evil-win-pct');
+    const crGoodAvgEl = document.getElementById('cr-good-avg');
+    const crEvilAvgEl = document.getElementById('cr-evil-avg');
+
+    if (crGoodBar) crGoodBar.style.width = crGoodPct + '%';
+    if (crGoodPctEl) crGoodPctEl.textContent = crGoodPct + '%';
+    if (crEvilPctEl) crEvilPctEl.textContent = crEvilPct + '%';
+    if (crGoodAvgEl) crGoodAvgEl.textContent = Math.round(goodCRAvg);
+    if (crEvilAvgEl) crEvilAvgEl.textContent = Math.round(evilCRAvg);
   }
 
   // Drag handlers
@@ -702,13 +742,14 @@
       }
     }
 
-    // Update ML Score and W/L display
+    // Update ML Score, CR, and W/L display
     const select = document.getElementById('player-select-' + slotIndex);
     if (select) {
       const option = select.options[select.selectedIndex];
       const playerId = option ? option.value : null;
       const factionId = select.dataset.factionId;
       const mlScoreCell = document.getElementById('ml-score-' + slotIndex);
+      const crCell = document.getElementById('cr-' + slotIndex);
       const wlCell = document.getElementById('wl-' + slotIndex);
       const facWlCell = document.getElementById('fac-wl-' + slotIndex);
 
@@ -719,6 +760,14 @@
           mlScoreCell.innerHTML = `<span class="${colorClass} font-medium">${option.dataset.mlScore}</span>`;
         } else {
           mlScoreCell.textContent = '-';
+        }
+      }
+      // Custom Rating
+      if (crCell) {
+        if (option && option.dataset.customRating) {
+          crCell.textContent = option.dataset.customRating;
+        } else {
+          crCell.textContent = '-';
         }
       }
       // Overall W/L

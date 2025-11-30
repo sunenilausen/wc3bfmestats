@@ -198,7 +198,7 @@ class LobbiesController < ApplicationController
         }
       end
 
-      @players_for_select = Player.order(:nickname).select(:id, :nickname, :elo_rating, :glicko2_rating, :glicko2_rating_deviation, :ml_score)
+      @players_for_select = Player.order(:nickname).select(:id, :nickname, :elo_rating, :glicko2_rating, :glicko2_rating_deviation, :ml_score, :custom_rating)
 
       # Build player search data with games played count and ML score
       @players_search_data = @players_for_select.map do |player|
@@ -208,6 +208,7 @@ class LobbiesController < ApplicationController
           id: player.id,
           nickname: player.nickname,
           elo: player.elo_rating&.round || 1500,
+          customRating: player.custom_rating&.round || 1300,
           mlScore: player.ml_score,
           wins: stats[:wins],
           losses: stats[:losses],
@@ -224,7 +225,7 @@ class LobbiesController < ApplicationController
                                     .pluck(:player_id)
 
       recent_players_data = Player.where(id: recent_player_ids)
-                                  .pluck(:id, :nickname, :ml_score)
+                                  .pluck(:id, :nickname, :ml_score, :custom_rating)
                                   .index_by(&:first)
 
       # Get last match date for each player
@@ -237,7 +238,7 @@ class LobbiesController < ApplicationController
       @recent_players = recent_player_ids.map do |player_id|
         data = recent_players_data[player_id]
         next unless data
-        id, nickname, ml_score = data
+        id, nickname, ml_score, custom_rating = data
         stats = @player_stats[id] || { wins: 0, losses: 0 }
         last_date = last_match_dates[id]
         formatted_date = if last_date.is_a?(String)
@@ -249,6 +250,7 @@ class LobbiesController < ApplicationController
           id: id,
           nickname: nickname,
           mlScore: ml_score,
+          customRating: custom_rating&.round || 1300,
           wins: stats[:wins],
           losses: stats[:losses],
           lastSeen: formatted_date

@@ -46,9 +46,20 @@
     <%= appearance.elo_rating&.round %>
   </td>
   <td class="px-2 py-1">
-    <%= appearance.elo_rating_change&.round %>
+    <% if appearance.elo_rating_change %>
+      <span class="<%= appearance.elo_rating_change >= 0 ? 'text-green-600' : 'text-red-600' %>">
+        <%= appearance.elo_rating_change >= 0 ? '+' : '' %><%= appearance.elo_rating_change.round %>
+      </span>
+    <% end %>
   </td>
   <td class="px-2 py-1">
-    <%= appearance.player&.elo_rating&.round %>
+    <%= appearance.custom_rating&.round %>
+  </td>
+  <td class="px-2 py-1">
+    <% if appearance.custom_rating_change %>
+      <span class="<%= appearance.custom_rating_change >= 0 ? 'text-green-600' : 'text-red-600' %>">
+        <%= appearance.custom_rating_change >= 0 ? '+' : '' %><%= appearance.custom_rating_change.round %>
+      </span>
+    <% end %>
   </td>
 </tr>

@@ -13,7 +13,9 @@
 <% evil_pooled_rd = evil_rds.any? ? Math.sqrt(evil_rds.map { |r| r**2 }.sum / evil_rds.size) : 350 %>
 <% good_avg_ml = good_with_players.any? ? (good_with_players.sum { |lp| lp.player.ml_score.to_f } / good_with_players.size).round(1) : 0 %>
 <% evil_avg_ml = evil_with_players.any? ? (evil_with_players.sum { |lp| lp.player.ml_score.to_f } / evil_with_players.size).round(1) : 0 %>
-<% col_count = editable ? 5 : 14 %>
+<% good_avg_cr = good_with_players.any? ? (good_with_players.sum { |lp| lp.player.custom_rating.to_i } / good_with_players.size) : 0 %>
+<% evil_avg_cr = evil_with_players.any? ? (evil_with_players.sum { |lp| lp.player.custom_rating.to_i } / evil_with_players.size) : 0 %>
+<% col_count = editable ? 6 : 15 %>
 
 <div id="<%= dom_id lobby %>" class="w-full sm:w-auto <%= editable ? 'mt-2 space-y-5' : 'my-5 space-y-5' %>" data-controller="<%= 'auto-submit' if editable %>">
   <%= simple_form_for(lobby, data: editable ? { auto_submit_target: "form", turbo_action: "replace" } : {}) do |f| %>
@@ -29,10 +31,12 @@
           <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Player</th>
           <% if editable %>
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="ML-based player score (0-100)">ML Score</th>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Custom rating">CR</th>
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">W/L</th>
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Win/Loss with this faction">Fac W/L</th>
           <% else %>
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ELO</th>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Custom rating">CR</th>
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Glicko-2 rating (uncertainty)">Glicko</th>
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">W/L</th>
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="ML-based player score (0-100)">ML Score</th>
@@ -56,12 +60,14 @@
           <td class="px-4 py-2"></td>
           <% if editable %>
             <td class="px-4 py-2 font-bold text-sm"><span data-average-elo-target="mlValue"><%= good_avg_ml %></span></td>
+            <td class="px-4 py-2 font-bold text-sm"><span data-average-elo-target="crValue"><%= good_avg_cr %></span></td>
             <td class="px-4 py-2"></td>
             <td class="px-4 py-2"></td>
           <% else %>
             <td class="px-4 py-2 font-bold text-sm"><span data-average-elo-target="value"><%= good_avg_elo %></span></td>
+            <td class="px-4 py-2 font-bold text-sm"><%= good_avg_cr %></td>
             <td class="px-4 py-2 font-bold text-sm"><span data-average-elo-target="glickoValue"><%= good_avg_glicko.round %></span><span class="text-gray-400 text-xs">&plusmn;<span data-average-elo-target="glickoRd"><%= good_pooled_rd.round %></span></span></td>
-            <% if col_count > 4 %><td class="px-4 py-2" colspan="<%= col_count - 4 %>"></td><% end %>
+            <% if col_count > 5 %><td class="px-4 py-2" colspan="<%= col_count - 5 %>"></td><% end %>
           <% end %>
         </tr>
       </tbody>
@@ -75,12 +81,14 @@
           <td class="px-4 py-2"></td>
           <% if editable %>
             <td class="px-4 py-2 font-bold text-sm"><span data-average-elo-target="mlValue"><%= evil_avg_ml %></span></td>
+            <td class="px-4 py-2 font-bold text-sm"><span data-average-elo-target="crValue"><%= evil_avg_cr %></span></td>
             <td class="px-4 py-2"></td>
             <td class="px-4 py-2"></td>
           <% else %>
             <td class="px-4 py-2 font-bold text-sm"><span data-average-elo-target="value"><%= evil_avg_elo %></span></td>
+            <td class="px-4 py-2 font-bold text-sm"><%= evil_avg_cr %></td>
             <td class="px-4 py-2 font-bold text-sm"><span data-average-elo-target="glickoValue"><%= evil_avg_glicko.round %></span><span class="text-gray-400 text-xs">&plusmn;<span data-average-elo-target="glickoRd"><%= evil_pooled_rd.round %></span></span></td>
-            <% if col_count > 4 %><td class="px-4 py-2" colspan="<%= col_count - 4 %>"></td><% end %>
+            <% if col_count > 5 %><td class="px-4 py-2" colspan="<%= col_count - 5 %>"></td><% end %>
           <% end %>
         </tr>
       </tbody>
@@ -107,6 +115,7 @@
                 <%= link_to observer.nickname, player_path(observer), class: "text-blue-600 hover:underline" %>
               </td>
               <td class="px-4 py-2 whitespace-nowrap text-sm"><%= observer.elo_rating&.round || "-" %></td>
+              <td class="px-4 py-2 whitespace-nowrap text-sm"><%= observer.custom_rating&.round || "-" %></td>
               <td class="px-4 py-2 whitespace-nowrap text-sm">
                 <% if observer.glicko2_rating %>
                   <%= observer.glicko2_rating.round %><span class="text-gray-400 text-xs">&plusmn;<%= observer.glicko2_rating_deviation&.round || "-" %></span>
@@ -176,16 +185,35 @@
     <% if editable %>
       <div id="prediction" class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
         <h3 class="text-sm font-medium text-gray-700 mb-2">Predicted Outcome</h3>
-        <div class="flex items-center gap-2">
-          <span class="text-green-700 font-medium">Good</span>
-          <div class="flex-1 h-6 bg-gray-200 rounded-full overflow-hidden">
-            <div id="good-win-bar" class="h-full bg-green-500 transition-all duration-300" style="width: 50%"></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <div class="text-xs text-gray-500 mb-1">ML Score (avg: <span id="ml-good-avg" class="text-green-600">-</span> vs <span id="ml-evil-avg" class="text-red-600">-</span>)</div>
+            <div class="flex items-center gap-2">
+              <span class="text-green-700 font-medium text-sm">Good</span>
+              <div class="flex-1 h-5 bg-red-500 rounded-full overflow-hidden">
+                <div id="good-win-bar" class="h-full bg-green-500 transition-all duration-300" style="width: 50%"></div>
+              </div>
+              <span class="text-red-700 font-medium text-sm">Evil</span>
+            </div>
+            <div class="flex justify-between text-xs">
+              <span id="good-win-pct" class="text-green-700">50%</span>
+              <span id="evil-win-pct" class="text-red-700">50%</span>
+            </div>
           </div>
-          <span class="text-red-700 font-medium">Evil</span>
-        </div>
-        <div class="flex justify-between mt-1 text-sm">
-          <span id="good-win-pct" class="text-green-700">50%</span>
-          <span id="evil-win-pct" class="text-red-700">50%</span>
+          <div>
+            <div class="text-xs text-gray-500 mb-1">Custom Rating (avg: <span id="cr-good-avg" class="text-green-600">-</span> vs <span id="cr-evil-avg" class="text-red-600">-</span>)</div>
+            <div class="flex items-center gap-2">
+              <span class="text-green-700 font-medium text-sm">Good</span>
+              <div class="flex-1 h-5 bg-red-500 rounded-full overflow-hidden">
+                <div id="cr-good-win-bar" class="h-full bg-green-500 transition-all duration-300" style="width: 50%"></div>
+              </div>
+              <span class="text-red-700 font-medium text-sm">Evil</span>
+            </div>
+            <div class="flex justify-between text-xs">
+              <span id="cr-good-win-pct" class="text-green-700">50%</span>
+              <span id="cr-evil-win-pct" class="text-red-700">50%</span>
+            </div>
+          </div>
         </div>
       </div>
     <% elsif good_avg_elo > 0 && evil_avg_elo > 0 %>
@@ -201,9 +229,13 @@
       <% glicko_good_expected = 1.0 / (1.0 + Math.exp(-g_phi * (mu_good - mu_evil))) %>
       <% glicko_good_pct = (glicko_good_expected * 100).round %>
       <% glicko_evil_pct = 100 - glicko_good_pct %>
+      <%# Custom Rating prediction %>
+      <% cr_good_expected = good_avg_cr > 0 && evil_avg_cr > 0 ? 1.0 / (1 + 10 ** ((evil_avg_cr - good_avg_cr) / 400.0)) : 0.5 %>
+      <% cr_good_pct = (cr_good_expected * 100).round %>
+      <% cr_evil_pct = 100 - cr_good_pct %>
       <div class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
         <h3 class="text-sm font-medium text-gray-700 mb-2">Predicted Outcome</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <div class="text-xs text-gray-500 mb-1">ELO (Good: <%= good_avg_elo %> vs Evil: <%= evil_avg_elo %>)</div>
             <div class="flex items-center gap-2">
@@ -216,6 +248,20 @@
             <div class="flex justify-between text-xs">
               <span class="text-green-700"><%= good_pct %>%</span>
               <span class="text-red-700"><%= evil_pct %>%</span>
+            </div>
+          </div>
+          <div>
+            <div class="text-xs text-gray-500 mb-1">Custom (Good: <%= good_avg_cr %> vs Evil: <%= evil_avg_cr %>)</div>
+            <div class="flex items-center gap-2">
+              <span class="text-green-700 font-medium text-sm">Good</span>
+              <div class="flex-1 h-5 bg-red-500 rounded-full overflow-hidden">
+                <div class="h-full bg-green-500" style="width: <%= cr_good_pct %>%"></div>
+              </div>
+              <span class="text-red-700 font-medium text-sm">Evil</span>
+            </div>
+            <div class="flex justify-between text-xs">
+              <span class="text-green-700"><%= cr_good_pct %>%</span>
+              <span class="text-red-700"><%= cr_evil_pct %>%</span>
             </div>
           </div>
           <div>

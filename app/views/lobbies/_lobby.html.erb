@@ -15,7 +15,7 @@
 <% evil_avg_ml = evil_with_players.any? ? (evil_with_players.sum { |lp| lp.player.ml_score.to_f } / evil_with_players.size).round(1) : 0 %>
 <% col_count = editable ? 5 : 13 %>
 
-<div id="<%= dom_id lobby %>" class="w-full sm:w-auto my-5 space-y-5" data-controller="<%= 'auto-submit' if editable %>">
+<div id="<%= dom_id lobby %>" class="w-full sm:w-auto <%= editable ? 'mt-2 space-y-5' : 'my-5 space-y-5' %>" data-controller="<%= 'auto-submit' if editable %>">
   <%= simple_form_for(lobby, data: editable ? { auto_submit_target: "form", turbo_action: "replace" } : {}) do |f| %>
     <% if editable %>
       <%= f.error_notification %>

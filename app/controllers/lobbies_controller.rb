@@ -173,12 +173,12 @@ class LobbiesController < ApplicationController
         }
       end.sort_by { |p| -p[:games] } # Sort by most games first
 
-      # Get 30 most recent players based on their latest match
+      # Get 28 most recent players based on their latest match
       recent_player_ids = Appearance.joins(:match)
                                     .where(matches: { ignored: false })
                                     .group(:player_id)
                                     .order(Arel.sql("MAX(matches.uploaded_at) DESC"))
-                                    .limit(30)
+                                    .limit(28)
                                     .pluck(:player_id)
 
       recent_players_data = Player.where(id: recent_player_ids)

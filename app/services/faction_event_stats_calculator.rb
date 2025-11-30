@@ -65,15 +65,20 @@ class FactionEventStatsCalculator
     total_hero_kills = 0
     total_hero_deaths = 0
 
-    # Single pass through all replays
-    Wc3statsReplay.includes(:match).find_each do |replay|
+    # Only load replays where this faction was played (instead of all replays)
+    replay_ids = Appearance.joins(:match)
+      .where(faction_id: faction.id, matches: { ignored: false })
+      .where.not(matches: { wc3stats_replay_id: nil })
+      .pluck("matches.wc3stats_replay_id")
+      .uniq
+
+    Wc3statsReplay.includes(match: :appearances).where(id: replay_ids).find_each do |replay|
       next unless replay.match.present?
-      next if replay.match.ignored?
 
       match_length = replay.game_length || replay.match.seconds
       next unless match_length && match_length > 0
 
-      # Check if this faction was played in this match
+      # Get the faction appearance (we know it exists since we filtered by faction)
       faction_appearance = replay.match.appearances.find { |a| a.faction_id == faction.id }
       next unless faction_appearance
 

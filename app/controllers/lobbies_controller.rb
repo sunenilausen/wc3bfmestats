@@ -8,9 +8,31 @@ class LobbiesController < ApplicationController
 
   # GET /lobbies/1 or /lobbies/1.json
   def show
-    preload_lobby_player_stats
-    preload_event_stats
-    compute_score_prediction
+    # Cache key based on lobby composition and global stats version
+    player_ids = @lobby.lobby_players.map(&:player_id).compact.sort
+    observer_ids = @lobby.observer_ids.sort
+    cache_key = ["lobby_stats", @lobby.id, player_ids, observer_ids, StatsCacheKey.key]
+
+    cached_stats = Rails.cache.fetch(cache_key) do
+      preload_lobby_player_stats
+      preload_event_stats
+      compute_score_prediction
+      {
+        lobby_player_stats: @lobby_player_stats,
+        faction_specific_stats: @faction_specific_stats,
+        recent_stats: @recent_stats,
+        event_stats: @event_stats,
+        player_scores: @player_scores,
+        good_win_pct: @good_win_pct
+      }
+    end
+
+    @lobby_player_stats = cached_stats[:lobby_player_stats]
+    @faction_specific_stats = cached_stats[:faction_specific_stats]
+    @recent_stats = cached_stats[:recent_stats]
+    @event_stats = cached_stats[:event_stats]
+    @player_scores = cached_stats[:player_scores]
+    @good_win_pct = cached_stats[:good_win_pct]
   end
 
   # GET /lobbies/new - creates lobby instantly with previous match players
@@ -246,7 +268,10 @@ class LobbiesController < ApplicationController
         appearances = appearances_by_player[player_id] || []
 
         # Use PlayerStatsCalculator for main stats
-        @lobby_player_stats[player_id] = PlayerStatsCalculator.new(player, appearances).compute
+        stats = PlayerStatsCalculator.new(player, appearances).compute
+        # Convert Hash with default proc to regular Hash for caching
+        stats[:faction_stats] = Hash[stats[:faction_stats]] if stats[:faction_stats]
+        @lobby_player_stats[player_id] = stats
 
         # Calculate recent stats from preloaded appearances (avoid N+1)
         recent_100d = appearances.select { |a| a.match.uploaded_at && a.match.uploaded_at >= cutoff_100d }

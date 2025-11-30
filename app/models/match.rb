@@ -5,6 +5,13 @@ class Match < ApplicationRecord
 
   accepts_nested_attributes_for :appearances# , allow_destroy: true
 
+  # Invalidate stats cache when matches change
+  after_commit :invalidate_stats_cache
+
+  def invalidate_stats_cache
+    StatsCacheKey.invalidate!
+  end
+
   scope :by_uploaded_at, ->(direction = :asc) {
     order(Arel.sql("matches.uploaded_at #{direction.to_s.upcase} NULLS LAST"))
   }

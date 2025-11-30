@@ -8,8 +8,16 @@ class FactionsController < ApplicationController
 
   # GET /factions/1 or /factions/1.json
   def show
-    @stats = FactionStatsCalculator.new(@faction).compute
-    event_stats = FactionEventStatsCalculator.new(@faction).compute
+    cache_key = ["faction_stats", @faction.id, StatsCacheKey.key]
+
+    @stats = Rails.cache.fetch(cache_key + ["basic"]) do
+      FactionStatsCalculator.new(@faction).compute
+    end
+
+    event_stats = Rails.cache.fetch(cache_key + ["events"]) do
+      FactionEventStatsCalculator.new(@faction).compute
+    end
+
     @hero_stats = event_stats[:hero_stats]
     @hero_loss_stats = event_stats[:hero_loss_stats]
     @base_stats = event_stats[:base_stats]

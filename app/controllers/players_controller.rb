@@ -65,6 +65,8 @@ class PlayersController < ApplicationController
 
   # GET /players/1 or /players/1.json
   def show
+    cache_key = ["player_stats", @player.id, StatsCacheKey.key]
+
     # Preload all data needed for stats computation (exclude ignored matches)
     # Order by reverse chronological (newest first) using same ordering as matches index
     @appearances = @player.appearances
@@ -73,11 +75,18 @@ class PlayersController < ApplicationController
       .includes(:faction, :match, match: { appearances: :faction, wc3stats_replay: {} })
       .merge(Match.reverse_chronological)
 
-    # Compute all stats in a single pass
-    @stats = PlayerStatsCalculator.new(@player, @appearances).compute
+    # Compute all stats in a single pass (cached)
+    @stats = Rails.cache.fetch(cache_key + ["basic"]) do
+      stats = PlayerStatsCalculator.new(@player, @appearances).compute
+      # Convert Hash with default proc to regular Hash for caching
+      stats[:faction_stats] = Hash[stats[:faction_stats]] if stats[:faction_stats]
+      stats
+    end
 
-    # Compute hero and base death stats from replay events
-    @event_stats = PlayerEventStatsCalculator.new(@player).compute
+    # Compute hero and base death stats from replay events (cached)
+    @event_stats = Rails.cache.fetch(cache_key + ["events"]) do
+      PlayerEventStatsCalculator.new(@player).compute
+    end
   end
 
   # GET /players/new

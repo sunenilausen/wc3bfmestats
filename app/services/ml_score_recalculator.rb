@@ -139,7 +139,7 @@ class MlScoreRecalculator
       hero_kd = es[:hero_kd_ratio] || 1.0
       hero_uptime = es[:hero_uptime] || 80.0
 
-      elo = player.elo_rating || 1500
+      elo = player.custom_rating || 1300
 
       # Use log scale for games played (diminishing returns)
       # log(1) = 0, log(10) ≈ 2.3, log(50) ≈ 3.9, log(100) ≈ 4.6
@@ -154,7 +154,7 @@ class MlScoreRecalculator
       hero_uptime_weight = [weights[:hero_uptime], 0.005].max
 
       raw_score = 0.0
-      raw_score += elo_weight * (elo - 1500)
+      raw_score += elo_weight * (elo - 1300)
       raw_score += hero_kill_weight * (avg_hk - 20.0)
       raw_score += unit_kill_weight * (avg_uk - 20.0)
       raw_score += castle_raze_weight * (avg_cr - 20.0)

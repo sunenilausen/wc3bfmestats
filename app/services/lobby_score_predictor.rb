@@ -153,8 +153,8 @@ class LobbyScorePredictor
         features[:enemy_elo_diff] << ps[:avg_enemy_elo_diff] if ps[:avg_enemy_elo_diff]
       end
 
-      # ELO
-      features[:elo] << player.elo_rating if player.elo_rating
+      # Custom Rating (used as ELO in ML)
+      features[:elo] << player.custom_rating if player.custom_rating
     end
 
     # Average each feature, using defaults for missing data
@@ -164,7 +164,7 @@ class LobbyScorePredictor
       unit_kill_contribution: safe_average(features[:unit_kill_contribution], 20.0),
       castle_raze_contribution: safe_average(features[:castle_raze_contribution], 20.0),
       games_played: safe_average(features[:games_played], 0),
-      elo: safe_average(features[:elo], 1500),
+      elo: safe_average(features[:elo], 1300),
       enemy_elo_diff: safe_average(features[:enemy_elo_diff], 0)
     }
   end
@@ -218,13 +218,13 @@ class LobbyScorePredictor
       features[:enemy_elo_diff] = 0
     end
 
-    # ELO
-    features[:elo] = player.elo_rating || 1500
+    # Custom Rating (used as ELO in ML)
+    features[:elo] = player.custom_rating || 1300
 
     features
   end
 
-  # Features for a new player (bottom 5% ELO, 0 games, baseline stats)
+  # Features for a new player (default custom rating, 0 games, baseline stats)
   def new_player_features
     {
       hero_kd: 1.0,
@@ -232,7 +232,7 @@ class LobbyScorePredictor
       unit_kill_contribution: 20.0,
       castle_raze_contribution: 20.0,
       games_played: 0,
-      elo: NewPlayerDefaults.elo,
+      elo: NewPlayerDefaults.custom_rating,
       enemy_elo_diff: 0
     }
   end
@@ -247,8 +247,8 @@ class LobbyScorePredictor
     # Baseline: ELO 1500, Hero K/D 1.0, HK% 20, UK% 20, CR% 20, 0 games, 0 enemy ELO diff
     score = 0.0
 
-    # ELO contribution (relative to 1500)
-    score += @weights[:elo] * (features[:elo] - 1500)
+    # Custom Rating contribution (relative to 1300)
+    score += @weights[:elo] * (features[:elo] - 1300)
 
     # Hero K/D contribution (relative to 1.0)
     score += @weights[:hero_kd] * (features[:hero_kd] - 1.0)

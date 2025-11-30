@@ -89,7 +89,7 @@ class PredictionModelTrainer
       team_heal_contribution: safe_average(player_stats.values.map { |s| s[:team_heal_contribution] }),
       hero_uptime: safe_average(player_stats.values.map { |s| s[:hero_uptime] }),
       games_played: safe_average(player_stats.values.map { |s| s[:games_played] }),
-      elo: safe_average(appearances.map(&:elo_rating).compact),
+      elo: safe_average(appearances.map(&:custom_rating).compact),
       enemy_elo_diff: safe_average(player_stats.values.map { |s| s[:enemy_elo_diff] })
     }
   end
@@ -181,7 +181,7 @@ class PredictionModelTrainer
       team_heal_contribution: (a[:team_heal_contribution] || 20.0) - (b[:team_heal_contribution] || 20.0),
       hero_uptime: (a[:hero_uptime] || 80.0) - (b[:hero_uptime] || 80.0),
       games_played: (a[:games_played] || 0) - (b[:games_played] || 0),
-      elo: (a[:elo] || 1500) - (b[:elo] || 1500),
+      elo: (a[:elo] || 1300) - (b[:elo] || 1300),
       enemy_elo_diff: (a[:enemy_elo_diff] || 0) - (b[:enemy_elo_diff] || 0)
     }
   end

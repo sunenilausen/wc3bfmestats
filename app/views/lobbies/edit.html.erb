@@ -375,7 +375,7 @@
       }
     }
 
-    // Set ML Score, CR, and W/L to new player defaults
+    // Set Performance Score, CR, and W/L to new player defaults
     const mlScoreCell = document.getElementById('ml-score-' + slotIndex);
     const crCell = document.getElementById('cr-' + slotIndex);
     const wlCell = document.getElementById('wl-' + slotIndex);
@@ -495,7 +495,7 @@
   }
 
   function updateAverageElos() {
-    // Recalculate average ML Score and CR for each team
+    // Recalculate average Performance Score and CR for each team
     [1, 2].forEach(teamNumber => {
       const rows = document.querySelectorAll(`tr.nested-fields[data-team="${teamNumber}"]`);
       let totalMlScore = 0;
@@ -580,7 +580,7 @@
       }
     });
 
-    // Calculate ML score prediction
+    // Calculate performance score prediction
     const goodAvg = goodScores.length > 0 ? goodScores.reduce((a, b) => a + b, 0) / goodScores.length : 50;
     const evilAvg = evilScores.length > 0 ? evilScores.reduce((a, b) => a + b, 0) / evilScores.length : 50;
 
@@ -742,7 +742,7 @@
       }
     }
 
-    // Update ML Score, CR, and W/L display
+    // Update Performance Score, CR, and W/L display
     const select = document.getElementById('player-select-' + slotIndex);
     if (select) {
       const option = select.options[select.selectedIndex];

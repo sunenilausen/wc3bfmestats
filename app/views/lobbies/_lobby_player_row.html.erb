@@ -60,7 +60,7 @@
     <% end %>
   </td>
   <% if editable %>
-    <%# ML Score column for editable mode %>
+    <%# Performance Score column for editable mode %>
     <td class="px-4 py-2 whitespace-nowrap text-sm" id="ml-score-<%= index %>">
       <% if lp.player %>
         <% ml_score = lp.player.ml_score %>
@@ -129,7 +129,7 @@
     </td>
   <% end %>
   <% unless editable %>
-    <%# ML Score - use stored ml_score from player %>
+    <%# Performance Score - use stored ml_score from player %>
     <td class="px-4 py-2 whitespace-nowrap text-sm">
       <% if lp.player&.ml_score %>
         <% ml_score = lp.player.ml_score %>

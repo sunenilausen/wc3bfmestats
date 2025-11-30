@@ -68,26 +68,30 @@
             </td>
           </tr>
           <tr>
-            <td class="py-0.5" title="Player's ELO vs enemy team average. Positive = playing weaker opponents">Avg vs Enemy</td>
+            <td class="py-0.5" title="Average difference between this player's ELO and the enemy team's average ELO. Positive means typically facing weaker opponents, negative means typically facing stronger opponents.">ELO vs Enemies</td>
             <td class="text-right py-0.5">
               <% enemy_diff = stats[:avg_enemy_elo_diff] %>
               <% if enemy_diff > 0 %>
                 <span class="text-green-600">+<%= enemy_diff %></span>
+                <span class="text-gray-400 text-xs">(weaker foes)</span>
               <% elsif enemy_diff < 0 %>
                 <span class="text-red-600"><%= enemy_diff %></span>
+                <span class="text-gray-400 text-xs">(stronger foes)</span>
               <% else %>
                 <span class="text-gray-500">0</span>
               <% end %>
             </td>
           </tr>
           <tr>
-            <td class="py-0.5" title="Player's ELO vs own team average (excluding self). Positive = carrying weaker teammates">Avg vs Allies</td>
+            <td class="py-0.5" title="Average difference between this player's ELO and their teammates' average ELO (excluding self). Positive means typically the strongest on the team, negative means typically carried by stronger teammates.">ELO vs Teammates</td>
             <td class="text-right py-0.5">
               <% ally_diff = stats[:avg_ally_elo_diff] %>
               <% if ally_diff > 0 %>
                 <span class="text-green-600">+<%= ally_diff %></span>
+                <span class="text-gray-400 text-xs">(team carry)</span>
               <% elsif ally_diff < 0 %>
                 <span class="text-red-600"><%= ally_diff %></span>
+                <span class="text-gray-400 text-xs">(carried)</span>
               <% else %>
                 <span class="text-gray-500">0</span>
               <% end %>

@@ -82,11 +82,56 @@ class Wc3statsSyncJob < ApplicationJob
     # Mark invalid matches as ignored
     mark_invalid_matches
 
+    # Create observer players
+    create_observers
+
     # Fix unicode encoding
     fix_unicode_names
 
     # Recalculate ratings
     recalculate_ratings
+  end
+
+  def create_observers
+    observers_created = 0
+    Wc3statsReplay.find_each do |replay|
+      replay.players.each do |player_data|
+        slot = player_data["slot"]
+        next unless slot.nil? || slot > 9 || player_data["isWinner"].nil?
+
+        battletag = player_data["name"]
+        next if battletag.blank?
+
+        # Fix encoding
+        fixed_battletag = begin
+          bytes = battletag.encode("ISO-8859-1", "UTF-8").bytes
+          fixed = bytes.pack("C*").force_encoding("UTF-8")
+          if fixed.valid_encoding? && fixed != battletag
+            fixed
+          else
+            battletag
+          end
+        rescue Encoding::UndefinedConversionError, Encoding::InvalidByteSequenceError
+          battletag
+        end
+
+        # Create player if not exists
+        unless Player.exists?(battletag: fixed_battletag) || Player.exists?(battletag: battletag)
+          nickname = fixed_battletag.split("#").first
+          Player.create!(
+            battletag: fixed_battletag,
+            nickname: nickname,
+            custom_rating: NewPlayerDefaults::CUSTOM_RATING,
+            ml_score: NewPlayerDefaults::ML_SCORE
+          )
+          observers_created += 1
+        end
+      end
+    end
+
+    if observers_created > 0
+      Rails.logger.info "Wc3statsSyncJob: Created #{observers_created} new observer players"
+    end
   end
 
   def mark_invalid_matches

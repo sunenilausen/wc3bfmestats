@@ -24,7 +24,8 @@ class LobbiesController < ApplicationController
         recent_stats: @recent_stats,
         event_stats: @event_stats,
         player_scores: @player_scores,
-        good_win_pct: @good_win_pct
+        score_prediction: @score_prediction,
+        feature_contributions: @feature_contributions
       }
     end
 
@@ -33,7 +34,8 @@ class LobbiesController < ApplicationController
     @recent_stats = cached_stats[:recent_stats]
     @event_stats = cached_stats[:event_stats]
     @player_scores = cached_stats[:player_scores]
-    @good_win_pct = cached_stats[:good_win_pct]
+    @score_prediction = cached_stats[:score_prediction]
+    @feature_contributions = cached_stats[:feature_contributions]
   end
 
   # GET /lobbies/new - creates lobby instantly with previous match players

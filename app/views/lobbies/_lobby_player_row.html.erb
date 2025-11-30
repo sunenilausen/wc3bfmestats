@@ -129,12 +129,12 @@
     </td>
   <% end %>
   <% unless editable %>
-    <%# Score %>
+    <%# ML Score - use stored ml_score from player %>
     <td class="px-4 py-2 whitespace-nowrap text-sm">
-      <% if player_score_data %>
-        <% score = player_score_data[:score] %>
-        <% color_class = score >= 55 ? 'text-green-600' : (score <= 45 ? 'text-red-600' : 'text-gray-600') %>
-        <span class="<%= color_class %> font-medium" title="Raw score: <%= player_score_data[:raw_score] %>"><%= score %></span>
+      <% if lp.player&.ml_score %>
+        <% ml_score = lp.player.ml_score %>
+        <% color_class = ml_score >= 55 ? 'text-green-600' : (ml_score <= 45 ? 'text-red-600' : 'text-gray-600') %>
+        <span class="<%= color_class %> font-medium"><%= ml_score %></span>
       <% elsif lp.is_new_player? %>
         <span class="text-red-600 font-medium"><%= NewPlayerDefaults.ml_score %></span>
       <% else %>
@@ -152,14 +152,6 @@
         <span class="text-green-600"><%= faction_recent[:wins] %></span>/<span class="text-red-600"><%= faction_recent[:losses] %></span>
       <% elsif lp.player && lp.faction %>
         <span class="text-green-600"><%= lp.player.recent_wins_with_faction(lp.faction, days: 365) %></span>/<span class="text-red-600"><%= lp.player.recent_losses_with_faction(lp.faction, days: 365) %></span>
-      <% else %>
-        -
-      <% end %>
-    </td>
-    <%# Hero K/D %>
-    <td class="px-4 py-2 whitespace-nowrap text-sm">
-      <% if player_event_stats && player_event_stats[:hero_kd_ratio] %>
-        <%= player_event_stats[:hero_kd_ratio] %>
       <% else %>
         -
       <% end %>

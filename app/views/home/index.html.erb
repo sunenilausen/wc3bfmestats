@@ -50,82 +50,118 @@
     </div>
   </div>
 
-  <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <div class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <% if @my_lobby %>
+      <%# Your Lobby %>
+      <div class="bg-white rounded-lg shadow border border-blue-200">
+        <div class="px-4 py-2 border-b border-blue-200 bg-blue-50 flex justify-between items-center">
+          <h2 class="text-sm font-semibold text-gray-900">Your Lobby</h2>
+          <div class="flex gap-2">
+            <%= link_to "Edit", edit_lobby_path(@my_lobby), class: "text-xs text-blue-600 hover:text-blue-800 font-medium" %>
+            <%= link_to "View", lobby_path(@my_lobby), class: "text-xs text-blue-600 hover:text-blue-800" %>
+          </div>
+        </div>
+        <div class="p-3 text-xs">
+          <p class="text-gray-500 mb-2"><%= time_ago_in_words(@my_lobby.updated_at) %> ago</p>
+          <div class="space-y-0.5">
+            <% @my_lobby.lobby_players.includes(:faction, :player).select { |lp| lp.faction&.good? }.each do |lp| %>
+              <div class="flex justify-between items-center">
+                <span class="flex items-center gap-1">
+                  <span class="w-2 h-2 rounded-full" style="background-color: <%= lp.faction.color_hex %>"></span>
+                  <span class="text-green-700"><%= lp.player&.nickname || (lp.is_new_player? ? "New" : "-") %></span>
+                </span>
+                <span class="text-gray-500"><%= lp.faction&.name %></span>
+              </div>
+            <% end %>
+            <% @my_lobby.lobby_players.includes(:faction, :player).select { |lp| lp.faction && !lp.faction.good? }.each do |lp| %>
+              <div class="flex justify-between items-center">
+                <span class="flex items-center gap-1">
+                  <span class="w-2 h-2 rounded-full" style="background-color: <%= lp.faction.color_hex %>"></span>
+                  <span class="text-red-700"><%= lp.player&.nickname || (lp.is_new_player? ? "New" : "-") %></span>
+                </span>
+                <span class="text-gray-500"><%= lp.faction&.name %></span>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
     <%# Most Recent Lobby %>
     <div class="bg-white rounded-lg shadow border border-gray-200">
-      <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-        <h2 class="text-lg font-semibold text-gray-900">Most Recent Lobby</h2>
+      <div class="px-4 py-2 border-b border-gray-200 flex justify-between items-center">
+        <h2 class="text-sm font-semibold text-gray-900">Recent Lobby</h2>
         <% if @recent_lobby %>
-          <%= link_to "View", lobby_path(@recent_lobby), class: "text-sm text-blue-600 hover:text-blue-800" %>
+          <%= link_to "View", lobby_path(@recent_lobby), class: "text-xs text-blue-600 hover:text-blue-800" %>
         <% end %>
       </div>
-      <div class="p-4">
+      <div class="p-3 text-xs">
         <% if @recent_lobby %>
-          <p class="text-sm text-gray-500 mb-3">Updated <%= time_ago_in_words(@recent_lobby.updated_at) %> ago</p>
-          <div class="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <h3 class="font-medium text-green-700 mb-2">Good</h3>
-              <% @recent_lobby.lobby_players.includes(:faction, :player).select { |lp| lp.faction&.good? }.each do |lp| %>
-                <div class="flex justify-between py-0.5">
-                  <span><%= lp.player&.nickname || (lp.is_new_player? ? "New Player" : "-") %></span>
-                  <span class="text-gray-400"><%= lp.faction&.name %></span>
-                </div>
-              <% end %>
-            </div>
-            <div>
-              <h3 class="font-medium text-red-700 mb-2">Evil</h3>
-              <% @recent_lobby.lobby_players.includes(:faction, :player).select { |lp| lp.faction && !lp.faction.good? }.each do |lp| %>
-                <div class="flex justify-between py-0.5">
-                  <span><%= lp.player&.nickname || (lp.is_new_player? ? "New Player" : "-") %></span>
-                  <span class="text-gray-400"><%= lp.faction&.name %></span>
-                </div>
-              <% end %>
-            </div>
+          <p class="text-gray-500 mb-2"><%= time_ago_in_words(@recent_lobby.updated_at) %> ago</p>
+          <div class="space-y-0.5">
+            <% @recent_lobby.lobby_players.includes(:faction, :player).select { |lp| lp.faction&.good? }.each do |lp| %>
+              <div class="flex justify-between items-center">
+                <span class="flex items-center gap-1">
+                  <span class="w-2 h-2 rounded-full" style="background-color: <%= lp.faction.color_hex %>"></span>
+                  <span class="text-green-700"><%= lp.player&.nickname || (lp.is_new_player? ? "New" : "-") %></span>
+                </span>
+                <span class="text-gray-500"><%= lp.faction&.name %></span>
+              </div>
+            <% end %>
+            <% @recent_lobby.lobby_players.includes(:faction, :player).select { |lp| lp.faction && !lp.faction.good? }.each do |lp| %>
+              <div class="flex justify-between items-center">
+                <span class="flex items-center gap-1">
+                  <span class="w-2 h-2 rounded-full" style="background-color: <%= lp.faction.color_hex %>"></span>
+                  <span class="text-red-700"><%= lp.player&.nickname || (lp.is_new_player? ? "New" : "-") %></span>
+                </span>
+                <span class="text-gray-500"><%= lp.faction&.name %></span>
+              </div>
+            <% end %>
           </div>
         <% else %>
-          <p class="text-gray-500 text-center py-4">No lobbies yet</p>
+          <p class="text-gray-500 text-center py-2">No lobbies yet</p>
         <% end %>
       </div>
     </div>
 
     <%# Most Recent Match %>
     <div class="bg-white rounded-lg shadow border border-gray-200">
-      <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-        <h2 class="text-lg font-semibold text-gray-900">Most Recent Match</h2>
+      <div class="px-4 py-2 border-b border-gray-200 flex justify-between items-center">
+        <h2 class="text-sm font-semibold text-gray-900">Recent Match</h2>
         <% if @recent_match %>
-          <%= link_to "View", match_path(@recent_match), class: "text-sm text-blue-600 hover:text-blue-800" %>
+          <%= link_to "View", match_path(@recent_match), class: "text-xs text-blue-600 hover:text-blue-800" %>
         <% end %>
       </div>
-      <div class="p-4">
+      <div class="p-3 text-xs">
         <% if @recent_match %>
-          <div class="flex justify-between items-center mb-3">
-            <p class="text-sm text-gray-500">Uploaded <%= time_ago_in_words(@recent_match.uploaded_at) %> ago</p>
-            <span class="text-sm font-medium <%= @recent_match.good_victory? ? 'text-green-600' : 'text-red-600' %>">
-              <%= @recent_match.good_victory? ? 'Good Victory' : 'Evil Victory' %>
+          <div class="flex justify-between items-center mb-2">
+            <p class="text-gray-500"><%= time_ago_in_words(@recent_match.uploaded_at) %> ago</p>
+            <span class="font-medium <%= @recent_match.good_victory? ? 'text-green-600' : 'text-red-600' %>">
+              <%= @recent_match.good_victory? ? 'Good' : 'Evil' %> Win
             </span>
           </div>
-          <div class="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <h3 class="font-medium text-green-700 mb-2">Good</h3>
-              <% @recent_match.appearances.select { |a| a.faction&.good? }.each do |app| %>
-                <div class="flex justify-between py-0.5">
-                  <span><%= app.player&.nickname || "-" %></span>
-                  <span class="text-gray-400"><%= app.faction&.name %></span>
-                </div>
-              <% end %>
-            </div>
-            <div>
-              <h3 class="font-medium text-red-700 mb-2">Evil</h3>
-              <% @recent_match.appearances.select { |a| a.faction && !a.faction.good? }.each do |app| %>
-                <div class="flex justify-between py-0.5">
-                  <span><%= app.player&.nickname || "-" %></span>
-                  <span class="text-gray-400"><%= app.faction&.name %></span>
-                </div>
-              <% end %>
-            </div>
+          <div class="space-y-0.5">
+            <% @recent_match.appearances.select { |a| a.faction&.good? }.each do |app| %>
+              <div class="flex justify-between items-center">
+                <span class="flex items-center gap-1">
+                  <span class="w-2 h-2 rounded-full" style="background-color: <%= app.faction.color_hex %>"></span>
+                  <span class="text-green-700"><%= app.player&.nickname || "-" %></span>
+                </span>
+                <span class="text-gray-500"><%= app.faction&.name %></span>
+              </div>
+            <% end %>
+            <% @recent_match.appearances.select { |a| a.faction && !a.faction.good? }.each do |app| %>
+              <div class="flex justify-between items-center">
+                <span class="flex items-center gap-1">
+                  <span class="w-2 h-2 rounded-full" style="background-color: <%= app.faction.color_hex %>"></span>
+                  <span class="text-red-700"><%= app.player&.nickname || "-" %></span>
+                </span>
+                <span class="text-gray-500"><%= app.faction&.name %></span>
+              </div>
+            <% end %>
           </div>
         <% else %>
-          <p class="text-gray-500 text-center py-4">No matches yet</p>
+          <p class="text-gray-500 text-center py-2">No matches yet</p>
         <% end %>
       </div>
     </div>

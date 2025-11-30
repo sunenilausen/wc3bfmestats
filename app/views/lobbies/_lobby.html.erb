@@ -290,7 +290,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <% factor_labels = { hero_kd: "Hero K/D", hero_kill_contribution: "HK%", unit_kill_contribution: "UK%", castle_raze_contribution: "CK%", games_played: "Games", elo: "ELO", enemy_elo_diff: "vs Enemy ELO" } %>
+                  <% factor_labels = { hero_kd: "Hero K/D", hero_kill_contribution: "HK%", unit_kill_contribution: "UK%", castle_raze_contribution: "CK%", team_heal_contribution: "TH%", games_played: "Games", elo: "ELO", enemy_elo_diff: "vs Enemy ELO" } %>
                   <% @feature_contributions.each do |key, data| %>
                     <tr class="border-t border-gray-100">
                       <td class="py-1"><%= factor_labels[key.to_sym] || key %></td>

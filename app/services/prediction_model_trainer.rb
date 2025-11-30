@@ -86,6 +86,7 @@ class PredictionModelTrainer
       hero_kill_contribution: safe_average(player_stats.values.map { |s| s[:hero_kill_contribution] }),
       unit_kill_contribution: safe_average(player_stats.values.map { |s| s[:unit_kill_contribution] }),
       castle_raze_contribution: safe_average(player_stats.values.map { |s| s[:castle_raze_contribution] }),
+      team_heal_contribution: safe_average(player_stats.values.map { |s| s[:team_heal_contribution] }),
       games_played: safe_average(player_stats.values.map { |s| s[:games_played] }),
       elo: safe_average(appearances.map(&:elo_rating).compact),
       enemy_elo_diff: safe_average(player_stats.values.map { |s| s[:enemy_elo_diff] })
@@ -108,12 +109,17 @@ class PredictionModelTrainer
     # Get event stats (hero K/D, uptime) - this is expensive so we approximate
     event_stats = compute_simple_event_stats(player, prior_appearances)
 
+    # Use log scale for games played (diminishing returns)
+    total_matches = stats[:total_matches] || 0
+    games_played_log = total_matches > 0 ? Math.log(total_matches + 1) : 0
+
     {
       hero_kd: event_stats[:hero_kd] || 1.0,
       hero_kill_contribution: stats[:avg_hero_kill_contribution] || 20.0,
       unit_kill_contribution: stats[:avg_unit_kill_contribution] || 20.0,
       castle_raze_contribution: stats[:avg_castle_raze_contribution] || 20.0,
-      games_played: stats[:total_matches] || 0,
+      team_heal_contribution: stats[:avg_team_heal_contribution] || 20.0,
+      games_played: games_played_log,
       enemy_elo_diff: stats[:avg_enemy_elo_diff] || 0
     }
   end
@@ -156,6 +162,7 @@ class PredictionModelTrainer
       hero_kill_contribution: (a[:hero_kill_contribution] || 20.0) - (b[:hero_kill_contribution] || 20.0),
       unit_kill_contribution: (a[:unit_kill_contribution] || 20.0) - (b[:unit_kill_contribution] || 20.0),
       castle_raze_contribution: (a[:castle_raze_contribution] || 20.0) - (b[:castle_raze_contribution] || 20.0),
+      team_heal_contribution: (a[:team_heal_contribution] || 20.0) - (b[:team_heal_contribution] || 20.0),
       games_played: (a[:games_played] || 0) - (b[:games_played] || 0),
       elo: (a[:elo] || 1500) - (b[:elo] || 1500),
       enemy_elo_diff: (a[:enemy_elo_diff] || 0) - (b[:enemy_elo_diff] || 0)
@@ -174,6 +181,7 @@ class PredictionModelTrainer
       hero_kill_contribution: 0.0,
       unit_kill_contribution: 0.0,
       castle_raze_contribution: 0.0,
+      team_heal_contribution: 0.0,
       games_played: 0.0,
       elo: 0.0,
       enemy_elo_diff: 0.0,
@@ -185,7 +193,7 @@ class PredictionModelTrainer
     features = data.map { |d| d[:features] }
 
     @feature_stats = {}
-    %i[hero_kd hero_kill_contribution unit_kill_contribution castle_raze_contribution games_played elo enemy_elo_diff].each do |key|
+    %i[hero_kd hero_kill_contribution unit_kill_contribution castle_raze_contribution team_heal_contribution games_played elo enemy_elo_diff].each do |key|
       values = features.map { |f| f[key] }.compact
       next if values.empty?
 
@@ -269,6 +277,7 @@ class PredictionModelTrainer
       hero_kill_contribution_weight: denormalized[:hero_kill_contribution],
       unit_kill_contribution_weight: denormalized[:unit_kill_contribution],
       castle_raze_contribution_weight: denormalized[:castle_raze_contribution],
+      team_heal_contribution_weight: denormalized[:team_heal_contribution],
       games_played_weight: denormalized[:games_played],
       elo_weight: denormalized[:elo],
       enemy_elo_diff_weight: denormalized[:enemy_elo_diff],
@@ -282,7 +291,7 @@ class PredictionModelTrainer
   def denormalize_weights(weights)
     denormalized = { bias: weights[:bias] }
 
-    %i[hero_kd hero_kill_contribution unit_kill_contribution castle_raze_contribution games_played elo enemy_elo_diff].each do |key|
+    %i[hero_kd hero_kill_contribution unit_kill_contribution castle_raze_contribution team_heal_contribution games_played elo enemy_elo_diff].each do |key|
       if @feature_stats[key]
         # w_denorm = w_norm / std
         # bias adjustment: bias -= w_norm * mean / std

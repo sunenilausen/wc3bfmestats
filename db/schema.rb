@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_30_113701) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_30_121521) do
   create_table "appearances", force: :cascade do |t|
     t.integer "castles_razed"
     t.datetime "created_at", null: false
@@ -117,6 +117,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_30_113701) do
     t.float "hero_kill_contribution_weight", default: 0.0
     t.float "hero_uptime_weight", default: 0.0
     t.datetime "last_trained_at"
+    t.float "team_heal_contribution_weight", default: 0.0
     t.float "unit_kill_contribution_weight", default: 0.0
     t.datetime "updated_at", null: false
   end

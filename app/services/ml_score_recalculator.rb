@@ -39,6 +39,20 @@ class MlScoreRecalculator
       castle_totals_by_match[match_id][is_good] = cr.to_i
     end
 
+    # Batch query: team heal team totals
+    team_heal_totals = Appearance.joins(:faction)
+      .where(match_id: match_ids)
+      .where.not(team_heal: nil)
+      .where("team_heal > 0")
+      .group(:match_id, "factions.good")
+      .pluck(:match_id, Arel.sql("factions.good"), Arel.sql("SUM(team_heal)"))
+
+    team_heal_by_match = {}
+    team_heal_totals.each do |match_id, is_good, th|
+      team_heal_by_match[match_id] ||= {}
+      team_heal_by_match[match_id][is_good] = th.to_i
+    end
+
     # Get all player appearances with faction info
     player_appearances = Appearance.joins(:match, :faction)
       .where(matches: { ignored: false })
@@ -51,8 +65,15 @@ class MlScoreRecalculator
       .where.not(castles_razed: nil)
       .pluck(:player_id, :match_id, "factions.good", :castles_razed)
 
+    # Get team heal appearances separately
+    team_heal_appearances = Appearance.joins(:match, :faction)
+      .where(matches: { ignored: false })
+      .where.not(team_heal: nil)
+      .where("team_heal > 0")
+      .pluck(:player_id, :match_id, "factions.good", :team_heal)
+
     # Calculate average kill contributions per player
-    player_contributions = Hash.new { |h, k| h[k] = { hk_contribs: [], uk_contribs: [], cr_contribs: [], enemy_elo_diffs: [] } }
+    player_contributions = Hash.new { |h, k| h[k] = { hk_contribs: [], uk_contribs: [], cr_contribs: [], th_contribs: [], enemy_elo_diffs: [] } }
 
     player_appearances.each do |player_id, match_id, is_good, hk, uk|
       team = team_totals_by_match.dig(match_id, is_good)
@@ -71,6 +92,13 @@ class MlScoreRecalculator
       next unless team_total && team_total > 0
 
       player_contributions[player_id][:cr_contribs] << (cr.to_f / team_total * 100)
+    end
+
+    team_heal_appearances.each do |player_id, match_id, is_good, th|
+      team_total = team_heal_by_match.dig(match_id, is_good)
+      next unless team_total && team_total > 0
+
+      player_contributions[player_id][:th_contribs] << (th.to_f / team_total * 100)
     end
 
     # Batch query: ELO ratings per match for enemy ELO diff calculation
@@ -103,6 +131,7 @@ class MlScoreRecalculator
       avg_hk = contribs[:hk_contribs].any? ? (contribs[:hk_contribs].sum / contribs[:hk_contribs].size) : 20.0
       avg_uk = contribs[:uk_contribs].any? ? (contribs[:uk_contribs].sum / contribs[:uk_contribs].size) : 20.0
       avg_cr = contribs[:cr_contribs].any? ? (contribs[:cr_contribs].sum / contribs[:cr_contribs].size) : 20.0
+      avg_th = contribs[:th_contribs].any? ? (contribs[:th_contribs].sum / contribs[:th_contribs].size) : 20.0
       avg_enemy_elo_diff = contribs[:enemy_elo_diffs].any? ? (contribs[:enemy_elo_diffs].sum / contribs[:enemy_elo_diffs].size) : 0
       total_matches = games_played[player.id] || 0
 
@@ -111,13 +140,18 @@ class MlScoreRecalculator
 
       elo = player.elo_rating || 1500
 
+      # Use log scale for games played (diminishing returns)
+      # log(1) = 0, log(10) ≈ 2.3, log(50) ≈ 3.9, log(100) ≈ 4.6
+      games_played_log = total_matches > 0 ? Math.log(total_matches + 1) : 0
+
       raw_score = 0.0
       raw_score += weights[:elo] * (elo - 1500)
       raw_score += weights[:hero_kd] * (hero_kd - 1.0)
       raw_score += weights[:hero_kill_contribution] * (avg_hk - 20.0)
       raw_score += weights[:unit_kill_contribution] * (avg_uk - 20.0)
       raw_score += weights[:castle_raze_contribution] * (avg_cr - 20.0)
-      raw_score += weights[:games_played] * total_matches
+      raw_score += weights[:team_heal_contribution] * (avg_th - 20.0)
+      raw_score += weights[:games_played] * games_played_log
       raw_score += weights[:enemy_elo_diff] * avg_enemy_elo_diff
 
       sigmoid_value = 1.0 / (1.0 + Math.exp(-raw_score.clamp(-500, 500) * 0.5))

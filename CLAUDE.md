@@ -60,6 +60,7 @@ The `uploaded_at` field on Match represents when the replay was **first uploaded
 - Hero kill contribution % (player's share of team hero kills)
 - Unit kill contribution % (player's share of team unit kills)
 - Castle raze contribution % (player's share of team castles razed)
+- Team heal contribution % (player's share of team healing to teammates)
 - Enemy ELO diff (player's ELO vs enemy team average - accounts for lobby strength)
 - Games played (experience factor)
 

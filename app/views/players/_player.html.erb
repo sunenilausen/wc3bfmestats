@@ -1,25 +1,97 @@
 <div id="<%= dom_id player %>" class="w-full sm:w-auto my-5 space-y-5">
-  <%# Compute Custom Rating extremes %>
-  <% custom_ratings = appearances.map(&:custom_rating).compact %>
-  <% custom_ratings << player.custom_rating.round if player.custom_rating %>
-  <% highest_custom = custom_ratings.any? ? custom_ratings.max : nil %>
-  <% lowest_custom = custom_ratings.any? ? custom_ratings.min : nil %>
+  <%# Compute Custom Rating extremes (after 20 placement wins) %>
+  <%
+    # appearances are in reverse chronological order, so reverse to get oldest first
+    chronological_appearances = appearances.to_a.reverse
+    win_count = 0
+    post_placement_ratings = []
+    chronological_appearances.each do |app|
+      next unless app.custom_rating
+      is_win = (app.faction.good? && app.match.good_victory?) || (!app.faction.good? && !app.match.good_victory?)
+      win_count += 1 if is_win
+      # Only include ratings after 20 wins (placement period)
+      post_placement_ratings << app.custom_rating if win_count > 20
+    end
+    # Also include current rating if they have more than 20 wins
+    post_placement_ratings << player.custom_rating.round if player.custom_rating && win_count > 20
+    highest_custom = post_placement_ratings.any? ? post_placement_ratings.max : nil
+    lowest_custom = post_placement_ratings.any? ? post_placement_ratings.min : nil
+  %>
 
-  <%# Player Info %>
-  <div class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-2 text-sm">
-    <div><strong>Battletag:</strong> <%= player.battletag %></div>
-    <div><strong>Nickname:</strong> <%= player.nickname %></div>
-    <div><strong>Battlenet:</strong> <%= player.battlenet_name %></div>
-    <div>
-      <strong>Custom Rating:</strong> <%= player.custom_rating&.round || "-" %>
-      <% if player.custom_rating_bonus_wins.to_i > 0 %>
-        <span class="text-xs text-blue-500" title="Bonus wins remaining">(+<%= player.custom_rating_bonus_wins %>)</span>
-      <% end %>
+  <%# Helper to convert percentile to bracket %>
+  <%
+    percentile_bracket = ->(pct) {
+      case pct
+      when 0..1 then "t1%"
+      when 2..5 then "t5%"
+      when 6..10 then "t10%"
+      when 11..25 then "t25%"
+      when 26..50 then "t50%"
+      when 51..75 then "t75%"
+      when 76..90 then "t90%"
+      else "b10%"
+      end
+    }
+  %>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <%# Player Info %>
+    <div class="bg-gray-50 rounded-md p-3">
+      <h3 class="font-semibold mb-2 text-gray-700">Player Info</h3>
+      <table class="w-full text-sm">
+        <tbody>
+          <tr>
+            <td class="py-0.5">Nickname</td>
+            <td class="text-right py-0.5"><%= player.nickname %></td>
+          </tr>
+          <tr>
+            <td class="py-0.5">Battletag</td>
+            <td class="text-right py-0.5"><%= player.battletag %></td>
+          </tr>
+          <tr>
+            <td class="py-0.5">Region</td>
+            <td class="text-right py-0.5"><%= player.region || "-" %></td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-    <div><strong>ML Score:</strong> <span class="<%= ml_score_color_class(player.ml_score) %> font-medium"><%= player.ml_score %></span> <%= tier_badge(player.ml_score) %></div>
-    <div><strong>Region:</strong> <%= player.region %></div>
-    <div><strong>Highest CR:</strong> <%= highest_custom || "-" %></div>
-    <div><strong>Lowest CR:</strong> <%= lowest_custom || "-" %></div>
+
+    <%# Rating & Score %>
+    <div class="bg-gray-50 rounded-md p-3">
+      <h3 class="font-semibold mb-2 text-gray-700">Rating & Score</h3>
+      <table class="w-full text-sm">
+        <tbody>
+          <tr>
+            <td class="py-0.5">Custom Rating</td>
+            <td class="text-right py-0.5">
+              <span class="font-medium"><%= player.custom_rating&.round || "-" %></span>
+              <% if local_assigns.key?(:ranks) && ranks && ranks[:cr_rank] && ranks[:cr_total] %>
+                <% cr_percentile = (ranks[:cr_rank].to_f / ranks[:cr_total] * 100).round %>
+                <span class="text-gray-500">(#<%= ranks[:cr_rank] %> - top<%= cr_percentile %>%)</span>
+              <% end %>
+              <% if player.custom_rating_bonus_wins.to_i > 0 %>
+                <span class="text-xs text-blue-500" title="Bonus wins remaining">(+<%= player.custom_rating_bonus_wins %>)</span>
+              <% end %>
+            </td>
+          </tr>
+          <tr>
+            <td class="py-0.5">ML Score</td>
+            <td class="text-right py-0.5">
+              <%= tier_badge(player.ml_score) %>
+              <span class="<%= ml_score_color_class(player.ml_score) %> font-medium"><%= player.ml_score %></span>
+              <% if local_assigns.key?(:ranks) && ranks && ranks[:ml_rank] && ranks[:ml_total] %>
+                <% ml_percentile = (ranks[:ml_rank].to_f / ranks[:ml_total] * 100).round %>
+                <span class="text-gray-500">(#<%= ranks[:ml_rank] %> - top<%= ml_percentile %>%)</span>
+              <% end %>
+            </td>
+          </tr>
+          <tr>
+            <td class="py-0.5">CR Range</td>
+            <td class="text-right py-0.5"><%= lowest_custom || "-" %> - <%= highest_custom || "-" %></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <%# Compute averages from preloaded appearances %>
@@ -47,6 +119,14 @@
               <% if stats[:total_matches] > 0 %>
                 <span class="text-gray-500">(<%= number_with_precision(stats[:wins].to_f / stats[:total_matches] * 100, precision: 1) %>%)</span>
               <% end %>
+            </td>
+          </tr>
+          <tr>
+            <% underdog_games = stats[:wins_as_underdog] + stats[:losses_as_underdog] %>
+            <% favorite_games = stats[:wins_as_favorite] + stats[:losses_as_favorite] %>
+            <td class="py-0.5">Team Balance</td>
+            <td class="text-right py-0.5">
+              <span class="text-gray-600"><%= underdog_games %> as underdog</span> / <span class="text-gray-600"><%= favorite_games %> as favorite</span>
             </td>
           </tr>
           <tr>

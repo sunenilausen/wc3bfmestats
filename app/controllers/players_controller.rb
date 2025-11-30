@@ -87,6 +87,16 @@ class PlayersController < ApplicationController
     @event_stats = Rails.cache.fetch(cache_key + ["events"]) do
       PlayerEventStatsCalculator.new(@player).compute
     end
+
+    # Compute ranks (cached separately since they change with other players)
+    @ranks = Rails.cache.fetch(cache_key + ["ranks"]) do
+      {
+        cr_rank: @player.cr_rank,
+        ml_rank: @player.ml_rank,
+        cr_total: Player.ranked_player_count_by_cr,
+        ml_total: Player.ranked_player_count_by_ml
+      }
+    end
   end
 
   # GET /players/new

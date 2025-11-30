@@ -4,6 +4,48 @@ class Player < ApplicationRecord
   has_many :lobby_players
   has_many :lobbies, through: :lobby_players
 
+  # Returns the player's rank by custom rating (1 = highest)
+  # Only counts players who have played at least one non-ignored match
+  def cr_rank
+    return nil unless custom_rating
+    Player.joins(:matches)
+      .where(matches: { ignored: false })
+      .where.not(players: { custom_rating: nil })
+      .where("players.custom_rating > ?", custom_rating)
+      .distinct
+      .count + 1
+  end
+
+  # Returns the player's rank by ML score (1 = highest)
+  # Only counts players who have played at least one non-ignored match
+  def ml_rank
+    return nil unless ml_score
+    Player.joins(:matches)
+      .where(matches: { ignored: false })
+      .where.not(players: { ml_score: nil })
+      .where("players.ml_score > ?", ml_score)
+      .distinct
+      .count + 1
+  end
+
+  # Returns total number of ranked players (those with CR who played non-ignored matches)
+  def self.ranked_player_count_by_cr
+    Player.joins(:matches)
+      .where(matches: { ignored: false })
+      .where.not(players: { custom_rating: nil })
+      .distinct
+      .count
+  end
+
+  # Returns total number of ranked players (those with ML score who played non-ignored matches)
+  def self.ranked_player_count_by_ml
+    Player.joins(:matches)
+      .where(matches: { ignored: false })
+      .where.not(players: { ml_score: nil })
+      .distinct
+      .count
+  end
+
   def last_seen
     matches.where(ignored: false).maximum(:uploaded_at)
   end

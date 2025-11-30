@@ -23,8 +23,14 @@ class BatchPlayerEventStatsCalculator
     # Load all factions for fast lookup
     factions_by_name = Faction.all.index_by(&:name)
 
-    # Single pass through all replays with non-ignored matches
-    Wc3statsReplay.includes(match: :appearances).find_each do |replay|
+    # Only load replays where these players appear (instead of all replays)
+    replay_ids = Appearance.joins(:match)
+      .where(player_id: @player_ids, matches: { ignored: false })
+      .where.not(matches: { wc3stats_replay_id: nil })
+      .pluck("matches.wc3stats_replay_id")
+      .uniq
+
+    Wc3statsReplay.includes(match: :appearances).where(id: replay_ids).find_each do |replay|
       next unless replay.match.present?
       next if replay.match.ignored?
 

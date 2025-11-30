@@ -32,7 +32,7 @@
   <div class="w-48 flex-shrink-0">
     <div class="sticky top-4">
       <h2 class="font-bold text-lg mb-3">Recent Players</h2>
-      <p class="text-xs text-gray-500 mb-2">From last 5 matches</p>
+      <p class="text-xs text-gray-500 mb-2">50 most recent</p>
 
       <div id="recent-players-list" class="space-y-1 max-h-[70vh] overflow-y-auto">
         <!-- Populated by JS -->
@@ -119,6 +119,7 @@
 
     container.innerHTML = recentPlayers.map(p => {
       const isAssigned = assignedIds.has(String(p.id));
+      const mlScoreColor = p.mlScore >= 55 ? 'text-green-600' : (p.mlScore <= 45 ? 'text-red-600' : 'text-gray-600');
       return `
         <div class="player-card p-2 bg-gray-50 border border-gray-200 rounded transition-colors ${isAssigned ? 'already-assigned' : ''}"
              draggable="${!isAssigned}"
@@ -127,12 +128,13 @@
              ondragstart="handlePlayerDragStart(event, ${p.id}, '${p.nickname}')"
              ondragend="handlePlayerDragEnd(event)"
              onclick="assignPlayer(${p.id}, this)">
-          <div class="font-medium text-sm">${p.nickname}</div>
+          <div class="flex justify-between items-center">
+            <span class="font-medium text-sm">${p.nickname}</span>
+            <span class="text-xs ${mlScoreColor} font-medium">${p.mlScore || '-'}</span>
+          </div>
           <div class="text-xs text-gray-500">
-            <span>${p.elo}</span>
-            <span class="ml-1">
-              <span class="text-green-600">${p.wins}W</span>/<span class="text-red-600">${p.losses}L</span>
-            </span>
+            <span class="text-green-600">${p.wins}W</span>/<span class="text-red-600">${p.losses}L</span>
+            <span class="ml-1 text-gray-400">${p.lastSeen || ''}</span>
           </div>
         </div>
       `;
@@ -149,13 +151,15 @@
       return {
         id: opt.value,
         nickname: opt.text,
-        elo: playerData ? playerData.elo : '-',
+        mlScore: playerData ? playerData.mlScore : null,
         wins: playerData ? playerData.wins : 0,
         losses: playerData ? playerData.losses : 0
       };
     });
 
-    container.innerHTML = selectedObservers.map(p => `
+    container.innerHTML = selectedObservers.map(p => {
+      const mlScoreColor = p.mlScore >= 55 ? 'text-green-600' : (p.mlScore <= 45 ? 'text-red-600' : 'text-gray-600');
+      return `
       <div class="player-card p-2 bg-yellow-50 border border-yellow-200 rounded transition-colors cursor-move"
            draggable="true"
            data-player-id="${p.id}"
@@ -167,7 +171,7 @@
           <div>
             <div class="font-medium text-sm">${p.nickname}</div>
             <div class="text-xs text-gray-500">
-              <span>${p.elo}</span>
+              <span class="${mlScoreColor} font-medium">${p.mlScore || '-'}</span>
               <span class="ml-1">
                 <span class="text-green-600">${p.wins}W</span>/<span class="text-red-600">${p.losses}L</span>
               </span>
@@ -176,7 +180,7 @@
           <button type="button" onclick="removeObserver(${p.id})" class="text-gray-400 hover:text-red-500 text-lg leading-none">&times;</button>
         </div>
       </div>
-    `).join('');
+    `}).join('');
 
     if (selectedObservers.length === 0) {
       container.innerHTML = '<div class="p-4 border-2 border-dashed border-gray-300 rounded text-center text-xs text-gray-400 italic">Drag players here</div>';
@@ -253,6 +257,7 @@
 
     html += filtered.slice(0, 50).map(p => {
       const isAssigned = assignedIds.has(String(p.id));
+      const mlScoreColor = p.mlScore >= 55 ? 'text-green-600' : (p.mlScore <= 45 ? 'text-red-600' : 'text-gray-600');
       return `
         <div class="player-card p-2 bg-gray-50 border border-gray-200 rounded transition-colors ${isAssigned ? 'already-assigned' : ''}"
              draggable="${!isAssigned}"
@@ -263,13 +268,11 @@
              onclick="assignPlayer(${p.id}, this)">
           <div class="flex justify-between items-center">
             <span class="font-medium text-sm">${p.nickname}</span>
-            <span class="text-xs text-gray-400">${p.games}g</span>
+            <span class="text-xs ${mlScoreColor} font-medium">${p.mlScore || '-'}</span>
           </div>
           <div class="text-xs text-gray-500">
-            <span>${p.elo}</span>
-            <span class="ml-2">
-              <span class="text-green-600">${p.wins}W</span>/<span class="text-red-600">${p.losses}L</span>
-            </span>
+            <span class="text-green-600">${p.wins}W</span>/<span class="text-red-600">${p.losses}L</span>
+            <span class="ml-1 text-gray-400">${p.games}g</span>
           </div>
         </div>
       `;

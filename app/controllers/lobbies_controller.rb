@@ -1,5 +1,6 @@
 class LobbiesController < ApplicationController
   before_action :set_lobby, only: %i[ show edit update ]
+  before_action :ensure_lobby_owner, only: %i[ edit update ]
 
   # GET /lobbies or /lobbies.json
   def index
@@ -38,6 +39,7 @@ class LobbiesController < ApplicationController
   # GET /lobbies/new - creates lobby instantly with previous match players
   def new
     @lobby = Lobby.new
+    @lobby.session_token = lobby_session_token
     latest_match = Match.order(uploaded_at: :desc).first
 
     Faction.order(:id).each do |faction|
@@ -134,6 +136,24 @@ class LobbiesController < ApplicationController
     # Use callbacks to share common setup or constraints between actions.
     def set_lobby
       @lobby = Lobby.includes(lobby_players: [:faction, :player], observers: []).find(params.expect(:id))
+    end
+
+    # Check if current session owns this lobby
+    def ensure_lobby_owner
+      unless @lobby.session_token == lobby_session_token
+        redirect_to @lobby, alert: "You can only edit lobbies you created."
+      end
+    end
+
+    # Get or create a unique session token for lobby ownership
+    def lobby_session_token
+      session[:lobby_token] ||= SecureRandom.hex(16)
+    end
+
+    # Make this available to views
+    helper_method :lobby_owner?
+    def lobby_owner?(lobby = @lobby)
+      lobby&.session_token == lobby_session_token
     end
 
     # Only allow a list of trusted parameters through.

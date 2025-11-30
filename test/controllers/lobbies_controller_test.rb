@@ -30,13 +30,24 @@ class LobbiesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "should get edit" do
-    get edit_lobby_url(@lobby)
+    # First create a lobby via the new action to get session ownership
+    get new_lobby_url
+    owned_lobby = Lobby.last
+    get edit_lobby_url(owned_lobby)
     assert_response :success
   end
 
   test "should update lobby" do
-    patch lobby_url(@lobby), params: { lobby: {} }
+    # First create a lobby via the new action to get session ownership
+    get new_lobby_url
+    owned_lobby = Lobby.last
+    patch lobby_url(owned_lobby), params: { lobby: {} }
     # Update now redirects back to edit for auto-save workflow
-    assert_redirected_to edit_lobby_url(@lobby)
+    assert_redirected_to edit_lobby_url(owned_lobby)
+  end
+
+  test "should not allow editing lobby created by another session" do
+    get edit_lobby_url(@lobby)
+    assert_redirected_to lobby_url(@lobby)
   end
 end

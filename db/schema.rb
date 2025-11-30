@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_29_173720) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_30_105450) do
   create_table "appearances", force: :cascade do |t|
     t.integer "castles_razed"
     t.datetime "created_at", null: false
@@ -42,6 +42,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_29_173720) do
 
   create_table "lobbies", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.string "session_token"
     t.datetime "updated_at", null: false
   end
 

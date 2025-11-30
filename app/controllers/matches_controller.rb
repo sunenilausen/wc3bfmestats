@@ -8,10 +8,14 @@ class MatchesController < ApplicationController
   def index
     @per_page = 50
     @page = [ params[:page].to_i, 1 ].max
-    @total_count = Match.count
+
+    # Only show ignored matches to admins
+    base_scope = current_user&.admin? ? Match : Match.where(ignored: false)
+
+    @total_count = base_scope.count
     @total_pages = (@total_count.to_f / @per_page).ceil
 
-    @matches = Match.includes(appearances: [ :player, :faction ])
+    @matches = base_scope.includes(appearances: [ :player, :faction ])
 
     case params[:sort]
     when "duration"
@@ -29,6 +33,12 @@ class MatchesController < ApplicationController
 
   # GET /matches/1 or /matches/1.json
   def show
+    # Hide ignored matches from non-admins
+    if @match.ignored? && !current_user&.admin?
+      redirect_to matches_path, alert: "Match not found."
+      return
+    end
+
     # Get all matches in chronological order and find previous/next
     ordered_ids = Match.chronological.pluck(:id)
     current_index = ordered_ids.index(@match.id)

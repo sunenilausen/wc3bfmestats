@@ -82,14 +82,76 @@ class Wc3statsSyncJob < ApplicationJob
     # Mark invalid matches as ignored
     mark_invalid_matches
 
+    # Set ignore flags on kill stats
+    set_ignore_kill_flags
+
+    # Backfill ordering fields
+    backfill_ordering_fields
+
     # Create observer players
     create_observers
 
     # Fix unicode encoding
     fix_unicode_names
 
-    # Recalculate ratings
+    # Recalculate ratings and retrain model if needed
     recalculate_ratings
+  end
+
+  def set_ignore_kill_flags
+    updated_unit = 0
+    updated_hero = 0
+
+    Match.includes(:appearances).find_each do |match|
+      appearances = match.appearances
+
+      appearances.each do |app|
+        if app.unit_kills == 0 && !app.ignore_unit_kills?
+          app.update_column(:ignore_unit_kills, true)
+          updated_unit += 1
+        end
+      end
+
+      all_zero = appearances.all? { |a| a.hero_kills.nil? || a.hero_kills == 0 }
+      if all_zero
+        appearances.each do |app|
+          unless app.ignore_hero_kills?
+            app.update_column(:ignore_hero_kills, true)
+            updated_hero += 1
+          end
+        end
+      end
+    end
+
+    if updated_unit > 0 || updated_hero > 0
+      Rails.logger.info "Wc3statsSyncJob: Set ignore flags on #{updated_unit} unit kills, #{updated_hero} hero kills"
+    end
+  end
+
+  def backfill_ordering_fields
+    matches_needing_backfill = Match.joins(:wc3stats_replay)
+                                    .where("major_version IS NULL OR uploaded_at IS NULL")
+                                    .includes(:wc3stats_replay)
+    backfill_count = 0
+
+    matches_needing_backfill.find_each do |match|
+      replay = match.wc3stats_replay
+      changes = {}
+
+      changes[:major_version] = replay.major_version if match.major_version.nil? && replay.major_version
+      changes[:build_version] = replay.build_version if match.build_version.nil? && replay.build_version
+      changes[:map_version] = replay.map_version if match.map_version.nil? && replay.map_version
+      changes[:uploaded_at] = replay.played_at if match.uploaded_at.nil? && replay.played_at
+
+      if changes.any?
+        match.update_columns(changes)
+        backfill_count += 1
+      end
+    end
+
+    if backfill_count > 0
+      Rails.logger.info "Wc3statsSyncJob: Backfilled ordering fields for #{backfill_count} matches"
+    end
   end
 
   def create_observers
@@ -191,6 +253,11 @@ class Wc3statsSyncJob < ApplicationJob
     Rails.logger.info "Wc3statsSyncJob: Recalculating Custom Rating"
     custom = CustomRatingRecalculator.new
     custom.call
+
+    # Retrain prediction model if enough new matches
+    if PredictionWeight.retrain_if_needed!
+      Rails.logger.info "Wc3statsSyncJob: Retrained ML prediction model"
+    end
 
     Rails.logger.info "Wc3statsSyncJob: Recalculating ML scores"
     ml = MlScoreRecalculator.new

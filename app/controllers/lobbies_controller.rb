@@ -141,6 +141,21 @@ class LobbiesController < ApplicationController
         @player_stats[player_id] = { wins: wins, losses: total - wins }
       end
 
+      # Precompute faction-specific W/L for all players
+      @faction_stats = {}
+      faction_wins = Appearance.joins(:match, :faction)
+        .where("(factions.good = ? AND matches.good_victory = ?) OR (factions.good = ? AND matches.good_victory = ?)", true, true, false, false)
+        .group(:player_id, :faction_id).count
+
+      faction_totals = Appearance.group(:player_id, :faction_id).count
+
+      faction_totals.each do |(player_id, faction_id), total|
+        @faction_stats[[player_id, faction_id]] = {
+          wins: faction_wins[[player_id, faction_id]] || 0,
+          losses: total - (faction_wins[[player_id, faction_id]] || 0)
+        }
+      end
+
       @players_for_select = Player.order(:nickname).select(:id, :nickname, :elo_rating, :glicko2_rating, :glicko2_rating_deviation, :ml_score)
 
       # Build player search data with games played count and ML score
@@ -158,12 +173,12 @@ class LobbiesController < ApplicationController
         }
       end.sort_by { |p| -p[:games] } # Sort by most games first
 
-      # Get 50 most recent players based on their latest match
+      # Get 30 most recent players based on their latest match
       recent_player_ids = Appearance.joins(:match)
                                     .where(matches: { ignored: false })
                                     .group(:player_id)
                                     .order(Arel.sql("MAX(matches.uploaded_at) DESC"))
-                                    .limit(50)
+                                    .limit(30)
                                     .pluck(:player_id)
 
       recent_players_data = Player.where(id: recent_player_ids)

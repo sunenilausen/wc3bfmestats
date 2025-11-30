@@ -21,7 +21,7 @@
                class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
       </div>
 
-      <div id="player-search-results" class="space-y-1 max-h-[60vh] overflow-y-auto">
+      <div id="player-search-results" class="space-y-1 h-[780px] overflow-y-auto">
         <!-- Results populated by JS -->
       </div>
 
@@ -29,12 +29,11 @@
     </div>
   </div>
 
-  <div class="w-48 flex-shrink-0">
+  <div class="w-80 flex-shrink-0">
     <div class="sticky top-4">
-      <h2 class="font-bold text-lg mb-3">Recent Players</h2>
-      <p class="text-xs text-gray-500 mb-2">50 most recent</p>
+      <h2 class="font-bold text-lg mb-3">30 Recent Players</h2>
 
-      <div id="recent-players-list" class="space-y-1 max-h-[70vh] overflow-y-auto">
+      <div id="recent-players-list" class="grid grid-cols-2 gap-1 h-[780px]">
         <!-- Populated by JS -->
       </div>
     </div>
@@ -63,6 +62,10 @@
 
 <script id="new-player-defaults" type="application/json">
   <%= raw @new_player_defaults.to_json %>
+</script>
+
+<script id="faction-stats-data" type="application/json">
+  <%= raw @faction_stats.transform_keys { |k| "#{k[0]}_#{k[1]}" }.to_json %>
 </script>
 
 <style>
@@ -95,6 +98,13 @@
   const allPlayers = JSON.parse(document.getElementById('players-data').textContent);
   const recentPlayers = JSON.parse(document.getElementById('recent-players-data').textContent);
   const newPlayerDefaults = JSON.parse(document.getElementById('new-player-defaults').textContent);
+  const factionStats = JSON.parse(document.getElementById('faction-stats-data').textContent);
+
+  // Helper to get faction W/L for a player
+  function getFactionWL(playerId, factionId) {
+    const key = `${playerId}_${factionId}`;
+    return factionStats[key] || { wins: 0, losses: 0 };
+  }
 
   // Special "New Player" option with bottom 5% ratings
   const NEW_PLAYER = { id: 'new', nickname: `New Player (${newPlayerDefaults.ml_score})`, elo: newPlayerDefaults.elo, glicko: newPlayerDefaults.glicko, mlScore: newPlayerDefaults.ml_score, wins: 0, losses: 0, games: 0, isNew: true };
@@ -370,9 +380,11 @@
     // Set ML Score and W/L to new player defaults
     const mlScoreCell = document.getElementById('ml-score-' + slotIndex);
     const wlCell = document.getElementById('wl-' + slotIndex);
+    const facWlCell = document.getElementById('fac-wl-' + slotIndex);
 
     if (mlScoreCell) mlScoreCell.innerHTML = `<span class="text-red-600 font-medium">${newPlayerDefaults.ml_score}</span>`;
-    if (wlCell) wlCell.innerHTML = '<span class="text-green-600">0W</span>/<span class="text-red-600">0L</span>';
+    if (wlCell) wlCell.innerHTML = '<span class="text-gray-400">0/0</span>';
+    if (facWlCell) facWlCell.innerHTML = '<span class="text-gray-400">0/0</span>';
 
     // Mark this slot as a new player for prediction calculations
     const row = cell.closest('tr');
@@ -442,16 +454,32 @@
 
   function updateWL(select, targetId) {
     const option = select.options[select.selectedIndex];
+    const playerId = option.value;
+    const factionId = select.dataset.factionId;
+    const mlScore = option.dataset.mlScore;
     const wins = option.dataset.wins;
     const losses = option.dataset.losses;
-    const mlScore = option.dataset.mlScore;
     const wlTarget = document.getElementById(targetId);
+    const facWlTarget = document.getElementById(targetId.replace('wl-', 'fac-wl-'));
     const mlScoreTarget = document.getElementById(targetId.replace('wl-', 'ml-score-'));
-    if (wins && losses) {
-      wlTarget.innerHTML = '<span class="text-green-600">' + wins + 'W</span>/<span class="text-red-600">' + losses + 'L</span>';
+
+    // Overall W/L
+    if (wins !== undefined && losses !== undefined && wins !== '' && losses !== '') {
+      wlTarget.innerHTML = `<span class="text-green-600">${wins}</span>/<span class="text-red-600">${losses}</span>`;
     } else {
       wlTarget.innerHTML = '-';
     }
+
+    // Faction-specific W/L
+    if (facWlTarget) {
+      if (playerId && factionId) {
+        const facWL = getFactionWL(playerId, factionId);
+        facWlTarget.innerHTML = `<span class="text-green-600">${facWL.wins}</span>/<span class="text-red-600">${facWL.losses}</span>`;
+      } else {
+        facWlTarget.innerHTML = '-';
+      }
+    }
+
     if (mlScoreTarget && mlScore) {
       const score = parseFloat(mlScore);
       const colorClass = score >= 55 ? 'text-green-600' : (score <= 45 ? 'text-red-600' : 'text-gray-600');
@@ -680,8 +708,11 @@
     const select = document.getElementById('player-select-' + slotIndex);
     if (select) {
       const option = select.options[select.selectedIndex];
+      const playerId = option ? option.value : null;
+      const factionId = select.dataset.factionId;
       const mlScoreCell = document.getElementById('ml-score-' + slotIndex);
       const wlCell = document.getElementById('wl-' + slotIndex);
+      const facWlCell = document.getElementById('fac-wl-' + slotIndex);
 
       if (mlScoreCell) {
         if (option && option.dataset.mlScore) {
@@ -692,11 +723,21 @@
           mlScoreCell.textContent = '-';
         }
       }
+      // Overall W/L
       if (wlCell) {
-        if (option && option.dataset.wins && option.dataset.losses) {
-          wlCell.innerHTML = `<span class="text-green-600">${option.dataset.wins}W</span>/<span class="text-red-600">${option.dataset.losses}L</span>`;
+        if (option && option.dataset.wins !== undefined && option.dataset.losses !== undefined) {
+          wlCell.innerHTML = `<span class="text-green-600">${option.dataset.wins}</span>/<span class="text-red-600">${option.dataset.losses}</span>`;
         } else {
           wlCell.textContent = '-';
+        }
+      }
+      // Faction W/L
+      if (facWlCell) {
+        if (playerId && factionId) {
+          const facWL = getFactionWL(playerId, factionId);
+          facWlCell.innerHTML = `<span class="text-green-600">${facWL.wins}</span>/<span class="text-red-600">${facWL.losses}</span>`;
+        } else {
+          facWlCell.textContent = '-';
         }
       }
     }

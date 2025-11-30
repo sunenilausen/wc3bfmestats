@@ -22,7 +22,8 @@
               id="player-select-<%= index %>"
               data-average-elo-target="playerSelect"
               data-action="change->average-elo#calculateAverageElo change->auto-submit#submit"
-              data-wl-target="wl-<%= index %>">
+              data-wl-target="wl-<%= index %>"
+              data-faction-id="<%= lp.faction_id %>">
         <option value="" data-wins="" data-losses="">-- Select Player --</option>
         <% @players_for_select.each do |player| %>
           <% stats = @player_stats[player.id] || { wins: 0, losses: 0 } %>
@@ -95,21 +96,39 @@
     </td>
   <% end %>
   <td class="px-4 py-2 whitespace-nowrap text-sm" id="wl-<%= index %>">
+    <%# Overall W/L %>
     <% if lp.player %>
       <% if editable && @player_stats && @player_stats[lp.player_id] %>
         <% stats = @player_stats[lp.player_id] %>
-        <span class="text-green-600"><%= stats[:wins] %>W</span>/<span class="text-red-600"><%= stats[:losses] %>L</span>
+        <span class="text-green-600"><%= stats[:wins] %></span>/<span class="text-red-600"><%= stats[:losses] %></span>
       <% elsif player_stats %>
         <span class="text-green-600"><%= player_stats[:wins] %>W</span>/<span class="text-red-600"><%= player_stats[:losses] %>L</span>
       <% else %>
         <span class="text-green-600"><%= lp.player.wins %>W</span>/<span class="text-red-600"><%= lp.player.losses %>L</span>
       <% end %>
     <% elsif lp.is_new_player? %>
-      <span class="text-green-600">0W</span>/<span class="text-red-600">0L</span>
+      <span class="text-gray-400">0/0</span>
     <% else %>
       -
     <% end %>
   </td>
+  <% if editable %>
+    <%# Faction-specific W/L for edit mode %>
+    <td class="px-4 py-2 whitespace-nowrap text-sm" id="fac-wl-<%= index %>">
+      <% if lp.player && @faction_stats %>
+        <% fac_wl = @faction_stats[[lp.player_id, lp.faction_id]] %>
+        <% if fac_wl %>
+          <span class="text-green-600"><%= fac_wl[:wins] %></span>/<span class="text-red-600"><%= fac_wl[:losses] %></span>
+        <% else %>
+          <span class="text-gray-400">0/0</span>
+        <% end %>
+      <% elsif lp.is_new_player? %>
+        <span class="text-gray-400">0/0</span>
+      <% else %>
+        -
+      <% end %>
+    </td>
+  <% end %>
   <% unless editable %>
     <%# Score %>
     <td class="px-4 py-2 whitespace-nowrap text-sm">

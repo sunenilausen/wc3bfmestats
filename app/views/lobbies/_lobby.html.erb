@@ -13,7 +13,7 @@
 <% evil_pooled_rd = evil_rds.any? ? Math.sqrt(evil_rds.map { |r| r**2 }.sum / evil_rds.size) : 350 %>
 <% good_avg_ml = good_with_players.any? ? (good_with_players.sum { |lp| lp.player.ml_score.to_f } / good_with_players.size).round(1) : 0 %>
 <% evil_avg_ml = evil_with_players.any? ? (evil_with_players.sum { |lp| lp.player.ml_score.to_f } / evil_with_players.size).round(1) : 0 %>
-<% col_count = editable ? 5 : 13 %>
+<% col_count = editable ? 5 : 14 %>
 
 <div id="<%= dom_id lobby %>" class="w-full sm:w-auto <%= editable ? 'mt-2 space-y-5' : 'my-5 space-y-5' %>" data-controller="<%= 'auto-submit' if editable %>">
   <%= simple_form_for(lobby, data: editable ? { auto_submit_target: "form", turbo_action: "replace" } : {}) do |f| %>
@@ -42,6 +42,7 @@
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Hero uptime percentage">Hero Up</th>
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Average hero kill contribution">HK%</th>
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Average unit kill contribution">UK%</th>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Average team heal contribution">TH%</th>
           <% end %>
         </tr>
       </thead>
@@ -160,6 +161,10 @@
               <%# UK% %>
               <td class="px-4 py-2 whitespace-nowrap text-sm">
                 <% if obs_stats %><%= obs_stats[:avg_unit_kill_contribution] %>%<% else %>-<% end %>
+              </td>
+              <%# TH% %>
+              <td class="px-4 py-2 whitespace-nowrap text-sm">
+                <% if obs_stats && obs_stats[:avg_team_heal_contribution] > 0 %><%= obs_stats[:avg_team_heal_contribution] %>%<% else %>-<% end %>
               </td>
             </tr>
           <% end %>

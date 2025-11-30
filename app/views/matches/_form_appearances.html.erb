@@ -9,14 +9,14 @@
                 <%= af.input :faction_id, as: :hidden, input_html: { value: appearance.faction_id } %>
                 <select name="match[appearances_attributes][<%= @match.appearances.index(appearance) %>][player_id]"
                                 class="form-control"
-                                data-average-elo-target="playerSelect"
-                                data-action="change->average-elo#calculateAverageElo">
+                                data-average-cr-target="playerSelect"
+                                data-action="change->average-cr#calculateAverageCr">
                     <% Player.all.each_with_index do |player, index| %>
                         <option
                             value="<%= player.id %>" <%= "selected" if (player.id == appearance.player_id || index == @match.appearances.index(appearance)) %>
-                            data-elo="<%= player.elo_rating.round %>"
+                            data-cr="<%= player.custom_rating&.round || 1300 %>"
                         >
-                            <%= "#{player.nickname} - #{player.elo_rating.round}" %>
+                            <%= "#{player.nickname} - #{player.custom_rating&.round || 1300}" %>
                         </option>
                     <% end %>
                 </select>
@@ -31,11 +31,11 @@
         </tr>
     <% end %>
 <% end %>
-<tr class="average-elo-row" data-controller="average-elo" data-team="<%= team_number %>">
-    <td class="px-4 py-2 font-bold" colspan="1">Average Elo</td>
+<tr class="average-cr-row" data-controller="average-cr" data-team="<%= team_number %>">
+    <td class="px-4 py-2 font-bold" colspan="1">Average CR</td>
     <td class="px-4 py-2" colspan="3">
-        <span data-average-elo-target="value">
-            <%= appearances.any? ? (appearances.map { |a| a.player&.elo_rating.to_i }.sum / appearances.size) : 0 %>
+        <span data-average-cr-target="value">
+            <%= appearances.any? ? (appearances.map { |a| a.player&.custom_rating.to_i }.sum / appearances.size) : 0 %>
         </span>
     </td>
 </tr>

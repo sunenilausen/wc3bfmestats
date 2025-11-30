@@ -25,7 +25,7 @@ class PlayersControllerTest < ActionDispatch::IntegrationTest
   test "should create player as admin" do
     sign_in @admin
     assert_difference("Player.count") do
-      post players_url, params: { player: { battlenet_name: @player.battlenet_name, battlenet_number: @player.battlenet_number, battletag: "new#{@player.battletag}", elo_rating: @player.elo_rating, nickname: "New#{@player.nickname}", region: @player.region } }
+      post players_url, params: { player: { battlenet_name: @player.battlenet_name, battlenet_number: @player.battlenet_number, battletag: "new#{@player.battletag}", nickname: "New#{@player.nickname}", region: @player.region } }
     end
 
     assert_redirected_to player_url(Player.last)
@@ -33,7 +33,7 @@ class PlayersControllerTest < ActionDispatch::IntegrationTest
 
   test "should not create player when not admin" do
     assert_no_difference("Player.count") do
-      post players_url, params: { player: { battlenet_name: @player.battlenet_name, battlenet_number: @player.battlenet_number, battletag: @player.battletag, elo_rating: @player.elo_rating, nickname: @player.nickname, region: @player.region } }
+      post players_url, params: { player: { battlenet_name: @player.battlenet_name, battlenet_number: @player.battlenet_number, battletag: @player.battletag, nickname: @player.nickname, region: @player.region } }
     end
 
     assert_redirected_to root_path
@@ -57,7 +57,7 @@ class PlayersControllerTest < ActionDispatch::IntegrationTest
 
   test "should update player as admin" do
     sign_in @admin
-    patch player_url(@player), params: { player: { battlenet_name: @player.battlenet_name, battlenet_number: @player.battlenet_number, battletag: @player.battletag, elo_rating: @player.elo_rating, nickname: @player.nickname, region: @player.region } }
+    patch player_url(@player), params: { player: { battlenet_name: @player.battlenet_name, battlenet_number: @player.battlenet_number, battletag: @player.battletag, nickname: @player.nickname, region: @player.region } }
     assert_redirected_to player_url(@player)
   end
 

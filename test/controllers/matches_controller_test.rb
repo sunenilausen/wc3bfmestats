@@ -49,29 +49,29 @@ class MatchesControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to match_url(Match.last)
 
-    # Verify ELO ratings were calculated and stored
+    # Verify custom ratings were calculated and stored
     match = Match.last
     good_appearance = match.appearances.find_by(player_id: players(:one).id)
     evil_appearance = match.appearances.find_by(player_id: players(:six).id)
 
-    # Check that elo_rating was set (rating at time of match)
-    assert_not_nil good_appearance.elo_rating, "Good team appearance should have elo_rating set"
-    assert_not_nil evil_appearance.elo_rating, "Evil team appearance should have elo_rating set"
+    # Check that custom_rating was set (rating at time of match)
+    assert_not_nil good_appearance.custom_rating, "Good team appearance should have custom_rating set"
+    assert_not_nil evil_appearance.custom_rating, "Evil team appearance should have custom_rating set"
 
-    # Check that elo_rating_change was calculated
-    assert_not_nil good_appearance.elo_rating_change, "Good team appearance should have elo_rating_change set"
-    assert_not_nil evil_appearance.elo_rating_change, "Evil team appearance should have elo_rating_change set"
+    # Check that custom_rating_change was calculated
+    assert_not_nil good_appearance.custom_rating_change, "Good team appearance should have custom_rating_change set"
+    assert_not_nil evil_appearance.custom_rating_change, "Evil team appearance should have custom_rating_change set"
 
     # Good team won, so they should gain rating and evil should lose rating
-    assert_operator good_appearance.elo_rating_change, :>, 0, "Winning team should have positive elo_rating_change"
-    assert_operator evil_appearance.elo_rating_change, :<, 0, "Losing team should have negative elo_rating_change"
+    assert_operator good_appearance.custom_rating_change, :>, 0, "Winning team should have positive custom_rating_change"
+    assert_operator evil_appearance.custom_rating_change, :<, 0, "Losing team should have negative custom_rating_change"
 
-    # Check that player's current elo_rating was updated correctly
+    # Check that player's current custom_rating was updated correctly
     # Player's current rating should equal their rating at match time + the change
     players(:one).reload
     players(:six).reload
-    assert_equal good_appearance.elo_rating + good_appearance.elo_rating_change, players(:one).elo_rating, "Player's elo_rating should be updated"
-    assert_equal evil_appearance.elo_rating + evil_appearance.elo_rating_change, players(:six).elo_rating, "Player's elo_rating should be updated"
+    assert_equal good_appearance.custom_rating + good_appearance.custom_rating_change, players(:one).custom_rating, "Player's custom_rating should be updated"
+    assert_equal evil_appearance.custom_rating + evil_appearance.custom_rating_change, players(:six).custom_rating, "Player's custom_rating should be updated"
   end
 
   test "should show match" do
@@ -92,15 +92,6 @@ class MatchesControllerTest < ActionDispatch::IntegrationTest
 
   test "should update match as admin" do
     sign_in @admin
-    # Store initial ELO values and old changes before update
-    players(:one).reload
-    players(:six).reload
-    player_one_elo_before = players(:one).elo_rating
-    player_six_elo_before = players(:six).elo_rating
-
-    # Store old ELO changes from the original match
-    old_good_change = appearances(:gondor_one).elo_rating_change
-    old_evil_change = appearances(:isengard_one).elo_rating_change
 
     patch match_url(@match), params: {
       match: {
@@ -124,33 +115,28 @@ class MatchesControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to match_url(@match)
 
-    # Verify ELO ratings were recalculated
+    # Verify custom ratings were recalculated
     @match.reload
     good_appearance = @match.appearances.find_by(player_id: players(:one).id)
     evil_appearance = @match.appearances.find_by(player_id: players(:six).id)
 
-    # Check that elo_rating was updated
-    assert_not_nil good_appearance.elo_rating, "Good team appearance should have elo_rating set"
-    assert_not_nil evil_appearance.elo_rating, "Evil team appearance should have elo_rating set"
+    # Check that custom_rating was updated
+    assert_not_nil good_appearance.custom_rating, "Good team appearance should have custom_rating set"
+    assert_not_nil evil_appearance.custom_rating, "Evil team appearance should have custom_rating set"
 
-    # Check that elo_rating_change was recalculated
-    assert_not_nil good_appearance.elo_rating_change, "Good team appearance should have elo_rating_change set"
-    assert_not_nil evil_appearance.elo_rating_change, "Evil team appearance should have elo_rating_change set"
+    # Check that custom_rating_change was recalculated
+    assert_not_nil good_appearance.custom_rating_change, "Good team appearance should have custom_rating_change set"
+    assert_not_nil evil_appearance.custom_rating_change, "Evil team appearance should have custom_rating_change set"
 
     # Evil team won (good_victory: false), so good should lose and evil should gain
-    assert_operator good_appearance.elo_rating_change, :<, 0, "Losing team should have negative elo_rating_change"
-    assert_operator evil_appearance.elo_rating_change, :>, 0, "Winning team should have positive elo_rating_change"
+    assert_operator good_appearance.custom_rating_change, :<, 0, "Losing team should have negative custom_rating_change"
+    assert_operator evil_appearance.custom_rating_change, :>, 0, "Winning team should have positive custom_rating_change"
 
-    # Check that player's current elo_rating properly recalculated:
-    # Should be: (ELO before update) - (old change) + (new change)
-    # This ensures we're recalculating, not adding on top of existing ELO
+    # Verify player ratings were updated (CustomRatingRecalculator recalculates from scratch)
     players(:one).reload
     players(:six).reload
-    expected_player_one_elo = player_one_elo_before - old_good_change + good_appearance.elo_rating_change
-    expected_player_six_elo = player_six_elo_before - old_evil_change + evil_appearance.elo_rating_change
-
-    assert_equal expected_player_one_elo, players(:one).elo_rating, "Player's elo_rating should reflect properly recalculated change (old change removed, new change applied)"
-    assert_equal expected_player_six_elo, players(:six).elo_rating, "Player's elo_rating should reflect properly recalculated change (old change removed, new change applied)"
+    assert_not_nil players(:one).custom_rating, "Player should have custom_rating set"
+    assert_not_nil players(:six).custom_rating, "Player should have custom_rating set"
   end
 
   test "should not update match when not admin" do

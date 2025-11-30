@@ -62,8 +62,7 @@ class MatchesController < ApplicationController
     respond_to do |format|
       if @match.save
         # Recalculate ratings when match is created
-        EloRecalculator.new.call
-        Glicko2Recalculator.new.call
+        CustomRatingRecalculator.new.call
 
         # Retrain prediction model if enough new matches
         PredictionWeight.retrain_if_needed!
@@ -92,8 +91,7 @@ class MatchesController < ApplicationController
     respond_to do |format|
       if @match.save
         # Recalculate ratings when match is updated
-        EloRecalculator.new.call
-        Glicko2Recalculator.new.call
+        CustomRatingRecalculator.new.call
 
         format.html { redirect_to @match, notice: "Match was successfully updated.", status: :see_other }
         format.json { render :show, status: :ok, location: @match }

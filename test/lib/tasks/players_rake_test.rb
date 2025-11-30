@@ -108,8 +108,8 @@ class PlayersRakeTest < ActiveSupport::TestCase
     player1 = Player.find_by(battletag: "Player1#1234")
     assert_not_nil player1
     assert_equal "Player1", player1.nickname
-    assert_equal 1500, player1.elo_rating
-    assert_equal 1500, player1.elo_rating_seed
+    assert_equal 1300, player1.custom_rating
+    assert_equal 35.0, player1.ml_score
 
     # Check Player2 was created correctly
     player2 = Player.find_by(battletag: "Player2#5678")
@@ -149,8 +149,8 @@ class PlayersRakeTest < ActiveSupport::TestCase
     existing_player = Player.create!(
       battletag: "ExistingPlayer#9999",
       nickname: "ExistingPlayer",
-      elo_rating: 1600,
-      elo_rating_seed: 1600
+      custom_rating: 1400,
+      ml_score: 45.0
     )
 
     # Create replay with both existing and new players
@@ -198,7 +198,7 @@ class PlayersRakeTest < ActiveSupport::TestCase
 
     # Existing player should remain unchanged
     existing_player.reload
-    assert_equal 1600, existing_player.elo_rating
+    assert_equal 1400, existing_player.custom_rating
 
     output_string = output[0]
     assert_match /Already in database: 1/, output_string

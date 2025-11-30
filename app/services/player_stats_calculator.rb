@@ -83,7 +83,7 @@ class PlayerStatsCalculator
     end
 
     # Underdog/favorite calculation
-    process_elo_stats(appearance, team_appearances, opponent_appearances, player_won, stats)
+    process_cr_stats(appearance, team_appearances, opponent_appearances, player_won, stats)
 
     # Kill stats
     process_kill_stats(appearance, team_appearances, player_good, stats, faction_id)
@@ -95,41 +95,41 @@ class PlayerStatsCalculator
     process_heal_stats(appearance, team_appearances, stats, faction_id)
   end
 
-  def process_elo_stats(appearance, team_appearances, opponent_appearances, player_won, stats)
-    return unless appearance.elo_rating
+  def process_cr_stats(appearance, team_appearances, opponent_appearances, player_won, stats)
+    return unless appearance.custom_rating
 
-    team_with_elo = team_appearances.select { |a| a.elo_rating.present? }
-    opponents_with_elo = opponent_appearances.select { |a| a.elo_rating.present? }
+    team_with_cr = team_appearances.select { |a| a.custom_rating.present? }
+    opponents_with_cr = opponent_appearances.select { |a| a.custom_rating.present? }
 
-    return if team_with_elo.empty? || opponents_with_elo.empty?
+    return if team_with_cr.empty? || opponents_with_cr.empty?
 
-    player_elo = appearance.elo_rating
-    team_avg_elo = team_with_elo.sum(&:elo_rating).to_f / team_with_elo.size
-    opponent_avg_elo = opponents_with_elo.sum(&:elo_rating).to_f / opponents_with_elo.size
+    player_cr = appearance.custom_rating
+    team_avg_cr = team_with_cr.sum(&:custom_rating).to_f / team_with_cr.size
+    opponent_avg_cr = opponents_with_cr.sum(&:custom_rating).to_f / opponents_with_cr.size
 
-    # Track player's ELO vs enemy team avg (positive = playing against weaker opponents)
-    stats[:enemy_elo_diffs] << (player_elo - opponent_avg_elo)
+    # Track player's CR vs enemy team avg (positive = playing against weaker opponents)
+    stats[:enemy_elo_diffs] << (player_cr - opponent_avg_cr)
 
-    # Track player's ELO vs own team avg (positive = carrying weaker teammates)
+    # Track player's CR vs own team avg (positive = carrying weaker teammates)
     # Exclude self from team average for this calculation
-    teammates_with_elo = team_with_elo.reject { |a| a.id == appearance.id }
-    if teammates_with_elo.any?
-      teammates_avg_elo = teammates_with_elo.sum(&:elo_rating).to_f / teammates_with_elo.size
-      stats[:ally_elo_diffs] << (player_elo - teammates_avg_elo)
+    teammates_with_cr = team_with_cr.reject { |a| a.id == appearance.id }
+    if teammates_with_cr.any?
+      teammates_avg_cr = teammates_with_cr.sum(&:custom_rating).to_f / teammates_with_cr.size
+      stats[:ally_elo_diffs] << (player_cr - teammates_avg_cr)
     end
 
-    elo_diff = (team_avg_elo - opponent_avg_elo).abs
-    is_underdog = team_avg_elo < opponent_avg_elo
+    cr_diff = (team_avg_cr - opponent_avg_cr).abs
+    is_underdog = team_avg_cr < opponent_avg_cr
 
     if is_underdog
-      stats[:underdog_elo_diffs] << elo_diff
+      stats[:underdog_elo_diffs] << cr_diff
       if player_won
         stats[:wins_as_underdog] += 1
       else
         stats[:losses_as_underdog] += 1
       end
     else
-      stats[:favorite_elo_diffs] << elo_diff
+      stats[:favorite_elo_diffs] << cr_diff
       if player_won
         stats[:wins_as_favorite] += 1
       else

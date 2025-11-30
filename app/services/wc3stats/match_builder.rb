@@ -143,8 +143,8 @@ module Wc3stats
       Player.create!(
         battletag: fixed_battletag,
         nickname: nickname,
-        elo_rating: 1500,
-        elo_rating_seed: 1500
+        custom_rating: NewPlayerDefaults::CUSTOM_RATING,
+        ml_score: NewPlayerDefaults::ML_SCORE
       )
     end
 

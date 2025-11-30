@@ -17,18 +17,19 @@ class PlayersCsvExporter
   private
 
   def headers
-    ["nickname", "battletag", "elo_rating", "matches", "last_appearance", "wins", "losses", "win_rate"]
+    ["nickname", "battletag", "custom_rating", "ml_score", "matches", "last_appearance", "wins", "losses", "win_rate"]
   end
 
   def players
-    Player.includes(:appearances, :matches).order(elo_rating: :desc)
+    Player.includes(:appearances, :matches).order(custom_rating: :desc)
   end
 
   def row_for(player)
     [
       player.nickname,
       player.battletag,
-      player.elo_rating&.round,
+      player.custom_rating&.round,
+      player.ml_score&.round(1),
       player.appearances.size,
       last_appearance(player),
       player.wins,

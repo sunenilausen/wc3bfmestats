@@ -198,7 +198,7 @@ class LobbiesController < ApplicationController
         }
       end
 
-      @players_for_select = Player.order(:nickname).select(:id, :nickname, :elo_rating, :glicko2_rating, :glicko2_rating_deviation, :ml_score, :custom_rating)
+      @players_for_select = Player.order(:nickname).select(:id, :nickname, :ml_score, :custom_rating)
 
       # Build player search data with games played count and ML score
       @players_search_data = @players_for_select.map do |player|
@@ -207,7 +207,6 @@ class LobbiesController < ApplicationController
         {
           id: player.id,
           nickname: player.nickname,
-          elo: player.elo_rating&.round || 1500,
           customRating: player.custom_rating&.round || 1300,
           mlScore: player.ml_score,
           wins: stats[:wins],

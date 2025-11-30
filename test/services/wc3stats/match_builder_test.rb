@@ -112,8 +112,8 @@ module Wc3stats
       existing_player = Player.create!(
         battletag: "GoodPlayer1#1234",
         nickname: "GoodPlayer1",
-        elo_rating: 1600,
-        elo_rating_seed: 1600
+        custom_rating: 1400,
+        ml_score: 45.0
       )
 
       builder = MatchBuilder.new(@replay)

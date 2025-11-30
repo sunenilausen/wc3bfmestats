@@ -87,11 +87,6 @@ module MatchesHelper
     (sum_hero_kills(appearances).to_f / appearances.size).round(2)
   end
 
-  def avg_elo_rating(appearances)
-    total_elo = appearances.to_a.sum { |appearance| appearance.elo_rating.to_i }
-    (total_elo.to_f / appearances.size).round
-  end
-
   def avg_custom_rating(appearances)
     total = appearances.to_a.sum { |appearance| appearance.custom_rating.to_i }
     (total.to_f / appearances.size).round

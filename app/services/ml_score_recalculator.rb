@@ -101,25 +101,25 @@ class MlScoreRecalculator
       player_contributions[player_id][:th_contribs] << (th.to_f / team_total * 100)
     end
 
-    # Batch query: ELO ratings per match for enemy ELO diff calculation
-    elo_appearances = Appearance.joins(:match, :faction)
+    # Batch query: Custom ratings per match for enemy CR diff calculation
+    cr_appearances = Appearance.joins(:match, :faction)
       .where(matches: { ignored: false })
-      .where.not(elo_rating: nil)
-      .pluck(:player_id, :match_id, "factions.good", :elo_rating)
+      .where.not(custom_rating: nil)
+      .pluck(:player_id, :match_id, "factions.good", :custom_rating)
 
-    # Group ELO ratings by match and team
-    match_team_elos = Hash.new { |h, k| h[k] = { true => [], false => [] } }
-    elo_appearances.each do |player_id, match_id, is_good, elo|
-      match_team_elos[match_id][is_good] << { player_id: player_id, elo: elo }
+    # Group custom ratings by match and team
+    match_team_crs = Hash.new { |h, k| h[k] = { true => [], false => [] } }
+    cr_appearances.each do |player_id, match_id, is_good, cr|
+      match_team_crs[match_id][is_good] << { player_id: player_id, cr: cr }
     end
 
-    # Calculate enemy ELO diff for each player appearance
-    elo_appearances.each do |player_id, match_id, is_good, player_elo|
-      enemy_team = match_team_elos[match_id][!is_good]
+    # Calculate enemy CR diff for each player appearance
+    cr_appearances.each do |player_id, match_id, is_good, player_cr|
+      enemy_team = match_team_crs[match_id][!is_good]
       next if enemy_team.empty?
 
-      enemy_avg_elo = enemy_team.sum { |e| e[:elo] }.to_f / enemy_team.size
-      player_contributions[player_id][:enemy_elo_diffs] << (player_elo - enemy_avg_elo)
+      enemy_avg_cr = enemy_team.sum { |e| e[:cr] }.to_f / enemy_team.size
+      player_contributions[player_id][:enemy_elo_diffs] << (player_cr - enemy_avg_cr)
     end
 
     # Batch compute event stats for all players (hero K/D)
@@ -172,6 +172,12 @@ class MlScoreRecalculator
 
       player.update_column(:ml_score, ml_score)
     end
+
+    # Recalculate tier thresholds based on new ML score distribution
+    PlayerTierCalculator.call
+
+    # Invalidate stats cache since ML scores affect lobby/player displays
+    StatsCacheKey.invalidate!
   end
 
   private

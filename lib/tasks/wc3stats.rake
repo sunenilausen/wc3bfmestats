@@ -146,7 +146,7 @@ namespace :wc3stats do
     puts "=" * 60
   end
 
-  desc "Full sync: import/update replays, build matches, cleanup invalid, recalculate ELO"
+  desc "Full sync: import/update replays, build matches, cleanup invalid, recalculate ratings"
   task sync: :environment do
     search_term = ENV.fetch("SEARCH", "BFME")
     limit = ENV["LIMIT"]&.to_i
@@ -382,9 +382,7 @@ namespace :wc3stats do
           nickname = fixed_battletag.split("#").first
           Player.create!(
             battletag: fixed_battletag,
-            nickname: nickname,
-            elo_rating: 1500,
-            elo_rating_seed: 1500
+            nickname: nickname
           )
           observers_created += 1
         end
@@ -393,52 +391,40 @@ namespace :wc3stats do
     puts "  Created #{observers_created} new observer players"
     puts
 
-    # Step 9: Recalculate ELO
-    puts "Step 9: Recalculating ELO ratings..."
-    elo_recalculator = EloRecalculator.new
-    elo_recalculator.call
+    # Step 9: Recalculate Custom Ratings
+    puts "Step 9: Recalculating Custom Ratings..."
+    custom_rating_recalculator = CustomRatingRecalculator.new
+    custom_rating_recalculator.call
 
-    puts "  Matches processed: #{elo_recalculator.matches_processed}"
-    if elo_recalculator.errors.any?
-      puts "  Errors: #{elo_recalculator.errors.count}"
-      elo_recalculator.errors.first(3).each { |e| puts "    - #{e}" }
+    puts "  Matches processed: #{custom_rating_recalculator.matches_processed}"
+    if custom_rating_recalculator.errors.any?
+      puts "  Errors: #{custom_rating_recalculator.errors.count}"
+      custom_rating_recalculator.errors.first(3).each { |e| puts "    - #{e}" }
     end
     puts
 
-    # Step 10: Recalculate Glicko-2
-    puts "Step 10: Recalculating Glicko-2 ratings..."
-    glicko_recalculator = Glicko2Recalculator.new
-    glicko_recalculator.call
-
-    puts "  Matches processed: #{glicko_recalculator.matches_processed}"
-    if glicko_recalculator.errors.any?
-      puts "  Errors: #{glicko_recalculator.errors.count}"
-      glicko_recalculator.errors.first(3).each { |e| puts "    - #{e}" }
-    end
-    puts
-
-    # Step 11: Train prediction model
-    puts "Step 11: Training ML prediction model..."
+    # Step 10: Train prediction model
+    puts "Step 10: Training ML prediction model..."
     trainer = PredictionModelTrainer.new
     model = trainer.train
     if model
       puts "  Model trained on #{model.games_trained_on} games"
       puts "  Accuracy: #{model.accuracy}%"
       puts "  Weights:"
-      puts "    ELO: #{model.elo_weight.round(4)}"
+      puts "    CR: #{model.elo_weight.round(4)}"
       puts "    Hero K/D: #{model.hero_kd_weight.round(4)}"
       puts "    HK%: #{model.hero_kill_contribution_weight.round(4)}"
       puts "    UK%: #{model.unit_kill_contribution_weight.round(4)}"
       puts "    CK%: #{model.castle_raze_contribution_weight.round(4)}"
-      puts "    Enemy ELO Diff: #{model.enemy_elo_diff_weight.round(4)}"
+      puts "    Enemy CR Diff: #{model.enemy_elo_diff_weight.round(4)}"
       puts "    Games: #{model.games_played_weight.round(4)}"
     else
       puts "  No training data available"
     end
     puts
 
-    # Step 12: Recalculate ML scores for all players
-    puts "Step 12: Recalculating ML scores for all players..."
+    # Step 11: Recalculate ML scores for all players
+    puts "Step 11: Recalculating ML scores for all players..."
     MlScoreRecalculator.new.call
     puts "  Updated ML scores for #{Player.count} players"
     puts
@@ -609,12 +595,12 @@ namespace :wc3stats do
       puts "  Accuracy: #{model.accuracy}%"
       puts
       puts "Learned weights:"
-      puts "  ELO:           #{model.elo_weight.round(6)}"
+      puts "  CR:            #{model.elo_weight.round(6)}"
       puts "  Hero K/D:      #{model.hero_kd_weight.round(6)}"
       puts "  HK%:           #{model.hero_kill_contribution_weight.round(6)}"
       puts "  UK%:           #{model.unit_kill_contribution_weight.round(6)}"
       puts "  CK%:           #{model.castle_raze_contribution_weight.round(6)}"
-      puts "  Enemy ELO Diff:#{model.enemy_elo_diff_weight.round(6)}"
+      puts "  Enemy CR Diff: #{model.enemy_elo_diff_weight.round(6)}"
       puts "  Games Played:  #{model.games_played_weight.round(6)}"
       puts "  Bias:          #{model.bias.round(6)}"
       puts

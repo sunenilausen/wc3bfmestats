@@ -7,8 +7,8 @@ gondor_one:
   match: one
   unit_kills: 120
   hero_kills: 6
-  elo_rating: 1500
-  elo_rating_change: 16
+  custom_rating: 1300
+  custom_rating_change: 20
 
 rohan_one:
   player: two
@@ -16,8 +16,8 @@ rohan_one:
   match: one
   unit_kills: 95
   hero_kills: 4
-  elo_rating: 1500
-  elo_rating_change: 16
+  custom_rating: 1300
+  custom_rating_change: 20
 
 dol_amroth_one:
   player: three
@@ -25,8 +25,8 @@ dol_amroth_one:
   match: one
   unit_kills: 110
   hero_kills: 5
-  elo_rating: 1500
-  elo_rating_change: 16
+  custom_rating: 1300
+  custom_rating_change: 20
 
 fellowship_one:
   player: four
@@ -34,8 +34,8 @@ fellowship_one:
   match: one
   unit_kills: 88
   hero_kills: 3
-  elo_rating: 1500
-  elo_rating_change: 16
+  custom_rating: 1300
+  custom_rating_change: 20
 
 fangorn_one:
   player: five
@@ -43,8 +43,8 @@ fangorn_one:
   match: one
   unit_kills: 102
   hero_kills: 4
-  elo_rating: 1550
-  elo_rating_change: 15
+  custom_rating: 1350
+  custom_rating_change: 18
 
 # Evil team (Forces of Sauron)
 isengard_one:
@@ -53,8 +53,8 @@ isengard_one:
   match: one
   unit_kills: 85
   hero_kills: 3
-  elo_rating: 1450
-  elo_rating_change: -17
+  custom_rating: 1250
+  custom_rating_change: -20
 
 easterlings_one:
   player: seven
@@ -62,8 +62,8 @@ easterlings_one:
   match: one
   unit_kills: 78
   hero_kills: 2
-  elo_rating: 1520
-  elo_rating_change: -15
+  custom_rating: 1320
+  custom_rating_change: -18
 
 harad_one:
   player: eight
@@ -71,8 +71,8 @@ harad_one:
   match: one
   unit_kills: 92
   hero_kills: 4
-  elo_rating: 1480
-  elo_rating_change: -16
+  custom_rating: 1280
+  custom_rating_change: -19
 
 minas_morgul_one:
   player: nine
@@ -80,8 +80,8 @@ minas_morgul_one:
   match: one
   unit_kills: 70
   hero_kills: 2
-  elo_rating: 1510
-  elo_rating_change: -15
+  custom_rating: 1310
+  custom_rating_change: -18
 
 mordor_one:
   player: ten
@@ -89,5 +89,5 @@ mordor_one:
   match: one
   unit_kills: 105
   hero_kills: 5
-  elo_rating: 1490
-  elo_rating_change: -16
+  custom_rating: 1290
+  custom_rating_change: -19

@@ -21,7 +21,7 @@ class UnicodeNameFixerTest < ActiveSupport::TestCase
     player = Player.create!(
       nickname: mojibake_name,
       battletag: "#{mojibake_name}#1234",
-      elo_rating: 1500
+      custom_rating: 1300
     )
 
     fixer = UnicodeNameFixer.new
@@ -36,7 +36,7 @@ class UnicodeNameFixerTest < ActiveSupport::TestCase
     player = Player.create!(
       nickname: "NormalPlayer",
       battletag: "NormalPlayer#1234",
-      elo_rating: 1500
+      custom_rating: 1300
     )
 
     fixer = UnicodeNameFixer.new
@@ -51,7 +51,7 @@ class UnicodeNameFixerTest < ActiveSupport::TestCase
     player = Player.create!(
       nickname: "한글이름",
       battletag: "한글이름#1234",
-      elo_rating: 1500
+      custom_rating: 1300
     )
 
     fixer = UnicodeNameFixer.new
@@ -63,8 +63,8 @@ class UnicodeNameFixerTest < ActiveSupport::TestCase
 
   test "preview returns list of players to fix" do
     mojibake = create_mojibake("테스트")
-    Player.create!(nickname: mojibake, battletag: "#{mojibake}#1234", elo_rating: 1500)
-    Player.create!(nickname: "Normal", battletag: "Normal#5678", elo_rating: 1500)
+    Player.create!(nickname: mojibake, battletag: "#{mojibake}#1234", custom_rating: 1300)
+    Player.create!(nickname: "Normal", battletag: "Normal#5678", custom_rating: 1300)
 
     fixer = UnicodeNameFixer.new
     preview = fixer.preview
@@ -75,8 +75,8 @@ class UnicodeNameFixerTest < ActiveSupport::TestCase
   end
 
   test "tracks fixed count" do
-    Player.create!(nickname: create_mojibake("플레이어1"), battletag: "Test#1234", elo_rating: 1500)
-    Player.create!(nickname: create_mojibake("플레이어2"), battletag: "Test2#5678", elo_rating: 1500)
+    Player.create!(nickname: create_mojibake("플레이어1"), battletag: "Test#1234", custom_rating: 1300)
+    Player.create!(nickname: create_mojibake("플레이어2"), battletag: "Test2#5678", custom_rating: 1300)
 
     fixer = UnicodeNameFixer.new
     fixer.call

@@ -113,12 +113,12 @@ class Wc3statsSyncJob < ApplicationJob
   end
 
   def recalculate_ratings
-    Rails.logger.info "Wc3statsSyncJob: Recalculating ELO ratings"
-    elo = EloRecalculator.new
-    elo.call
+    Rails.logger.info "Wc3statsSyncJob: Recalculating Custom Rating"
+    custom = CustomRatingRecalculator.new
+    custom.call
 
-    Rails.logger.info "Wc3statsSyncJob: Recalculating Glicko-2 ratings"
-    glicko = Glicko2Recalculator.new
-    glicko.call
+    Rails.logger.info "Wc3statsSyncJob: Recalculating ML scores"
+    ml = MlScoreRecalculator.new
+    ml.call
   end
 end

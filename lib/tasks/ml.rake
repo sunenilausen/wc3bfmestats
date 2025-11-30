@@ -61,7 +61,7 @@ namespace :ml do
 
     # Typical ranges for each feature (deviation from baseline)
     ranges = {
-      elo: { typical_range: 300, desc: "1200-1800" },
+      elo: { typical_range: 300, desc: "1000-1600" },  # elo key is CR (custom rating)
       hero_kd: { typical_range: 2.0, desc: "0.5-3.0" },
       hero_kill_contribution: { typical_range: 15.0, desc: "5%-35%" },
       unit_kill_contribution: { typical_range: 15.0, desc: "5%-35%" },
@@ -69,7 +69,7 @@ namespace :ml do
       team_heal_contribution: { typical_range: 15.0, desc: "5%-35%" },
       hero_uptime: { typical_range: 20.0, desc: "60%-100%" },
       games_played: { typical_range: 4.6, desc: "log(1)-log(100)" },
-      enemy_elo_diff: { typical_range: 200.0, desc: "-200 to +200" }
+      enemy_elo_diff: { typical_range: 200.0, desc: "-200 to +200" }  # enemy CR diff
     }
 
     puts "\n#{"Feature".ljust(28)} #{"Trained".rjust(10)} #{"Effective".rjust(10)} #{"Range".rjust(14)} #{"Impact".rjust(8)}"

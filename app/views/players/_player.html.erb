@@ -1,16 +1,4 @@
 <div id="<%= dom_id player %>" class="w-full sm:w-auto my-5 space-y-5">
-  <%# Compute ELO extremes from preloaded appearances (include current ELO) %>
-  <% elo_ratings = appearances.map(&:elo_rating).compact %>
-  <% elo_ratings << player.elo_rating.round if player.elo_rating %>
-  <% highest_elo = elo_ratings.any? ? elo_ratings.max : nil %>
-  <% lowest_elo = elo_ratings.any? ? elo_ratings.min : nil %>
-
-  <%# Compute Glicko-2 extremes %>
-  <% glicko_ratings = appearances.map(&:glicko2_rating).compact %>
-  <% glicko_ratings << player.glicko2_rating if player.glicko2_rating %>
-  <% highest_glicko = glicko_ratings.any? ? glicko_ratings.max.round : nil %>
-  <% lowest_glicko = glicko_ratings.any? ? glicko_ratings.min.round : nil %>
-
   <%# Compute Custom Rating extremes %>
   <% custom_ratings = appearances.map(&:custom_rating).compact %>
   <% custom_ratings << player.custom_rating.round if player.custom_rating %>
@@ -22,22 +10,16 @@
     <div><strong>Battletag:</strong> <%= player.battletag %></div>
     <div><strong>Nickname:</strong> <%= player.nickname %></div>
     <div><strong>Battlenet:</strong> <%= player.battlenet_name %></div>
-    <div><strong>ELO:</strong> <%= player.elo_rating&.round || "-" %></div>
     <div>
-      <strong>Custom:</strong> <%= player.custom_rating&.round || "-" %>
+      <strong>Custom Rating:</strong> <%= player.custom_rating&.round || "-" %>
       <% if player.custom_rating_bonus_wins.to_i > 0 %>
         <span class="text-xs text-blue-500" title="Bonus wins remaining">(+<%= player.custom_rating_bonus_wins %>)</span>
       <% end %>
     </div>
-    <div><strong>Glicko-2:</strong> <%= player.glicko2_rating&.round || "-" %> <span class="text-gray-400 text-xs" title="Rating Deviation (uncertainty)">&plusmn;<%= player.glicko2_rating_deviation&.round || "-" %></span></div>
     <div><strong>ML Score:</strong> <span class="<%= ml_score_color_class(player.ml_score) %> font-medium"><%= player.ml_score %></span> <%= tier_badge(player.ml_score) %></div>
     <div><strong>Region:</strong> <%= player.region %></div>
-    <div><strong>Highest ELO:</strong> <%= highest_elo || "-" %></div>
-    <div><strong>Lowest ELO:</strong> <%= lowest_elo || "-" %></div>
-    <div><strong>Highest Custom:</strong> <%= highest_custom || "-" %></div>
-    <div><strong>Lowest Custom:</strong> <%= lowest_custom || "-" %></div>
-    <div><strong>Highest Glicko:</strong> <%= highest_glicko || "-" %></div>
-    <div><strong>Lowest Glicko:</strong> <%= lowest_glicko || "-" %></div>
+    <div><strong>Highest CR:</strong> <%= highest_custom || "-" %></div>
+    <div><strong>Lowest CR:</strong> <%= lowest_custom || "-" %></div>
   </div>
 
   <%# Compute averages from preloaded appearances %>
@@ -71,18 +53,18 @@
             <td class="py-0.5">As Underdog</td>
             <td class="text-right py-0.5">
               <span class="text-green-600 font-medium"><%= stats[:wins_as_underdog] %>W</span>/<span class="text-red-600 font-medium"><%= stats[:losses_as_underdog] %>L</span>
-              <span class="text-gray-500">(avg <%= stats[:avg_underdog_elo_diff] %> deficit)</span>
+              <span class="text-gray-500">(avg <%= stats[:avg_underdog_elo_diff] %> CR deficit)</span>
             </td>
           </tr>
           <tr>
             <td class="py-0.5">As Favorite</td>
             <td class="text-right py-0.5">
               <span class="text-green-600 font-medium"><%= stats[:wins_as_favorite] %>W</span>/<span class="text-red-600 font-medium"><%= stats[:losses_as_favorite] %>L</span>
-              <span class="text-gray-500">(avg <%= stats[:avg_favorite_elo_diff] %> adv)</span>
+              <span class="text-gray-500">(avg <%= stats[:avg_favorite_elo_diff] %> CR adv)</span>
             </td>
           </tr>
           <tr>
-            <td class="py-0.5" title="Average difference between this player's ELO and the enemy team's average ELO. Positive means typically facing weaker opponents, negative means typically facing stronger opponents.">ELO vs Enemies</td>
+            <td class="py-0.5" title="Average difference between this player's CR and the enemy team's average CR. Positive means typically facing weaker opponents, negative means typically facing stronger opponents.">CR vs Enemies</td>
             <td class="text-right py-0.5">
               <% enemy_diff = stats[:avg_enemy_elo_diff] %>
               <% if enemy_diff > 0 %>
@@ -97,15 +79,15 @@
             </td>
           </tr>
           <tr>
-            <td class="py-0.5" title="Average difference between this player's ELO and their teammates' average ELO (excluding self). Positive means typically the strongest on the team, negative means typically carried by stronger teammates.">ELO vs Teammates</td>
+            <td class="py-0.5" title="Average difference between this player's CR and their teammates' average CR (excluding self). Positive means typically the strongest on the team, negative means typically with stronger teammates.">CR vs Teammates</td>
             <td class="text-right py-0.5">
               <% ally_diff = stats[:avg_ally_elo_diff] %>
               <% if ally_diff > 0 %>
                 <span class="text-green-600">+<%= ally_diff %></span>
-                <span class="text-gray-400 text-xs">(team carry)</span>
+                <span class="text-gray-400 text-xs">(weaker teammates)</span>
               <% elsif ally_diff < 0 %>
                 <span class="text-red-600"><%= ally_diff %></span>
-                <span class="text-gray-400 text-xs">(carried)</span>
+                <span class="text-gray-400 text-xs">(stronger teammates)</span>
               <% else %>
                 <span class="text-gray-500">0</span>
               <% end %>
@@ -392,12 +374,8 @@
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Heroes Lost">HL</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Bases Lost">BL</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Castles Razed">CK</th>
-            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="ELO change">+/-</th>
-            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="ELO after match">ELO</th>
-            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Custom rating change">C+/-</th>
-            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Custom rating after match">Custom</th>
-            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Glicko-2 change">G+/-</th>
-            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Glicko-2 after match">Glicko</th>
+            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Custom rating change">CR+/-</th>
+            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Custom rating after match">CR</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase">Duration</th>
           </tr>
         </thead>
@@ -430,28 +408,6 @@
               <td class="px-2 py-1 text-center whitespace-nowrap"><%= bases_lost_for_appearance(appearance) || '-' %></td>
               <td class="px-2 py-1 text-center whitespace-nowrap"><%= appearance.castles_razed || '-' %></td>
               <td class="px-2 py-1 text-center whitespace-nowrap">
-                <% if appearance.elo_rating_change %>
-                  <% if appearance.elo_rating_change > 0 %>
-                    <span class="text-green-600">+<%= appearance.elo_rating_change %></span>
-                  <% elsif appearance.elo_rating_change < 0 %>
-                    <span class="text-red-600"><%= appearance.elo_rating_change %></span>
-                  <% else %>
-                    <span class="text-gray-400">0</span>
-                  <% end %>
-                <% else %>
-                  -
-                <% end %>
-              </td>
-              <td class="px-2 py-1 text-center whitespace-nowrap">
-                <% if appearance.elo_rating && appearance.elo_rating_change %>
-                  <%= appearance.elo_rating + appearance.elo_rating_change %>
-                <% elsif appearance.elo_rating %>
-                  <%= appearance.elo_rating %>
-                <% else %>
-                  -
-                <% end %>
-              </td>
-              <td class="px-2 py-1 text-center whitespace-nowrap">
                 <% if appearance.custom_rating_change %>
                   <% if appearance.custom_rating_change > 0 %>
                     <span class="text-green-600">+<%= appearance.custom_rating_change %></span>
@@ -469,28 +425,6 @@
                   <%= appearance.custom_rating + appearance.custom_rating_change %>
                 <% elsif appearance.custom_rating %>
                   <%= appearance.custom_rating %>
-                <% else %>
-                  -
-                <% end %>
-              </td>
-              <td class="px-2 py-1 text-center whitespace-nowrap">
-                <% if appearance.glicko2_rating_change %>
-                  <% if appearance.glicko2_rating_change > 0 %>
-                    <span class="text-green-600">+<%= appearance.glicko2_rating_change.round %></span>
-                  <% elsif appearance.glicko2_rating_change < 0 %>
-                    <span class="text-red-600"><%= appearance.glicko2_rating_change.round %></span>
-                  <% else %>
-                    <span class="text-gray-400">0</span>
-                  <% end %>
-                <% else %>
-                  -
-                <% end %>
-              </td>
-              <td class="px-2 py-1 text-center whitespace-nowrap">
-                <% if appearance.glicko2_rating && appearance.glicko2_rating_change %>
-                  <%= (appearance.glicko2_rating + appearance.glicko2_rating_change).round %>
-                <% elsif appearance.glicko2_rating %>
-                  <%= appearance.glicko2_rating.round %>
                 <% else %>
                   -
                 <% end %>

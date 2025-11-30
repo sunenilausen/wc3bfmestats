@@ -1,4 +1,4 @@
 <tr id="<%= dom_id player %>">
     <td><%= player.nickname %></td>
-    <td><%= player.elo_rating %></td>
+    <td><%= player.custom_rating&.round || 1300 %></td>
 </tr>

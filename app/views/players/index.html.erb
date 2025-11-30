@@ -40,18 +40,8 @@
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nickname</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              <%= link_to players_path(sort: "elo_rating", direction: @sort_column == "elo_rating" && @sort_direction == "desc" ? "asc" : "desc", search: params[:search], min_games: params[:min_games], show_inactive: @show_inactive ? "1" : nil), class: "hover:text-gray-700" do %>
-                Elo Rating <%= @sort_column == "elo_rating" ? (@sort_direction == "desc" ? "▼" : "▲") : "" %>
-              <% end %>
-            </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               <%= link_to players_path(sort: "custom_rating", direction: @sort_column == "custom_rating" && @sort_direction == "desc" ? "asc" : "desc", search: params[:search], min_games: params[:min_games], show_inactive: @show_inactive ? "1" : nil), class: "hover:text-gray-700" do %>
-                Custom <%= @sort_column == "custom_rating" ? (@sort_direction == "desc" ? "▼" : "▲") : "" %>
-              <% end %>
-            </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              <%= link_to players_path(sort: "glicko2_rating", direction: @sort_column == "glicko2_rating" && @sort_direction == "desc" ? "asc" : "desc", search: params[:search], min_games: params[:min_games], show_inactive: @show_inactive ? "1" : nil), class: "hover:text-gray-700" do %>
-                Glicko-2 <%= @sort_column == "glicko2_rating" ? (@sort_direction == "desc" ? "▼" : "▲") : "" %>
+                Custom Rating <%= @sort_column == "custom_rating" ? (@sort_direction == "desc" ? "▼" : "▲") : "" %>
               <% end %>
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -76,18 +66,10 @@
           <% @players.each do |player| %>
             <tr>
               <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900"><%= player.nickname %></td>
-              <td class="px-6 py-4 whitespace-nowrap text-gray-900"><%= player.elo_rating&.round %></td>
               <td class="px-6 py-4 whitespace-nowrap text-gray-900">
                 <%= player.custom_rating&.round %>
                 <% if player.custom_rating_bonus_wins.to_i > 0 %>
                   <span class="text-xs text-blue-500" title="Bonus wins remaining">(+<%= player.custom_rating_bonus_wins %>)</span>
-                <% end %>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-gray-900">
-                <% if player.glicko2_rating %>
-                  <%= player.glicko2_rating.round %><span class="text-gray-400 text-xs">&plusmn;<%= player.glicko2_rating_deviation&.round || 350 %></span>
-                <% else %>
-                  -
                 <% end %>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-gray-900"><%= player.matches.size %></td>

@@ -106,8 +106,8 @@
     return factionStats[key] || { wins: 0, losses: 0 };
   }
 
-  // Special "New Player" option with bottom 5% ratings
-  const NEW_PLAYER = { id: 'new', nickname: `New Player (${newPlayerDefaults.ml_score})`, elo: newPlayerDefaults.elo, glicko: newPlayerDefaults.glicko, mlScore: newPlayerDefaults.ml_score, wins: 0, losses: 0, games: 0, isNew: true };
+  // Special "New Player" option with default ratings
+  const NEW_PLAYER = { id: 'new', nickname: `New Player (${newPlayerDefaults.ml_score})`, customRating: newPlayerDefaults.custom_rating, mlScore: newPlayerDefaults.ml_score, wins: 0, losses: 0, games: 0, isNew: true };
 
   function getAssignedPlayerIds() {
     const assignedIds = new Set();

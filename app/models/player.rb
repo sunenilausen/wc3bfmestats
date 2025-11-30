@@ -180,14 +180,14 @@ class Player < ApplicationRecord
     count_matches_by_role(:favorite, :loss)
   end
 
-  def avg_underdog_elo_difference
-    diffs = elo_differences_by_role(:underdog)
+  def avg_underdog_rating_difference
+    diffs = rating_differences_by_role(:underdog)
     return 0 if diffs.empty?
     (diffs.sum / diffs.size).round(0)
   end
 
-  def avg_favorite_elo_difference
-    diffs = elo_differences_by_role(:favorite)
+  def avg_favorite_rating_difference
+    diffs = rating_differences_by_role(:favorite)
     return 0 if diffs.empty?
     (diffs.sum / diffs.size).round(0)
   end
@@ -276,31 +276,31 @@ class Player < ApplicationRecord
 
   private
 
-  def elo_differences_by_role(role)
+  def rating_differences_by_role(role)
     differences = []
     appearances.includes(:match, :faction).where(matches: { ignored: false }).each do |appearance|
-      next unless appearance.elo_rating
+      next unless appearance.custom_rating
 
       match = appearance.match
       player_good = appearance.faction.good?
 
       team_appearances = match.appearances.includes(:faction).select do |a|
-        a.faction.good? == player_good && a.elo_rating.present?
+        a.faction.good? == player_good && a.custom_rating.present?
       end
 
       opponent_appearances = match.appearances.includes(:faction).select do |a|
-        a.faction.good? != player_good && a.elo_rating.present?
+        a.faction.good? != player_good && a.custom_rating.present?
       end
 
       next if team_appearances.empty? || opponent_appearances.empty?
 
-      team_avg_elo = team_appearances.sum(&:elo_rating).to_f / team_appearances.size
-      opponent_avg_elo = opponent_appearances.sum(&:elo_rating).to_f / opponent_appearances.size
-      elo_diff = team_avg_elo - opponent_avg_elo
-      is_underdog = elo_diff < 0
+      team_avg_cr = team_appearances.sum(&:custom_rating).to_f / team_appearances.size
+      opponent_avg_cr = opponent_appearances.sum(&:custom_rating).to_f / opponent_appearances.size
+      cr_diff = team_avg_cr - opponent_avg_cr
+      is_underdog = cr_diff < 0
 
       if (role == :underdog && is_underdog) || (role == :favorite && !is_underdog)
-        differences << elo_diff.abs
+        differences << cr_diff.abs
       end
     end
     differences
@@ -308,26 +308,26 @@ class Player < ApplicationRecord
 
   def count_matches_by_role(role, outcome)
     appearances.includes(:match, :faction).where(matches: { ignored: false }).count do |appearance|
-      next false unless appearance.elo_rating
+      next false unless appearance.custom_rating
 
       match = appearance.match
       player_good = appearance.faction.good?
 
       # Get team appearances (same side as player)
       team_appearances = match.appearances.includes(:faction).select do |a|
-        a.faction.good? == player_good && a.elo_rating.present?
+        a.faction.good? == player_good && a.custom_rating.present?
       end
 
       # Get opponent team appearances
       opponent_appearances = match.appearances.includes(:faction).select do |a|
-        a.faction.good? != player_good && a.elo_rating.present?
+        a.faction.good? != player_good && a.custom_rating.present?
       end
 
       next false if team_appearances.empty? || opponent_appearances.empty?
 
-      team_avg_elo = team_appearances.sum(&:elo_rating).to_f / team_appearances.size
-      opponent_avg_elo = opponent_appearances.sum(&:elo_rating).to_f / opponent_appearances.size
-      is_underdog = team_avg_elo < opponent_avg_elo
+      team_avg_cr = team_appearances.sum(&:custom_rating).to_f / team_appearances.size
+      opponent_avg_cr = opponent_appearances.sum(&:custom_rating).to_f / opponent_appearances.size
+      is_underdog = team_avg_cr < opponent_avg_cr
 
       # Determine if player won
       player_won = (player_good && match.good_victory?) || (!player_good && !match.good_victory?)

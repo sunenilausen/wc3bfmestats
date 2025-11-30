@@ -31,8 +31,8 @@ class HomeController < ApplicationController
       good_appearances = match.appearances.select { |a| a.faction&.good? }
       evil_appearances = match.appearances.select { |a| a.faction && !a.faction.good? }
 
-      good_elos = good_appearances.map(&:elo_rating).compact
-      evil_elos = evil_appearances.map(&:elo_rating).compact
+      good_elos = good_appearances.map(&:custom_rating).compact
+      evil_elos = evil_appearances.map(&:custom_rating).compact
 
       next if good_elos.empty? || evil_elos.empty?
 

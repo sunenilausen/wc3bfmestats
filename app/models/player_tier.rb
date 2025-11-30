@@ -1,19 +1,29 @@
-# Determines player tier based on ML score
+# Determines player tier based on ML score using dynamic percentile thresholds
 class PlayerTier
-  TIERS = [
-    { name: "Newcomer", min: 0, max: 40, color: "gray" },
-    { name: "Intermediate", min: 40, max: 47, color: "green" },
-    { name: "Advanced", min: 47, max: 53, color: "blue" },
-    { name: "Expert", min: 53, max: 62, color: "purple" },
-    { name: "Hardcore", min: 62, max: 100, color: "red" }
+  TIER_CONFIG = [
+    { key: :newcomer, name: "Newcomer", color: "gray" },
+    { key: :intermediate, name: "Intermediate", color: "green" },
+    { key: :advanced, name: "Advanced", color: "blue" },
+    { key: :expert, name: "Expert", color: "purple" },
+    { key: :hardcore, name: "Hardcore", color: "red" }
   ].freeze
 
   class << self
     def for_score(ml_score)
       return nil if ml_score.nil?
 
-      tier = TIERS.find { |t| ml_score >= t[:min] && ml_score < t[:max] }
-      tier || TIERS.last # Default to highest tier if score >= 100
+      thresholds = PlayerTierCalculator.current_thresholds
+      tier_key = determine_tier_key(ml_score, thresholds)
+      tier_config = TIER_CONFIG.find { |t| t[:key] == tier_key }
+
+      return nil unless tier_config
+
+      {
+        name: tier_config[:name],
+        color: tier_config[:color],
+        min: thresholds.dig(tier_key, :min),
+        max: thresholds.dig(tier_key, :max)
+      }
     end
 
     def name_for_score(ml_score)
@@ -41,6 +51,23 @@ class PlayerTier
       else
         "text-gray-500 bg-gray-100"
       end
+    end
+
+    # Get current tier thresholds for display
+    def current_thresholds
+      PlayerTierCalculator.current_thresholds
+    end
+
+    private
+
+    def determine_tier_key(ml_score, thresholds)
+      # Check from highest tier to lowest
+      return :hardcore if ml_score >= thresholds.dig(:hardcore, :min)
+      return :expert if ml_score >= thresholds.dig(:expert, :min)
+      return :advanced if ml_score >= thresholds.dig(:advanced, :min)
+      return :intermediate if ml_score >= thresholds.dig(:intermediate, :min)
+
+      :newcomer
     end
   end
 end

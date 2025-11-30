@@ -28,10 +28,7 @@
         <% @players_for_select.each do |player| %>
           <% stats = @player_stats[player.id] || { wins: 0, losses: 0 } %>
           <option value="<%= player.id %>"
-                  data-elo="<%= player.elo_rating.round %>"
                   data-custom-rating="<%= player.custom_rating&.round || 1300 %>"
-                  data-glicko="<%= player.glicko2_rating&.round || 1500 %>"
-                  data-glicko-rd="<%= player.glicko2_rating_deviation&.round || 350 %>"
                   data-ml-score="<%= player.ml_score || 50 %>"
                   data-wins="<%= stats[:wins] %>"
                   data-losses="<%= stats[:losses] %>"
@@ -86,30 +83,12 @@
       <% end %>
     </td>
   <% else %>
-    <%# ELO, Custom Rating, and Glicko columns for show mode %>
-    <td class="px-4 py-2 whitespace-nowrap text-sm" id="elo-<%= index %>">
-      <% if lp.player %>
-        <%= lp.player.elo_rating&.round || "-" %>
-      <% elsif lp.is_new_player? %>
-        <%= NewPlayerDefaults.elo %>
-      <% else %>
-        -
-      <% end %>
-    </td>
+    <%# Custom Rating column for show mode %>
     <td class="px-4 py-2 whitespace-nowrap text-sm" id="cr-<%= index %>">
       <% if lp.player %>
         <%= lp.player.custom_rating&.round || "-" %>
       <% elsif lp.is_new_player? %>
-        1300
-      <% else %>
-        -
-      <% end %>
-    </td>
-    <td class="px-4 py-2 whitespace-nowrap text-sm" id="glicko-<%= index %>">
-      <% if lp.player&.glicko2_rating %>
-        <%= lp.player.glicko2_rating.round %><span class="text-gray-400 text-xs">&plusmn;<%= lp.player.glicko2_rating_deviation&.round || "-" %></span>
-      <% elsif lp.is_new_player? %>
-        <%= NewPlayerDefaults.glicko %>
+        <%= NewPlayerDefaults.custom_rating %>
       <% else %>
         -
       <% end %>
@@ -156,10 +135,8 @@
         <% score = player_score_data[:score] %>
         <% color_class = score >= 55 ? 'text-green-600' : (score <= 45 ? 'text-red-600' : 'text-gray-600') %>
         <span class="<%= color_class %> font-medium" title="Raw score: <%= player_score_data[:raw_score] %>"><%= score %></span>
-        <%= tier_badge(score) %>
       <% elsif lp.is_new_player? %>
         <span class="text-red-600 font-medium"><%= NewPlayerDefaults.ml_score %></span>
-        <%= tier_badge(NewPlayerDefaults.ml_score) %>
       <% else %>
         -
       <% end %>

@@ -11,7 +11,8 @@ class PlayersCsvExporterTest < ActiveSupport::TestCase
 
     assert_includes lines.first, "nickname"
     assert_includes lines.first, "battletag"
-    assert_includes lines.first, "elo_rating"
+    assert_includes lines.first, "custom_rating"
+    assert_includes lines.first, "ml_score"
     assert_includes lines.first, "matches"
     assert_includes lines.first, "last_appearance"
     assert_includes lines.first, "wins"
@@ -26,20 +27,20 @@ class PlayersCsvExporterTest < ActiveSupport::TestCase
     assert_includes csv, @player.battletag
   end
 
-  test "orders players by elo_rating descending" do
+  test "orders players by custom_rating descending" do
     csv = PlayersCsvExporter.call
     lines = csv.split("\n")
 
     # Skip header row, get player rows
     data_lines = lines[1..]
 
-    # Extract elo ratings from CSV
-    elo_ratings = data_lines.map do |line|
+    # Extract custom ratings from CSV
+    custom_ratings = data_lines.map do |line|
       parts = CSV.parse_line(line)
-      parts[2].to_i  # elo_rating is 3rd column
+      parts[2].to_i  # custom_rating is 3rd column
     end
 
-    assert_equal elo_ratings.sort.reverse, elo_ratings, "Players should be sorted by ELO descending"
+    assert_equal custom_ratings.sort.reverse, custom_ratings, "Players should be sorted by custom_rating descending"
   end
 
   test "calculates win rate correctly" do
@@ -54,8 +55,8 @@ class PlayersCsvExporterTest < ActiveSupport::TestCase
     player = Player.create!(
       nickname: "NewPlayer",
       battletag: "NewPlayer#9999",
-      elo_rating: 1500,
-      elo_rating_seed: 1500
+      custom_rating: 1300,
+      ml_score: 35.0
     )
 
     csv = PlayersCsvExporter.call

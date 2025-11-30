@@ -79,11 +79,41 @@ class Wc3statsSyncJob < ApplicationJob
     # Build matches from replays
     build_matches
 
+    # Mark invalid matches as ignored
+    mark_invalid_matches
+
     # Fix unicode encoding
     fix_unicode_names
 
     # Recalculate ratings
     recalculate_ratings
+  end
+
+  def mark_invalid_matches
+    # Mark matches with != 10 appearances as ignored
+    invalid_matches = Match.left_joins(:appearances)
+                           .where(ignored: false)
+                           .group(:id)
+                           .having("COUNT(appearances.id) != 10")
+    invalid_count = 0
+    invalid_matches.find_each do |match|
+      match.update_column(:ignored, true)
+      invalid_count += 1
+    end
+
+    # Mark test maps as ignored
+    test_map_count = 0
+    Match.joins(:wc3stats_replay).where(ignored: false).find_each do |match|
+      if match.wc3stats_replay&.test_map?
+        match.update_column(:ignored, true)
+        test_map_count += 1
+      end
+    end
+
+    total = invalid_count + test_map_count
+    if total > 0
+      Rails.logger.info "Wc3statsSyncJob: Marked #{total} invalid matches as ignored (#{invalid_count} incomplete, #{test_map_count} test maps)"
+    end
   end
 
   def build_matches

@@ -48,6 +48,18 @@ class Wc3statsReplay < ApplicationRecord
     map_file_name&.match?(/test/i)
   end
 
+  # Check if the game has fewer than 10 active players (slots 0-9 with win/loss status)
+  def incomplete_game?
+    active_player_count < 10
+  end
+
+  def active_player_count
+    players.count do |p|
+      slot = p["slot"]
+      slot.present? && slot >= 0 && slot <= 9 && !p["isWinner"].nil?
+    end
+  end
+
   def game_length
     body&.dig("length")
   end

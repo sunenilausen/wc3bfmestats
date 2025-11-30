@@ -65,8 +65,13 @@ module Wc3stats
         good_victory: determine_good_victory,
         major_version: wc3stats_replay.major_version,
         build_version: wc3stats_replay.build_version,
-        map_version: wc3stats_replay.map_version
+        map_version: wc3stats_replay.map_version,
+        ignored: should_ignore_match?
       )
+    end
+
+    def should_ignore_match?
+      wc3stats_replay.test_map? || wc3stats_replay.incomplete_game?
     end
 
     def determine_good_victory

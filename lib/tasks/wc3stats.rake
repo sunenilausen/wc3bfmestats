@@ -309,18 +309,34 @@ namespace :wc3stats do
     end
     puts
 
-    # Step 6: Mark invalid matches as ignored
+    # Step 6: Mark invalid matches as ignored (test maps, incomplete games)
     puts "Step 6: Marking invalid matches as ignored..."
+
+    # Mark matches with != 10 appearances
     invalid_matches = Match.left_joins(:appearances)
                            .where(ignored: false)
                            .group(:id)
                            .having("COUNT(appearances.id) != 10")
-
     invalid_count = invalid_matches.count.size
     if invalid_count > 0
       invalid_matches.find_each { |m| m.update_column(:ignored, true) }
-      puts "  Marked #{invalid_count} invalid matches as ignored"
-    else
+      puts "  Marked #{invalid_count} matches as ignored (incomplete player count)"
+    end
+
+    # Mark test maps as ignored
+    test_map_matches = Match.joins(:wc3stats_replay).where(ignored: false)
+    test_map_count = 0
+    test_map_matches.find_each do |match|
+      if match.wc3stats_replay&.test_map?
+        match.update_column(:ignored, true)
+        test_map_count += 1
+      end
+    end
+    if test_map_count > 0
+      puts "  Marked #{test_map_count} matches as ignored (test maps)"
+    end
+
+    if invalid_count == 0 && test_map_count == 0
       puts "  No invalid matches found"
     end
     puts

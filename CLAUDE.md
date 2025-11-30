@@ -112,6 +112,24 @@ Test maps (containing "test" in filename) are automatically marked as `ignored: 
 
 Stats handle ties by sharing credit (e.g., if 2 players tie for top hero killer, each gets 0.5).
 
+## Stats Caching
+
+Stats are cached using `StatsCacheKey` to avoid recalculating on every page load:
+
+- **Cache key** is based on `Match.maximum(:updated_at)`, `Match.count`, and `Appearance.maximum(:updated_at)`
+- **Auto-invalidation**: Cache invalidates automatically when matches or appearances are updated
+- **Manual invalidation**: Run `bin/rails runner "StatsCacheKey.invalidate!"` to force cache refresh
+
+**When to invalidate cache:**
+- After running backfill migrations that update appearance data
+- After deploying code that changes how stats are calculated
+- After any manual data fixes
+
+**On deploy**, always run:
+```bash
+bin/rails runner "StatsCacheKey.invalidate!"
+```
+
 ## Authentication & Authorization
 
 - **Devise** for user authentication
@@ -157,6 +175,39 @@ Any data-fixing rake tasks should also be run on production after deployment:
 bin/rails wc3stats:fix_uploaded_at RAILS_ENV=production
 bin/rails wc3stats:sync RAILS_ENV=production
 ```
+
+## Backfill Migrations
+
+**IMPORTANT:** When adding new columns that need data populated from existing replay data, always create a backfill migration instead of relying on manual rake tasks.
+
+**Why migrations over rake tasks:**
+- Migrations run automatically on deploy (`bin/rails db:migrate`)
+- Migrations are tracked and won't run twice
+- Rake tasks require manual intervention and can be forgotten
+- Both dev and production servers need the same data
+
+**Example backfill migration pattern:**
+```ruby
+class BackfillNewColumnFromReplayData < ActiveRecord::Migration[8.1]
+  disable_ddl_transaction!
+
+  def up
+    Appearance.joins(match: :wc3stats_replay)
+      .includes({ match: :wc3stats_replay }, :player)
+      .find_each do |appearance|
+      # Extract data from replay and update appearance
+    end
+  end
+
+  def down
+    # No-op: don't remove data on rollback
+  end
+end
+```
+
+**After deploy**, remember to:
+1. Run `bin/rails db:migrate` (runs backfill migrations)
+2. Run `bin/rails runner "StatsCacheKey.invalidate!"` (refresh cached stats)
 
 ## Development Commands
 

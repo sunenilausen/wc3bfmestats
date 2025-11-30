@@ -136,6 +136,14 @@
             <td class="py-0.5">Avg Castle Raze Contrib</td>
             <td class="text-right py-0.5"><%= stats[:avg_castle_raze_contribution] %>%</td>
           </tr>
+          <tr>
+            <td class="py-0.5" title="Average share of team's total healing (self + teammates)">Avg Heal Contrib</td>
+            <td class="text-right py-0.5"><%= stats[:avg_heal_contribution] %>%</td>
+          </tr>
+          <tr>
+            <td class="py-0.5" title="Average share of team's healing applied to teammates (not self)">Avg Team Heal Contrib</td>
+            <td class="text-right py-0.5"><%= stats[:avg_team_heal_contribution] %>%</td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -267,6 +275,8 @@
                 <th class="text-center py-1" title="Average Castles Razed">CK</th>
                 <th class="text-center py-1" title="Times top hero killer on team">Top HK</th>
                 <th class="text-center py-1" title="Times top unit killer on team">Top UK</th>
+                <th class="text-center py-1" title="Average Heal Contribution %">H%</th>
+                <th class="text-center py-1" title="Average Team Heal Contribution %">TH%</th>
               </tr>
             </thead>
             <tbody>
@@ -291,6 +301,8 @@
                   <td class="text-center py-1"><%= fs[:avg_castles_razed] > 0 ? number_with_precision(fs[:avg_castles_razed], precision: 2) : "-" %></td>
                   <td class="text-center py-1"><%= number_with_precision(fs[:times_top_hero_kills], precision: 1) %></td>
                   <td class="text-center py-1"><%= number_with_precision(fs[:times_top_unit_kills], precision: 1) %></td>
+                  <td class="text-center py-1"><%= fs[:avg_heal_contribution] > 0 ? "#{fs[:avg_heal_contribution]}%" : "-" %></td>
+                  <td class="text-center py-1"><%= fs[:avg_team_heal_contribution] > 0 ? "#{fs[:avg_team_heal_contribution]}%" : "-" %></td>
                 </tr>
               <% end %>
             </tbody>
@@ -313,6 +325,8 @@
                 <th class="text-center py-1" title="Average Castles Razed">CK</th>
                 <th class="text-center py-1" title="Times top hero killer on team">Top HK</th>
                 <th class="text-center py-1" title="Times top unit killer on team">Top UK</th>
+                <th class="text-center py-1" title="Average Heal Contribution %">H%</th>
+                <th class="text-center py-1" title="Average Team Heal Contribution %">TH%</th>
               </tr>
             </thead>
             <tbody>
@@ -337,6 +351,8 @@
                   <td class="text-center py-1"><%= fs[:avg_castles_razed] > 0 ? number_with_precision(fs[:avg_castles_razed], precision: 2) : "-" %></td>
                   <td class="text-center py-1"><%= number_with_precision(fs[:times_top_hero_kills], precision: 1) %></td>
                   <td class="text-center py-1"><%= number_with_precision(fs[:times_top_unit_kills], precision: 1) %></td>
+                  <td class="text-center py-1"><%= fs[:avg_heal_contribution] > 0 ? "#{fs[:avg_heal_contribution]}%" : "-" %></td>
+                  <td class="text-center py-1"><%= fs[:avg_team_heal_contribution] > 0 ? "#{fs[:avg_team_heal_contribution]}%" : "-" %></td>
                 </tr>
               <% end %>
             </tbody>

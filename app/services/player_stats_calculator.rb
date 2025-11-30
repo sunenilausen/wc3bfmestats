@@ -27,6 +27,8 @@ class PlayerStatsCalculator
       unit_kill_contributions: [],
       castle_raze_contributions: [],
       castles_razed_values: [],
+      heal_contributions: [],
+      team_heal_contributions: [],
       faction_stats: Hash.new { |h, k| h[k] = new_faction_stats }
     }
 
@@ -49,7 +51,9 @@ class PlayerStatsCalculator
       hero_kill_contributions: [],
       unit_kill_contributions: [],
       castle_raze_contributions: [],
-      castles_razed_values: []
+      castles_razed_values: [],
+      heal_contributions: [],
+      team_heal_contributions: []
     }
   end
 
@@ -86,6 +90,9 @@ class PlayerStatsCalculator
 
     # Castles razed contribution
     process_castle_stats(appearance, team_appearances, stats, faction_id)
+
+    # Healing contribution
+    process_heal_stats(appearance, team_appearances, stats, faction_id)
   end
 
   def process_elo_stats(appearance, team_appearances, opponent_appearances, player_won, stats)
@@ -200,6 +207,38 @@ class PlayerStatsCalculator
     end
   end
 
+  def process_heal_stats(appearance, team_appearances, stats, faction_id)
+    faction_stats = stats[:faction_stats][faction_id]
+
+    # Total heal contribution (self_heal + team_heal)
+    if appearance.total_heal.present? && appearance.total_heal > 0
+      team_with_heal = team_appearances.select { |a| a.total_heal.present? && a.total_heal > 0 }
+
+      if team_with_heal.any?
+        team_total = team_with_heal.sum(&:total_heal)
+        if team_total > 0
+          contribution = (appearance.total_heal.to_f / team_total * 100)
+          stats[:heal_contributions] << contribution
+          faction_stats[:heal_contributions] << contribution
+        end
+      end
+    end
+
+    # Team heal contribution (healing others)
+    if appearance.team_heal.present? && appearance.team_heal > 0
+      team_with_team_heal = team_appearances.select { |a| a.team_heal.present? && a.team_heal > 0 }
+
+      if team_with_team_heal.any?
+        team_total = team_with_team_heal.sum(&:team_heal)
+        if team_total > 0
+          contribution = (appearance.team_heal.to_f / team_total * 100)
+          stats[:team_heal_contributions] << contribution
+          faction_stats[:team_heal_contributions] << contribution
+        end
+      end
+    end
+  end
+
   def finalize_stats(stats)
     # Compute averages
     stats[:avg_underdog_elo_diff] = average(stats[:underdog_elo_diffs]).round(0)
@@ -210,6 +249,8 @@ class PlayerStatsCalculator
     stats[:avg_unit_kill_contribution] = average(stats[:unit_kill_contributions]).round(1)
     stats[:avg_castle_raze_contribution] = average(stats[:castle_raze_contributions]).round(1)
     stats[:avg_castles_razed] = average(stats[:castles_razed_values]).round(2)
+    stats[:avg_heal_contribution] = average(stats[:heal_contributions]).round(1)
+    stats[:avg_team_heal_contribution] = average(stats[:team_heal_contributions]).round(1)
 
     # Finalize faction stats
     stats[:faction_stats].each do |_faction_id, fs|
@@ -218,6 +259,8 @@ class PlayerStatsCalculator
       fs[:avg_unit_kill_contribution] = average(fs[:unit_kill_contributions]).round(1)
       fs[:avg_castle_raze_contribution] = average(fs[:castle_raze_contributions]).round(1)
       fs[:avg_castles_razed] = average(fs[:castles_razed_values]).round(2)
+      fs[:avg_heal_contribution] = average(fs[:heal_contributions]).round(1)
+      fs[:avg_team_heal_contribution] = average(fs[:team_heal_contributions]).round(1)
     end
 
     stats

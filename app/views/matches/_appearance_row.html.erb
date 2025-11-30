@@ -28,6 +28,21 @@
     <%= bases_lost_for_appearance(appearance) || "-" %>
   </td>
   <td class="px-2 py-1">
+    <%= appearance.self_heal || "-" %>
+  </td>
+  <td class="px-2 py-1">
+    <%= appearance.team_heal || "-" %>
+  </td>
+  <td class="px-2 py-1">
+    <%= appearance.total_heal || "-" %>
+  </td>
+  <td class="px-2 py-1">
+    <%= heal_contribution(appearance, appearances) %>
+  </td>
+  <td class="px-2 py-1">
+    <%= team_heal_contribution(appearance, appearances) %>
+  </td>
+  <td class="px-2 py-1">
     <%= appearance.elo_rating&.round %>
   </td>
   <td class="px-2 py-1">

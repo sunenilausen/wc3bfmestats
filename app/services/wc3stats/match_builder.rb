@@ -88,12 +88,19 @@ module Wc3stats
         player = find_or_create_player(player_data)
         next unless player
 
+        self_heal = player_data.dig("variables", "selfHeal")
+        team_heal = player_data.dig("variables", "teamHeal")
+        total_heal = (self_heal || 0) + (team_heal || 0) if self_heal || team_heal
+
         match.appearances.create!(
           player: player,
           faction: faction,
           hero_kills: player_data.dig("variables", "heroKills") || 0,
           unit_kills: player_data.dig("variables", "unitKills") || 0,
-          castles_razed: player_data.dig("variables", "castlesRazed")
+          castles_razed: player_data.dig("variables", "castlesRazed"),
+          self_heal: self_heal,
+          team_heal: team_heal,
+          total_heal: total_heal
         )
       end
     end

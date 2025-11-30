@@ -634,6 +634,66 @@ namespace :wc3stats do
     end
   end
 
+  desc "Backfill heal stats (self_heal, team_heal, total_heal) from replay data"
+  task backfill_heal_stats: :environment do
+    puts "=" * 60
+    puts "Backfilling Heal Stats"
+    puts "=" * 60
+    puts
+
+    appearances_with_replay = Appearance.joins(match: :wc3stats_replay)
+      .includes({ match: :wc3stats_replay }, :player, :faction)
+    total = appearances_with_replay.count
+    updated = 0
+    skipped = 0
+
+    puts "Appearances with replays: #{total}"
+    puts
+
+    appearances_with_replay.find_each.with_index do |appearance, index|
+      replay = appearance.match.wc3stats_replay
+      player = appearance.player
+
+      # Find the player's data in the replay
+      player_data = replay.players.find do |p|
+        battletag = p["name"]
+        fixed_battletag = replay.fix_encoding(battletag&.gsub("\\", "") || "")
+        player.battletag == fixed_battletag || player.battletag == battletag
+      end
+
+      if player_data
+        self_heal = player_data.dig("variables", "selfHeal")
+        team_heal = player_data.dig("variables", "teamHeal")
+        total_heal = (self_heal || 0) + (team_heal || 0) if self_heal || team_heal
+
+        changes = {}
+        changes[:self_heal] = self_heal if self_heal && appearance.self_heal != self_heal
+        changes[:team_heal] = team_heal if team_heal && appearance.team_heal != team_heal
+        changes[:total_heal] = total_heal if total_heal && appearance.total_heal != total_heal
+
+        if changes.any?
+          appearance.update_columns(changes)
+          updated += 1
+        else
+          skipped += 1
+        end
+      else
+        skipped += 1
+      end
+
+      print "\r  Progress: #{index + 1}/#{total} (updated: #{updated}, skipped: #{skipped})"
+    end
+
+    puts
+    puts
+    puts "=" * 60
+    puts "Summary"
+    puts "=" * 60
+    puts "  Updated: #{updated}"
+    puts "  Skipped: #{skipped}"
+    puts "=" * 60
+  end
+
   desc "Backfill castles_razed from replay data"
   task backfill_castles_razed: :environment do
     puts "=" * 60

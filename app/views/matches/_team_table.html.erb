@@ -1,57 +1,77 @@
 <table class="min-w-full divide-y divide-gray-200 rounded-lg shadow overflow-hidden mb-4">
     <thead class="bg-gray-50">
         <tr>
-            <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" style="width: 180px;">Player</th>
-            <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Prev. Games</th>
-            <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Unit Kills</th>
-            <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Hero Kills</th>
-            <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Castles Razed</th>
-            <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Heroes Lost</th>
-            <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Bases Lost</th>
-            <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Elo rating</th>
-            <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Elo rating change</th>
-            <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Live elo rating</th>
+            <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" style="width: 140px;">Player</th>
+            <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Previous Games">Prev</th>
+            <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Unit Kills">UK</th>
+            <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Hero Kills">HK</th>
+            <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Castles Razed">CK</th>
+            <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Heroes Lost">HL</th>
+            <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Bases Lost">BL</th>
+            <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Self Heal">SH</th>
+            <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Team Heal">TH</th>
+            <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Total Heal">Heal</th>
+            <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Heal Contribution %">H%</th>
+            <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Team Heal Contribution %">TH%</th>
+            <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="ELO Rating">ELO</th>
+            <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="ELO Rating Change">+/-</th>
+            <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Current ELO Rating">Live</th>
         </tr>
     </thead>
     <tbody class="bg-white divide-y divide-gray-100">
         <% appearances.each do |appearance| %>
-            <%= render partial: "matches/appearance_row", locals: { appearance: appearance } %>
+            <%= render partial: "matches/appearance_row", locals: { appearance: appearance, appearances: appearances } %>
         <% end %>
         <tr class="font-bold bg-gray-100">
-            <td class="px-4 py-2">Total</td>
-            <td class="px-4 py-2"></td>
-            <td class="px-4 py-2"><%= sum_unit_kills(appearances) %></td>
-            <td class="px-4 py-2"><%= sum_hero_kills(appearances) %></td>
-            <td class="px-4 py-2"><%= sum_castles_razed(appearances) %></td>
-            <td class="px-4 py-2"></td>
-            <td class="px-4 py-2"></td>
-            <td class="px-4 py-2"></td>
-            <td class="px-4 py-2"></td>
-            <td class="px-4 py-2"></td>
+            <td class="px-2 py-1">Total</td>
+            <td class="px-2 py-1"></td>
+            <td class="px-2 py-1"><%= sum_unit_kills(appearances) %></td>
+            <td class="px-2 py-1"><%= sum_hero_kills(appearances) %></td>
+            <td class="px-2 py-1"><%= sum_castles_razed(appearances) %></td>
+            <td class="px-2 py-1"></td>
+            <td class="px-2 py-1"></td>
+            <td class="px-2 py-1"><%= sum_self_heal(appearances) %></td>
+            <td class="px-2 py-1"><%= sum_team_heal(appearances) %></td>
+            <td class="px-2 py-1"><%= sum_total_heal(appearances) %></td>
+            <td class="px-2 py-1"></td>
+            <td class="px-2 py-1"></td>
+            <td class="px-2 py-1"></td>
+            <td class="px-2 py-1"></td>
+            <td class="px-2 py-1"></td>
         </tr>
         <tr class="font-bold bg-gray-100">
-            <td class="px-4 py-2">Per minute</td>
-            <td class="px-4 py-2"></td>
-            <td class="px-4 py-2"><%= per_minute_unit_kills(appearances) %></td>
-            <td class="px-4 py-2"><%= per_minute_hero_kills(appearances) %></td>
-            <td class="px-4 py-2"></td>
-            <td class="px-4 py-2"></td>
-            <td class="px-4 py-2"></td>
-            <td class="px-4 py-2"></td>
-            <td class="px-4 py-2"></td>
-            <td class="px-4 py-2"></td>
+            <td class="px-2 py-1">/min</td>
+            <td class="px-2 py-1"></td>
+            <td class="px-2 py-1"><%= per_minute_unit_kills(appearances) %></td>
+            <td class="px-2 py-1"><%= per_minute_hero_kills(appearances) %></td>
+            <td class="px-2 py-1"></td>
+            <td class="px-2 py-1"></td>
+            <td class="px-2 py-1"></td>
+            <td class="px-2 py-1"></td>
+            <td class="px-2 py-1"></td>
+            <td class="px-2 py-1"></td>
+            <td class="px-2 py-1"></td>
+            <td class="px-2 py-1"></td>
+            <td class="px-2 py-1"></td>
+            <td class="px-2 py-1"></td>
+            <td class="px-2 py-1"></td>
         </tr>
         <tr class="font-bold bg-gray-50">
-            <td class="px-4 py-2">Average</td>
-            <td class="px-4 py-2"></td>
-            <td class="px-4 py-2"><%= avg_unit_kills(appearances) %></td>
-            <td class="px-4 py-2"><%= avg_hero_kills(appearances) %></td>
-            <td class="px-4 py-2"></td>
-            <td class="px-4 py-2"></td>
-            <td class="px-4 py-2"></td>
-            <td class="px-4 py-2"><%= avg_elo_rating(appearances) %></td>
-            <td class="px-4 py-2"></td>
-            <td class="px-4 py-2"></td>
+            <td class="px-2 py-1">Avg</td>
+            <td class="px-2 py-1"></td>
+            <td class="px-2 py-1"><%= avg_unit_kills(appearances) %></td>
+            <td class="px-2 py-1"><%= avg_hero_kills(appearances) %></td>
+            <td class="px-2 py-1"></td>
+            <td class="px-2 py-1"></td>
+            <td class="px-2 py-1"></td>
+            <td class="px-2 py-1"><%= avg_self_heal(appearances) %></td>
+            <td class="px-2 py-1"><%= avg_team_heal(appearances) %></td>
+            <td class="px-2 py-1"><%= avg_total_heal(appearances) %></td>
+            <td class="px-2 py-1"></td>
+            <td class="px-2 py-1"></td>
+            <td class="px-2 py-1"><%= avg_elo_rating(appearances) %></td>
+            <td class="px-2 py-1"></td>
+            <td class="px-2 py-1"></td>
         </tr>
     </tbody>
 </table>

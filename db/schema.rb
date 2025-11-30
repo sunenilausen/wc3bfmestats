@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_30_105450) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_30_113701) do
   create_table "appearances", force: :cascade do |t|
     t.integer "castles_razed"
     t.datetime "created_at", null: false
@@ -25,6 +25,9 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_30_105450) do
     t.boolean "ignore_unit_kills", default: false, null: false
     t.integer "match_id", null: false
     t.integer "player_id", null: false
+    t.integer "self_heal"
+    t.integer "team_heal"
+    t.integer "total_heal"
     t.integer "unit_kills"
     t.datetime "updated_at", null: false
     t.index ["faction_id"], name: "index_appearances_on_faction_id"

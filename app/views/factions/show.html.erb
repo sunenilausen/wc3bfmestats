@@ -67,6 +67,14 @@
             <td class="py-0.5">Avg Castle Raze Share</td>
             <td class="text-right py-0.5"><%= @stats[:avg_castle_raze_contribution] %>%</td>
           </tr>
+          <tr>
+            <td class="py-0.5" title="Average share of team's total healing">Avg Heal Share</td>
+            <td class="text-right py-0.5"><%= @stats[:avg_heal_contribution] %>%</td>
+          </tr>
+          <tr>
+            <td class="py-0.5" title="Average share of team's healing applied to teammates">Avg Team Heal Share</td>
+            <td class="text-right py-0.5"><%= @stats[:avg_team_heal_contribution] %>%</td>
+          </tr>
         </tbody>
       </table>
     </div>

@@ -37,6 +37,8 @@ class FactionStatsCalculator
     unit_contributions = []
     castle_raze_contributions = []
     castles_razed_values = []
+    heal_contributions = []
+    team_heal_contributions = []
     total_unit_kills = 0
     total_hero_kills = 0
     total_minutes = 0.0
@@ -119,6 +121,28 @@ class FactionStatsCalculator
           end
         end
       end
+
+      # Heal contribution
+      if appearance.total_heal.present? && appearance.total_heal > 0
+        team_with_heal = team_appearances.select { |a| a.total_heal.present? && a.total_heal > 0 }
+        if team_with_heal.any?
+          team_total = team_with_heal.sum(&:total_heal)
+          if team_total > 0
+            heal_contributions << (appearance.total_heal.to_f / team_total * 100)
+          end
+        end
+      end
+
+      # Team heal contribution
+      if appearance.team_heal.present? && appearance.team_heal > 0
+        team_with_team_heal = team_appearances.select { |a| a.team_heal.present? && a.team_heal > 0 }
+        if team_with_team_heal.any?
+          team_total = team_with_team_heal.sum(&:team_heal)
+          if team_total > 0
+            team_heal_contributions << (appearance.team_heal.to_f / team_total * 100)
+          end
+        end
+      end
     end
 
     total_games = appearances.size
@@ -136,6 +160,8 @@ class FactionStatsCalculator
     stats[:avg_unit_kill_contribution] = unit_contributions.any? ? (unit_contributions.sum / unit_contributions.size).round(1) : 0
     stats[:avg_castle_raze_contribution] = castle_raze_contributions.any? ? (castle_raze_contributions.sum / castle_raze_contributions.size).round(1) : 0
     stats[:avg_castles_razed] = castles_razed_values.any? ? (castles_razed_values.sum.to_f / castles_razed_values.size).round(2) : 0
+    stats[:avg_heal_contribution] = heal_contributions.any? ? (heal_contributions.sum / heal_contributions.size).round(1) : 0
+    stats[:avg_team_heal_contribution] = team_heal_contributions.any? ? (team_heal_contributions.sum / team_heal_contributions.size).round(1) : 0
     stats[:times_top_hero_kills] = times_top_hero
     stats[:times_top_unit_kills] = times_top_unit
     stats[:top_hero_kills_pct] = total_games > 0 ? (times_top_hero.to_f / total_games * 100).round(1) : 0

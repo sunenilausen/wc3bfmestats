@@ -16,11 +16,12 @@ class StatsCacheKey
     private
 
     def compute_key
-      # Use the maximum updated_at from matches and count as cache key
-      # This ensures cache invalidates when any match changes
+      # Use the maximum updated_at from matches/appearances and counts as cache key
+      # This ensures cache invalidates when any match or appearance changes
       match_max = Match.maximum(:updated_at)&.to_i || 0
       match_count = Match.count
-      "#{match_max}-#{match_count}"
+      appearance_max = Appearance.maximum(:updated_at)&.to_i || 0
+      "#{match_max}-#{match_count}-#{appearance_max}"
     end
   end
 end

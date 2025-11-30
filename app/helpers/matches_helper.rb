@@ -106,6 +106,51 @@ module MatchesHelper
     (sum_hero_kills(appearances) * 60 / total_seconds).round(2)
   end
 
+  # Healing stats
+  def sum_self_heal(appearances)
+    appearances.to_a.sum { |appearance| appearance[:self_heal].to_i }
+  end
+
+  def sum_team_heal(appearances)
+    appearances.to_a.sum { |appearance| appearance[:team_heal].to_i }
+  end
+
+  def sum_total_heal(appearances)
+    appearances.to_a.sum { |appearance| appearance[:total_heal].to_i }
+  end
+
+  def avg_self_heal(appearances)
+    (sum_self_heal(appearances).to_f / appearances.size).round
+  end
+
+  def avg_team_heal(appearances)
+    (sum_team_heal(appearances).to_f / appearances.size).round
+  end
+
+  def avg_total_heal(appearances)
+    (sum_total_heal(appearances).to_f / appearances.size).round
+  end
+
+  # Healing contribution as percentage of team total
+  def heal_contribution(appearance, appearances)
+    team_total = sum_total_heal(appearances)
+    return "-" if team_total == 0
+
+    player_heal = appearance[:total_heal].to_i
+    percentage = (player_heal.to_f / team_total * 100).round(1)
+    "#{percentage}%"
+  end
+
+  # Team heal contribution (healing others) as percentage of team total team heal
+  def team_heal_contribution(appearance, appearances)
+    team_total = sum_team_heal(appearances)
+    return "-" if team_total == 0
+
+    player_team_heal = appearance[:team_heal].to_i
+    percentage = (player_team_heal.to_f / team_total * 100).round(1)
+    "#{percentage}%"
+  end
+
   # Calculate heroes lost for an appearance based on replay events
   def heroes_lost_for_appearance(appearance)
     replay = appearance.match.wc3stats_replay

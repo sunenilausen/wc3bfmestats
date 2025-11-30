@@ -345,14 +345,11 @@
                 <th class="text-left py-1">Faction</th>
                 <th class="text-center py-1">W/L</th>
                 <th class="text-center py-1">Win%</th>
-                <th class="text-center py-1">Games</th>
-                <th class="text-center py-1" title="Hero Kill/Death ratio">H K/D</th>
-                <th class="text-center py-1" title="Hero Uptime %">H Up%</th>
-                <th class="text-center py-1" title="Average Castles Razed">CK</th>
-                <th class="text-center py-1" title="Times top hero killer on team">Top HK</th>
-                <th class="text-center py-1" title="Times top unit killer on team">Top UK</th>
-                <th class="text-center py-1" title="Average Heal Contribution %">H%</th>
-                <th class="text-center py-1" title="Average Team Heal Contribution %">TH%</th>
+                <th class="text-center py-1" title="Hero Uptime %">Hero Up</th>
+                <th class="text-center py-1" title="Hero Kill Contribution %">HK%</th>
+                <th class="text-center py-1" title="Unit Kill Contribution %">UK%</th>
+                <th class="text-center py-1" title="Team Heal Contribution %">TH%</th>
+                <th class="text-center py-1" title="Castle Raze Contribution %">CR%</th>
               </tr>
             </thead>
             <tbody>
@@ -371,14 +368,11 @@
                     <span class="text-green-600"><%= fs[:wins] %></span>/<span class="text-red-600"><%= fs[:losses] %></span>
                   </td>
                   <td class="text-center py-1"><%= fs[:win_rate] %>%</td>
-                  <td class="text-center py-1 text-gray-500"><%= fs[:games] %></td>
-                  <td class="text-center py-1"><%= efs&.dig(:hero_kd_ratio) || "-" %></td>
                   <td class="text-center py-1"><%= efs ? "#{efs[:hero_uptime]}%" : "-" %></td>
-                  <td class="text-center py-1"><%= fs[:avg_castles_razed] > 0 ? number_with_precision(fs[:avg_castles_razed], precision: 2) : "-" %></td>
-                  <td class="text-center py-1"><%= number_with_precision(fs[:times_top_hero_kills], precision: 1) %></td>
-                  <td class="text-center py-1"><%= number_with_precision(fs[:times_top_unit_kills], precision: 1) %></td>
-                  <td class="text-center py-1"><%= fs[:avg_heal_contribution] > 0 ? "#{fs[:avg_heal_contribution]}%" : "-" %></td>
+                  <td class="text-center py-1"><%= fs[:avg_hero_kill_contribution] > 0 ? "#{fs[:avg_hero_kill_contribution]}%" : "-" %></td>
+                  <td class="text-center py-1"><%= fs[:avg_unit_kill_contribution] > 0 ? "#{fs[:avg_unit_kill_contribution]}%" : "-" %></td>
                   <td class="text-center py-1"><%= fs[:avg_team_heal_contribution] > 0 ? "#{fs[:avg_team_heal_contribution]}%" : "-" %></td>
+                  <td class="text-center py-1"><%= fs[:avg_castle_raze_contribution] > 0 ? "#{fs[:avg_castle_raze_contribution]}%" : "-" %></td>
                 </tr>
               <% end %>
             </tbody>
@@ -395,14 +389,11 @@
                 <th class="text-left py-1">Faction</th>
                 <th class="text-center py-1">W/L</th>
                 <th class="text-center py-1">Win%</th>
-                <th class="text-center py-1">Games</th>
-                <th class="text-center py-1" title="Hero Kill/Death ratio">H K/D</th>
-                <th class="text-center py-1" title="Hero Uptime %">H Up%</th>
-                <th class="text-center py-1" title="Average Castles Razed">CK</th>
-                <th class="text-center py-1" title="Times top hero killer on team">Top HK</th>
-                <th class="text-center py-1" title="Times top unit killer on team">Top UK</th>
-                <th class="text-center py-1" title="Average Heal Contribution %">H%</th>
-                <th class="text-center py-1" title="Average Team Heal Contribution %">TH%</th>
+                <th class="text-center py-1" title="Hero Uptime %">Hero Up</th>
+                <th class="text-center py-1" title="Hero Kill Contribution %">HK%</th>
+                <th class="text-center py-1" title="Unit Kill Contribution %">UK%</th>
+                <th class="text-center py-1" title="Team Heal Contribution %">TH%</th>
+                <th class="text-center py-1" title="Castle Raze Contribution %">CR%</th>
               </tr>
             </thead>
             <tbody>
@@ -421,14 +412,11 @@
                     <span class="text-green-600"><%= fs[:wins] %></span>/<span class="text-red-600"><%= fs[:losses] %></span>
                   </td>
                   <td class="text-center py-1"><%= fs[:win_rate] %>%</td>
-                  <td class="text-center py-1 text-gray-500"><%= fs[:games] %></td>
-                  <td class="text-center py-1"><%= efs&.dig(:hero_kd_ratio) || "-" %></td>
                   <td class="text-center py-1"><%= efs ? "#{efs[:hero_uptime]}%" : "-" %></td>
-                  <td class="text-center py-1"><%= fs[:avg_castles_razed] > 0 ? number_with_precision(fs[:avg_castles_razed], precision: 2) : "-" %></td>
-                  <td class="text-center py-1"><%= number_with_precision(fs[:times_top_hero_kills], precision: 1) %></td>
-                  <td class="text-center py-1"><%= number_with_precision(fs[:times_top_unit_kills], precision: 1) %></td>
-                  <td class="text-center py-1"><%= fs[:avg_heal_contribution] > 0 ? "#{fs[:avg_heal_contribution]}%" : "-" %></td>
+                  <td class="text-center py-1"><%= fs[:avg_hero_kill_contribution] > 0 ? "#{fs[:avg_hero_kill_contribution]}%" : "-" %></td>
+                  <td class="text-center py-1"><%= fs[:avg_unit_kill_contribution] > 0 ? "#{fs[:avg_unit_kill_contribution]}%" : "-" %></td>
                   <td class="text-center py-1"><%= fs[:avg_team_heal_contribution] > 0 ? "#{fs[:avg_team_heal_contribution]}%" : "-" %></td>
+                  <td class="text-center py-1"><%= fs[:avg_castle_raze_contribution] > 0 ? "#{fs[:avg_castle_raze_contribution]}%" : "-" %></td>
                 </tr>
               <% end %>
             </tbody>

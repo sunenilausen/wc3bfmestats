@@ -188,5 +188,13 @@
         -
       <% end %>
     </td>
+    <%# Avg CR% (Castle Raze Contribution) %>
+    <td class="px-4 py-2 whitespace-nowrap text-sm">
+      <% if player_stats && player_stats[:avg_castle_raze_contribution] && player_stats[:avg_castle_raze_contribution] > 0 %>
+        <%= player_stats[:avg_castle_raze_contribution] %>%
+      <% else %>
+        -
+      <% end %>
+    </td>
   <% end %>
 </tr>

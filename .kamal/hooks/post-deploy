@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# Invalidate stats cache after deploy to ensure fresh views
+# This clears the StatsCacheKey so that fragment caches are regenerated
+
+echo "Invalidating stats cache..."
+bin/kamal app exec --reuse "bin/rails runner 'StatsCacheKey.invalidate!'"
+
+echo "$KAMAL_PERFORMER deployed $KAMAL_VERSION in $KAMAL_RUNTIME seconds"

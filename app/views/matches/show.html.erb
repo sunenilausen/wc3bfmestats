@@ -25,7 +25,9 @@
     <% end %>
   </div>
 
-  <%= render @match %>
+  <% cache ["match_show", @match.id, @match.updated_at, StatsCacheKey.key] do %>
+    <%= render @match %>
+  <% end %>
 
   <% if can? :update, @match %>
     <%= link_to "Edit this match", edit_match_path(@match), class: "w-full sm:w-auto text-center rounded-md px-3.5 py-2.5 bg-gray-100 hover:bg-gray-50 inline-block font-medium" %>

@@ -11,6 +11,7 @@
     </div>
   </div>
 
+  <% cache ["home_stats", StatsCacheKey.key] do %>
   <div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
     <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
       <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Matches</h2>
@@ -49,10 +50,11 @@
       </p>
     </div>
   </div>
+  <% end %>
 
   <div class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
     <% if @my_lobby %>
-      <%# Your Lobby %>
+      <%# Your Lobby - not cached, user-specific %>
       <div class="bg-white rounded-lg shadow border border-blue-200">
         <div class="px-4 py-2 border-b border-blue-200 bg-blue-50 flex justify-between items-center">
           <h2 class="text-sm font-semibold text-gray-900">Your Lobby</h2>
@@ -87,6 +89,7 @@
       </div>
     <% end %>
 
+    <% cache ["home_recent", StatsCacheKey.key, @recent_lobby&.updated_at, @recent_match&.updated_at] do %>
     <%# Most Recent Lobby %>
     <div class="bg-white rounded-lg shadow border border-gray-200">
       <div class="px-4 py-2 border-b border-gray-200 flex justify-between items-center">
@@ -165,5 +168,6 @@
         <% end %>
       </div>
     </div>
+    <% end %>
   </div>
 </div>

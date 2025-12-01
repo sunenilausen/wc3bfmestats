@@ -1,10 +1,8 @@
 <% content_for :title, "matches" %>
 
+<% cache_key = ["matches_index", @page, params[:sort], params[:direction], current_user&.admin?, StatsCacheKey.key] %>
+<% cache cache_key do %>
 <div class="w-full">
-  <% if notice.present? %>
-    <p class="py-2 px-3 bg-green-50 mb-5 text-green-500 font-medium rounded-md inline-block" id="notice"><%= notice %></p>
-  <% end %>
-
   <div class="flex justify-between items-center">
     <h1 class="font-bold text-4xl">Matches <span class="text-gray-500 text-2xl font-normal">(<%= @total_count %>)</span></h1>
     <div class="flex items-center gap-2">
@@ -88,3 +86,8 @@
     <% end %>
   </div>
 </div>
+<% end %>
+
+<% if notice.present? %>
+  <p class="py-2 px-3 bg-green-50 mb-5 text-green-500 font-medium rounded-md inline-block" id="notice"><%= notice %></p>
+<% end %>

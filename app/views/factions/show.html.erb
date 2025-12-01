@@ -5,13 +5,34 @@
     <p class="py-2 px-3 bg-green-50 mb-5 text-green-500 font-medium rounded-md inline-block" id="notice"><%= notice %></p>
   <% end %>
 
-  <div class="flex items-center gap-3 mb-6">
-    <span class="w-5 h-5 rounded-full inline-block" style="background-color: <%= @faction.color_hex %>"></span>
-    <h1 class="font-bold text-4xl"><%= @faction.name %></h1>
-    <span class="px-2 py-1 rounded text-sm font-medium <%= @faction.good? ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' %>">
-      <%= @faction.good? ? "Good" : "Evil" %>
-    </span>
+  <div class="flex items-center justify-between mb-6">
+    <div class="flex items-center gap-3">
+      <span class="w-5 h-5 rounded-full inline-block" style="background-color: <%= @faction.color_hex %>"></span>
+      <h1 class="font-bold text-4xl"><%= @faction.name %></h1>
+      <span class="px-2 py-1 rounded text-sm font-medium <%= @faction.good? ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' %>">
+        <%= @faction.good? ? "Good" : "Evil" %>
+      </span>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <label for="map_version" class="text-sm text-gray-600">Map Version:</label>
+      <%= form_with url: faction_path(@faction), method: :get, local: true, class: "flex items-center gap-2" do %>
+        <select name="map_version" id="map_version" onchange="this.form.submit()" class="rounded-md border border-gray-300 px-3 py-1.5 text-sm">
+          <option value="">All versions</option>
+          <% @available_map_versions.each do |version| %>
+            <option value="<%= version %>" <%= "selected" if @map_version == version %>><%= version %></option>
+          <% end %>
+        </select>
+      <% end %>
+    </div>
   </div>
+
+  <% if @map_version.present? %>
+    <div class="mb-4 px-3 py-2 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-700">
+      Showing stats for map version <strong><%= @map_version %></strong> (<%= @stats[:total_games] %> games)
+      &mdash; <%= link_to "Show all versions", faction_path(@faction), class: "underline hover:no-underline" %>
+    </div>
+  <% end %>
 
   <%# Stats Cards %>
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

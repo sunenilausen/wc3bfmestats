@@ -8,14 +8,30 @@ class FactionsController < ApplicationController
 
   # GET /factions/1 or /factions/1.json
   def show
-    cache_key = ["faction_stats", @faction.id, StatsCacheKey.key]
+    @map_version = params[:map_version]
+    @available_map_versions = Match.where(ignored: false)
+      .where.not(map_version: nil)
+      .distinct
+      .pluck(:map_version)
+      .sort_by do |v|
+        # Extract major.minor and suffix (e.g., "4.5e" -> [4, 5, "e"])
+        match = v.match(/^(\d+)\.(\d+)([a-zA-Z]*)/)
+        if match
+          [match[1].to_i, match[2].to_i, match[3].to_s]
+        else
+          [0, 0, v]
+        end
+      end
+      .reverse
+
+    cache_key = ["faction_stats", @faction.id, @map_version, StatsCacheKey.key]
 
     @stats = Rails.cache.fetch(cache_key + ["basic"]) do
-      FactionStatsCalculator.new(@faction).compute
+      FactionStatsCalculator.new(@faction, map_version: @map_version).compute
     end
 
     event_stats = Rails.cache.fetch(cache_key + ["events"]) do
-      FactionEventStatsCalculator.new(@faction).compute
+      FactionEventStatsCalculator.new(@faction, map_version: @map_version).compute
     end
 
     @hero_stats = event_stats[:hero_stats]

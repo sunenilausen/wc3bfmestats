@@ -1,5 +1,5 @@
 class FactionEventStatsCalculator
-  attr_reader :faction
+  attr_reader :faction, :map_version
 
   SAURON_HERO_NAME = "Sauron the Great"
 
@@ -25,8 +25,9 @@ class FactionEventStatsCalculator
   # Faction with heroes that can die twice (Nazgul)
   MULTI_LIFE_FACTION = "Minas Morgul"
 
-  def initialize(faction)
+  def initialize(faction, map_version: nil)
     @faction = faction
+    @map_version = map_version
   end
 
   def compute
@@ -66,11 +67,15 @@ class FactionEventStatsCalculator
     total_hero_deaths = 0
 
     # Only load replays where this faction was played (instead of all replays)
-    replay_ids = Appearance.joins(:match)
+    replay_query = Appearance.joins(:match)
       .where(faction_id: faction.id, matches: { ignored: false })
       .where.not(matches: { wc3stats_replay_id: nil })
-      .pluck("matches.wc3stats_replay_id")
-      .uniq
+
+    if map_version.present?
+      replay_query = replay_query.where(matches: { map_version: map_version })
+    end
+
+    replay_ids = replay_query.pluck("matches.wc3stats_replay_id").uniq
 
     Wc3statsReplay.includes(match: :appearances).where(id: replay_ids).find_each do |replay|
       next unless replay.match.present?

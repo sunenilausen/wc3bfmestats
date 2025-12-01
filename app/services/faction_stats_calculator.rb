@@ -1,9 +1,10 @@
 # Computes all faction statistics efficiently in minimal passes
 class FactionStatsCalculator
-  attr_reader :faction
+  attr_reader :faction, :map_version
 
-  def initialize(faction)
+  def initialize(faction, map_version: nil)
     @faction = faction
+    @map_version = map_version
   end
 
   def compute
@@ -11,6 +12,10 @@ class FactionStatsCalculator
       .joins(:match)
       .where(matches: { ignored: false })
       .includes(:player, :match, match: { appearances: :faction })
+
+    if map_version.present?
+      appearances = appearances.where(matches: { map_version: map_version })
+    end
 
     stats = {
       avg_unit_kills: 0,

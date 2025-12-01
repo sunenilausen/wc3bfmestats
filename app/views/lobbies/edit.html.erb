@@ -719,7 +719,7 @@
 
     if (playerId && playerName) {
       const html = `
-        <span class="slot-player cursor-move px-2 py-1 bg-blue-50 border border-blue-200 rounded inline-flex items-center gap-2"
+        <span class="slot-player cursor-move px-4 py-2 bg-blue-50 border border-blue-200 rounded inline-flex items-center gap-2"
               draggable="true"
               data-player-id="${playerId}"
               data-player-name="${playerName}"
@@ -727,6 +727,11 @@
               ondragstart="handleSlotDragStart(event, ${playerId}, '${playerName}', ${slotIndex})"
               ondragend="handlePlayerDragEnd(event)">
           ${playerName}
+          <a href="/players/${playerId}" class="text-gray-400 hover:text-blue-600" title="View player" onclick="event.stopPropagation()">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </a>
           <button type="button" onclick="clearSlot(${slotIndex})" class="text-gray-400 hover:text-red-500 text-sm leading-none">&times;</button>
         </span>
       `;

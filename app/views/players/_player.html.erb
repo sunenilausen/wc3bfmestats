@@ -220,6 +220,19 @@
             <td class="py-0.5" title="Average share of team's healing applied to teammates (not self)">Avg Team Heal Contrib</td>
             <td class="text-right py-0.5"><%= stats[:avg_team_heal_contribution] %>%</td>
           </tr>
+          <tr>
+            <td class="py-0.5" title="Average contribution rank within team (1 = top performer, 5 = lowest)">Avg Contribution Rank</td>
+            <td class="text-right py-0.5">
+              <% rank = stats[:avg_contribution_rank] %>
+              <% if rank && rank > 0 %>
+                <span class="<%= rank <= 2 ? 'text-green-600' : (rank >= 4 ? 'text-red-600' : 'text-gray-600') %>">
+                  #<%= rank %>
+                </span>
+              <% else %>
+                -
+              <% end %>
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -345,6 +358,7 @@
                 <th class="text-left py-1">Faction</th>
                 <th class="text-center py-1">W/L</th>
                 <th class="text-center py-1">Win%</th>
+                <th class="text-center py-1" title="Average Contribution Rank">Rank</th>
                 <th class="text-center py-1" title="Hero Uptime %">Hero Up</th>
                 <th class="text-center py-1" title="Hero Kill Contribution %">HK%</th>
                 <th class="text-center py-1" title="Unit Kill Contribution %">UK%</th>
@@ -368,6 +382,14 @@
                     <span class="text-green-600"><%= fs[:wins] %></span>/<span class="text-red-600"><%= fs[:losses] %></span>
                   </td>
                   <td class="text-center py-1"><%= fs[:win_rate] %>%</td>
+                  <td class="text-center py-1">
+                    <% fr = fs[:avg_contribution_rank] %>
+                    <% if fr && fr > 0 %>
+                      <span class="<%= fr <= 2 ? 'text-green-600' : (fr >= 4 ? 'text-red-600' : '') %>">#<%= fr %></span>
+                    <% else %>
+                      -
+                    <% end %>
+                  </td>
                   <td class="text-center py-1"><%= efs ? "#{efs[:hero_uptime]}%" : "-" %></td>
                   <td class="text-center py-1"><%= fs[:avg_hero_kill_contribution] > 0 ? "#{fs[:avg_hero_kill_contribution]}%" : "-" %></td>
                   <td class="text-center py-1"><%= fs[:avg_unit_kill_contribution] > 0 ? "#{fs[:avg_unit_kill_contribution]}%" : "-" %></td>
@@ -389,6 +411,7 @@
                 <th class="text-left py-1">Faction</th>
                 <th class="text-center py-1">W/L</th>
                 <th class="text-center py-1">Win%</th>
+                <th class="text-center py-1" title="Average Contribution Rank">Rank</th>
                 <th class="text-center py-1" title="Hero Uptime %">Hero Up</th>
                 <th class="text-center py-1" title="Hero Kill Contribution %">HK%</th>
                 <th class="text-center py-1" title="Unit Kill Contribution %">UK%</th>
@@ -412,6 +435,14 @@
                     <span class="text-green-600"><%= fs[:wins] %></span>/<span class="text-red-600"><%= fs[:losses] %></span>
                   </td>
                   <td class="text-center py-1"><%= fs[:win_rate] %>%</td>
+                  <td class="text-center py-1">
+                    <% fr = fs[:avg_contribution_rank] %>
+                    <% if fr && fr > 0 %>
+                      <span class="<%= fr <= 2 ? 'text-green-600' : (fr >= 4 ? 'text-red-600' : '') %>">#<%= fr %></span>
+                    <% else %>
+                      -
+                    <% end %>
+                  </td>
                   <td class="text-center py-1"><%= efs ? "#{efs[:hero_uptime]}%" : "-" %></td>
                   <td class="text-center py-1"><%= fs[:avg_hero_kill_contribution] > 0 ? "#{fs[:avg_hero_kill_contribution]}%" : "-" %></td>
                   <td class="text-center py-1"><%= fs[:avg_unit_kill_contribution] > 0 ? "#{fs[:avg_unit_kill_contribution]}%" : "-" %></td>

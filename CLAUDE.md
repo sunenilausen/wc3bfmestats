@@ -43,6 +43,23 @@ The `uploaded_at` field on Match represents when the replay was **first uploaded
 - More sophisticated rating with rating deviation and volatility
 - Also recalculates from scratch
 
+### Custom Rating (CR)
+- Managed by `CustomRatingRecalculator` service (app/services/custom_rating_recalculator.rb)
+- Default rating: 1300
+- Variable K-factor: 40 (new player < 30 games), 30 (normal), 20 (1800+ or reached 2000)
+- Effective rating: 20% individual + 80% team average vs opponent team average
+- New player bonus: First 20 wins get decreasing bonus points (20, 19, 18... 1)
+
+**Contribution bonus system:**
+Players are ranked within their team by performance score (calculated from hero kill %, unit kill %, castle raze %, and team heal % contributions - same as ML score but without the rating component).
+
+- **Both teams** (net 0 points distributed):
+  - 1st place: +1
+  - 2nd place: +1
+  - 3rd place: 0
+  - 4th place: -1
+  - 5th place: -1
+
 ### When Ratings are Recalculated
 - On match create (MatchesController#create)
 - On match update (MatchesController#update)

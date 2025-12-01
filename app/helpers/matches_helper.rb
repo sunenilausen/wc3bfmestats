@@ -226,4 +226,119 @@ module MatchesHelper
 
     "#{bases_died}/#{base_names.size}"
   end
+
+  # Calculate contribution bonus for an appearance
+  # Returns hash with :rank (1-5), :bonus (-1 to +3), and :score
+  def contribution_bonus_for_appearance(appearance, appearances)
+    match = appearance.match
+
+    # Calculate performance scores for all team members
+    ranked = appearances.map do |a|
+      { appearance: a, score: performance_score_for_appearance(a, appearances) }
+    end.sort_by { |r| -r[:score] }
+
+    rank_index = ranked.index { |r| r[:appearance].id == appearance.id } || (ranked.size - 1)
+    team_size = ranked.size
+
+    is_good = appearance.faction.good?
+    won = (is_good && match.good_victory?) || (!is_good && !match.good_victory?)
+
+    # Same for both teams: 1st +1, 2nd +1, 3rd 0, 4th -1, 5th -1
+    bonus = [ 1, 1, 0, -1, -1 ][rank_index] || 0
+
+    { rank: rank_index + 1, bonus: bonus, score: ranked[rank_index][:score].round(1) }
+  end
+
+  # Calculate performance score (same as in CustomRatingRecalculator)
+  def performance_score_for_appearance(appearance, team_appearances)
+    match = appearance.match
+    score = 0.0
+
+    # Hero kill contribution (capped at 40% for scoring)
+    if appearance.hero_kills && !appearance.ignore_hero_kills?
+      team_hero_kills = team_appearances.sum { |a| (a.hero_kills && !a.ignore_hero_kills?) ? a.hero_kills : 0 }
+      if team_hero_kills > 0
+        hk_contrib = [(appearance.hero_kills.to_f / team_hero_kills) * 100, 40.0].min
+        score += (hk_contrib - 20.0) * 0.25
+      end
+    end
+
+    # Unit kill contribution (capped at 40% for scoring)
+    if appearance.unit_kills && !appearance.ignore_unit_kills?
+      team_unit_kills = team_appearances.sum { |a| (a.unit_kills && !a.ignore_unit_kills?) ? a.unit_kills : 0 }
+      if team_unit_kills > 0
+        uk_contrib = [(appearance.unit_kills.to_f / team_unit_kills) * 100, 40.0].min
+        score += (uk_contrib - 20.0) * 0.2
+      end
+    end
+
+    # Castle raze contribution (capped at 40% for scoring)
+    if appearance.castles_razed
+      team_castles = team_appearances.sum { |a| a.castles_razed || 0 }
+      if team_castles > 0
+        cr_contrib = [(appearance.castles_razed.to_f / team_castles) * 100, 40.0].min
+        score += (cr_contrib - 20.0) * 0.2
+      end
+    end
+
+    # Team heal contribution (capped at 40% for scoring)
+    if appearance.team_heal && appearance.team_heal > 0
+      team_heal_total = team_appearances.sum { |a| (a.team_heal && a.team_heal > 0) ? a.team_heal : 0 }
+      if team_heal_total > 0
+        th_contrib = [(appearance.team_heal.to_f / team_heal_total) * 100, 40.0].min
+        score += (th_contrib - 20.0) * 0.15
+      end
+    end
+
+    # Hero uptime (0-100%)
+    hero_uptime = calculate_hero_uptime_for_appearance(appearance, match)
+    if hero_uptime
+      score += (hero_uptime - 80.0) * 0.2  # Baseline 80% uptime
+    end
+
+    score
+  end
+
+  # Calculate hero uptime for an appearance from replay events
+  def calculate_hero_uptime_for_appearance(appearance, match)
+    replay = match.wc3stats_replay
+    return nil unless replay&.events&.any?
+
+    faction = appearance.faction
+    return nil unless faction
+
+    match_length = replay.game_length || match.seconds
+    return nil unless match_length && match_length > 0
+
+    # Get core hero names (exclude extra heroes like Sauron)
+    extra_heroes = FactionEventStatsCalculator::EXTRA_HEROES rescue []
+    core_hero_names = faction.heroes.reject { |h| extra_heroes.include?(h) }
+    return nil if core_hero_names.empty?
+
+    # Get hero death events within match length
+    hero_death_events = replay.events.select do |e|
+      e["eventName"] == "heroDeath" && e["time"] && e["time"] <= match_length
+    end
+
+    total_seconds_alive = 0
+    total_seconds_possible = 0
+
+    core_hero_names.each do |hero_name|
+      hero_events = hero_death_events.select do |event|
+        replay.fix_encoding(event["args"]&.first&.gsub("\\", "")) == hero_name
+      end
+
+      if hero_events.any?
+        death_time = hero_events.map { |e| e["time"] }.compact.min
+        total_seconds_alive += death_time if death_time
+      else
+        total_seconds_alive += match_length
+      end
+      total_seconds_possible += match_length
+    end
+
+    return nil if total_seconds_possible == 0
+
+    (total_seconds_alive.to_f / total_seconds_possible * 100).round(1)
+  end
 end

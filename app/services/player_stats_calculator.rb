@@ -29,6 +29,7 @@ class PlayerStatsCalculator
       castles_razed_values: [],
       heal_contributions: [],
       team_heal_contributions: [],
+      contribution_ranks: [],
       faction_stats: Hash.new { |h, k| h[k] = new_faction_stats }
     }
 
@@ -53,7 +54,8 @@ class PlayerStatsCalculator
       castle_raze_contributions: [],
       castles_razed_values: [],
       heal_contributions: [],
-      team_heal_contributions: []
+      team_heal_contributions: [],
+      contribution_ranks: []
     }
   end
 
@@ -93,6 +95,9 @@ class PlayerStatsCalculator
 
     # Healing contribution
     process_heal_stats(appearance, team_appearances, stats, faction_id)
+
+    # Contribution rank
+    process_contribution_rank(appearance, team_appearances, match, stats, faction_id)
   end
 
   def process_cr_stats(appearance, team_appearances, opponent_appearances, player_won, stats)
@@ -239,6 +244,110 @@ class PlayerStatsCalculator
     end
   end
 
+  def process_contribution_rank(appearance, team_appearances, match, stats, faction_id)
+    return if team_appearances.size < 2
+
+    # Calculate performance scores for all team members
+    ranked = team_appearances.map do |a|
+      { appearance: a, score: performance_score(a, team_appearances, match) }
+    end.sort_by { |r| -r[:score] }
+
+    rank = ranked.index { |r| r[:appearance].id == appearance.id }
+    return unless rank
+
+    stats[:contribution_ranks] << (rank + 1)
+    stats[:faction_stats][faction_id][:contribution_ranks] << (rank + 1)
+  end
+
+  # Performance score calculation (same as CustomRatingRecalculator)
+  def performance_score(appearance, team_appearances, match)
+    score = 0.0
+
+    # Hero kill contribution (capped at 40%)
+    if appearance.hero_kills && !appearance.ignore_hero_kills?
+      team_hero_kills = team_appearances.sum { |a| (a.hero_kills && !a.ignore_hero_kills?) ? a.hero_kills : 0 }
+      if team_hero_kills > 0
+        hk_contrib = [(appearance.hero_kills.to_f / team_hero_kills) * 100, 40.0].min
+        score += (hk_contrib - 20.0) * 0.25
+      end
+    end
+
+    # Unit kill contribution (capped at 40%)
+    if appearance.unit_kills && !appearance.ignore_unit_kills?
+      team_unit_kills = team_appearances.sum { |a| (a.unit_kills && !a.ignore_unit_kills?) ? a.unit_kills : 0 }
+      if team_unit_kills > 0
+        uk_contrib = [(appearance.unit_kills.to_f / team_unit_kills) * 100, 40.0].min
+        score += (uk_contrib - 20.0) * 0.2
+      end
+    end
+
+    # Castle raze contribution (capped at 40%)
+    if appearance.castles_razed
+      team_castles = team_appearances.sum { |a| a.castles_razed || 0 }
+      if team_castles > 0
+        cr_contrib = [(appearance.castles_razed.to_f / team_castles) * 100, 40.0].min
+        score += (cr_contrib - 20.0) * 0.2
+      end
+    end
+
+    # Team heal contribution (capped at 40%)
+    if appearance.team_heal && appearance.team_heal > 0
+      team_heal_total = team_appearances.sum { |a| (a.team_heal && a.team_heal > 0) ? a.team_heal : 0 }
+      if team_heal_total > 0
+        th_contrib = [(appearance.team_heal.to_f / team_heal_total) * 100, 40.0].min
+        score += (th_contrib - 20.0) * 0.15
+      end
+    end
+
+    # Hero uptime
+    hero_uptime = calculate_hero_uptime(appearance, match)
+    if hero_uptime
+      score += (hero_uptime - 80.0) * 0.2
+    end
+
+    score
+  end
+
+  def calculate_hero_uptime(appearance, match)
+    replay = match.wc3stats_replay
+    return nil unless replay&.events&.any?
+
+    faction = appearance.faction
+    return nil unless faction
+
+    match_length = replay.game_length || match.seconds
+    return nil unless match_length && match_length > 0
+
+    extra_heroes = FactionEventStatsCalculator::EXTRA_HEROES rescue []
+    core_hero_names = faction.heroes.reject { |h| extra_heroes.include?(h) }
+    return nil if core_hero_names.empty?
+
+    hero_death_events = replay.events.select do |e|
+      e["eventName"] == "heroDeath" && e["time"] && e["time"] <= match_length
+    end
+
+    total_seconds_alive = 0
+    total_seconds_possible = 0
+
+    core_hero_names.each do |hero_name|
+      hero_events = hero_death_events.select do |event|
+        replay.fix_encoding(event["args"]&.first&.gsub("\\", "")) == hero_name
+      end
+
+      if hero_events.any?
+        death_time = hero_events.map { |e| e["time"] }.compact.min
+        total_seconds_alive += death_time if death_time
+      else
+        total_seconds_alive += match_length
+      end
+      total_seconds_possible += match_length
+    end
+
+    return nil if total_seconds_possible == 0
+
+    (total_seconds_alive.to_f / total_seconds_possible * 100).round(1)
+  end
+
   def finalize_stats(stats)
     # Compute averages
     stats[:avg_underdog_elo_diff] = average(stats[:underdog_elo_diffs]).round(0)
@@ -251,6 +360,7 @@ class PlayerStatsCalculator
     stats[:avg_castles_razed] = average(stats[:castles_razed_values]).round(2)
     stats[:avg_heal_contribution] = average(stats[:heal_contributions]).round(1)
     stats[:avg_team_heal_contribution] = average(stats[:team_heal_contributions]).round(1)
+    stats[:avg_contribution_rank] = average(stats[:contribution_ranks]).round(2)
 
     # Finalize faction stats
     stats[:faction_stats].each do |_faction_id, fs|
@@ -261,6 +371,7 @@ class PlayerStatsCalculator
       fs[:avg_castles_razed] = average(fs[:castles_razed_values]).round(2)
       fs[:avg_heal_contribution] = average(fs[:heal_contributions]).round(1)
       fs[:avg_team_heal_contribution] = average(fs[:team_heal_contributions]).round(1)
+      fs[:avg_contribution_rank] = average(fs[:contribution_ranks]).round(2)
     end
 
     stats

@@ -93,6 +93,9 @@ class CustomRatingRecalculator
   INDIVIDUAL_WEIGHT = 0.2  # 1/5 own rating
   TEAM_WEIGHT = 0.8        # 4/5 team average
 
+  # Contribution bonus points (same for both teams)
+  CONTRIBUTION_BONUS = [ 1, 1, 0, -1, -1 ]  # 1st, 2nd, 3rd, 4th, 5th
+
   def calculate_and_update_ratings(match)
     return if match.appearances.empty?
 
@@ -104,6 +107,10 @@ class CustomRatingRecalculator
     # Calculate team average ratings
     good_avg = good_appearances.sum { |a| a.player&.custom_rating.to_i } / good_appearances.size.to_f
     evil_avg = evil_appearances.sum { |a| a.player&.custom_rating.to_i } / evil_appearances.size.to_f
+
+    # Calculate performance scores and rank players within each team
+    good_ranked = rank_by_performance(good_appearances, match)
+    evil_ranked = rank_by_performance(evil_appearances, match)
 
     # Apply changes to all players (each player uses their own K-factor)
     match.appearances.each do |appearance|
@@ -127,12 +134,17 @@ class CustomRatingRecalculator
       base_change = (k_factor * (actual - expected)).round
 
       # Add individual bonus for wins if player has bonus wins remaining
-      bonus = 0
+      new_player_bonus = 0
       if won && player.custom_rating_bonus_wins.to_i > 0
-        bonus = bonus_for_win(player.custom_rating_bonus_wins)
+        new_player_bonus = bonus_for_win(player.custom_rating_bonus_wins)
       end
 
-      total_change = base_change + bonus
+      # Add contribution bonus based on performance ranking
+      ranked_team = is_good ? good_ranked : evil_ranked
+      rank_index = ranked_team.index { |r| r[:appearance].id == appearance.id } || (ranked_team.size - 1)
+      contribution_bonus = calculate_contribution_bonus(rank_index, ranked_team.size, won)
+
+      total_change = base_change + new_player_bonus + contribution_bonus
 
       appearance.custom_rating = player.custom_rating
       appearance.custom_rating_change = total_change
@@ -153,5 +165,118 @@ class CustomRatingRecalculator
       player.save!
       appearance.save!
     end
+  end
+
+  # Calculate performance score for an appearance (same as ML score but without rating)
+  def performance_score(appearance, match)
+    # Get team appearances for contribution calculations
+    team_appearances = match.appearances.select { |a| a.faction.good? == appearance.faction.good? }
+
+    score = 0.0
+
+    # Hero kill contribution (0-100%, capped at 40% for scoring)
+    if appearance.hero_kills && !appearance.ignore_hero_kills?
+      team_hero_kills = team_appearances.sum { |a| (a.hero_kills && !a.ignore_hero_kills?) ? a.hero_kills : 0 }
+      if team_hero_kills > 0
+        hk_contrib = [(appearance.hero_kills.to_f / team_hero_kills) * 100, 40.0].min
+        score += (hk_contrib - 20.0) * 0.25
+      end
+    end
+
+    # Unit kill contribution (0-100%, capped at 40% for scoring)
+    if appearance.unit_kills && !appearance.ignore_unit_kills?
+      team_unit_kills = team_appearances.sum { |a| (a.unit_kills && !a.ignore_unit_kills?) ? a.unit_kills : 0 }
+      if team_unit_kills > 0
+        uk_contrib = [(appearance.unit_kills.to_f / team_unit_kills) * 100, 40.0].min
+        score += (uk_contrib - 20.0) * 0.2
+      end
+    end
+
+    # Castle raze contribution (0-100%, capped at 40% for scoring)
+    if appearance.castles_razed
+      team_castles = team_appearances.sum { |a| a.castles_razed || 0 }
+      if team_castles > 0
+        cr_contrib = [(appearance.castles_razed.to_f / team_castles) * 100, 40.0].min
+        score += (cr_contrib - 20.0) * 0.2
+      end
+    end
+
+    # Team heal contribution (0-100%, capped at 40% for scoring)
+    if appearance.team_heal && appearance.team_heal > 0
+      team_heal_total = team_appearances.sum { |a| (a.team_heal && a.team_heal > 0) ? a.team_heal : 0 }
+      if team_heal_total > 0
+        th_contrib = [(appearance.team_heal.to_f / team_heal_total) * 100, 40.0].min
+        score += (th_contrib - 20.0) * 0.15
+      end
+    end
+
+    # Hero uptime (0-100%)
+    hero_uptime = calculate_hero_uptime(appearance, match)
+    if hero_uptime
+      score += (hero_uptime - 80.0) * 0.2  # Baseline 80% uptime
+    end
+
+    score
+  end
+
+  # Calculate hero uptime for an appearance from replay events
+  def calculate_hero_uptime(appearance, match)
+    replay = match.wc3stats_replay
+    return nil unless replay&.events&.any?
+
+    faction = appearance.faction
+    return nil unless faction
+
+    match_length = replay.game_length || match.seconds
+    return nil unless match_length && match_length > 0
+
+    # Get core hero names (exclude extra heroes like Sauron)
+    extra_heroes = FactionEventStatsCalculator::EXTRA_HEROES rescue []
+    core_hero_names = faction.heroes.reject { |h| extra_heroes.include?(h) }
+    return nil if core_hero_names.empty?
+
+    # Get hero death events within match length
+    hero_death_events = replay.events.select do |e|
+      e["eventName"] == "heroDeath" && e["time"] && e["time"] <= match_length
+    end
+
+    total_seconds_alive = 0
+    total_seconds_possible = 0
+
+    core_hero_names.each do |hero_name|
+      hero_events = hero_death_events.select do |event|
+        fix_encoding(replay, event["args"]&.first) == hero_name
+      end
+
+      if hero_events.any?
+        death_time = hero_events.map { |e| e["time"] }.compact.min
+        total_seconds_alive += death_time if death_time
+      else
+        total_seconds_alive += match_length
+      end
+      total_seconds_possible += match_length
+    end
+
+    return nil if total_seconds_possible == 0
+
+    (total_seconds_alive.to_f / total_seconds_possible * 100).round(1)
+  end
+
+  def fix_encoding(replay, str)
+    return str if str.nil?
+    replay.fix_encoding(str.gsub("\\", ""))
+  end
+
+  # Rank appearances by performance score (highest first)
+  def rank_by_performance(appearances, match)
+    appearances
+      .map { |a| { appearance: a, score: performance_score(a, match) } }
+      .sort_by { |r| -r[:score] }
+  end
+
+  # Calculate contribution bonus based on rank within team
+  def calculate_contribution_bonus(rank_index, _team_size, _won)
+    # Same for both teams: 1st +1, 2nd +1, 3rd 0, 4th -1, 5th -1
+    CONTRIBUTION_BONUS[rank_index] || 0
   end
 end

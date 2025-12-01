@@ -25,6 +25,16 @@
     <%= heroes_lost_for_appearance(appearance) || "-" %>
   </td>
   <td class="px-2 py-1">
+    <% uptime = calculate_hero_uptime_for_appearance(appearance, appearance.match) %>
+    <% if uptime %>
+      <span class="<%= uptime >= 80 ? 'text-green-600' : (uptime >= 60 ? 'text-yellow-600' : 'text-red-600') %>">
+        <%= uptime %>%
+      </span>
+    <% else %>
+      -
+    <% end %>
+  </td>
+  <td class="px-2 py-1">
     <%= bases_lost_for_appearance(appearance) || "-" %>
   </td>
   <td class="px-2 py-1">
@@ -35,6 +45,13 @@
   </td>
   <td class="px-2 py-1">
     <%= appearance.total_heal || "-" %>
+  </td>
+  <td class="px-2 py-1">
+    <% contrib = contribution_bonus_for_appearance(appearance, appearances) %>
+    <span class="text-gray-500">#<%= contrib[:rank] %></span>
+    <span class="<%= contrib[:bonus] > 0 ? 'text-green-600' : (contrib[:bonus] < 0 ? 'text-red-600' : 'text-gray-400') %>">
+      <%= contrib[:bonus] >= 0 ? '+' : '' %><%= contrib[:bonus] %>
+    </span>
   </td>
   <td class="px-2 py-1">
     <%= appearance.custom_rating&.round %>

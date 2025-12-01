@@ -272,11 +272,11 @@ module MatchesHelper
       end
     end
 
-    # Castle raze contribution (capped at 40% for scoring)
+    # Castle raze contribution (capped at 30% for scoring)
     if appearance.castles_razed
       team_castles = team_appearances.sum { |a| a.castles_razed || 0 }
       if team_castles > 0
-        cr_contrib = [(appearance.castles_razed.to_f / team_castles) * 100, 40.0].min
+        cr_contrib = [(appearance.castles_razed.to_f / team_castles) * 100, 30.0].min
         score += (cr_contrib - 20.0) * 0.2
       end
     end

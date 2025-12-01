@@ -96,6 +96,19 @@
             <td class="py-0.5" title="Average share of team's healing applied to teammates">Avg Team Heal Share</td>
             <td class="text-right py-0.5"><%= @stats[:avg_team_heal_contribution] %>%</td>
           </tr>
+          <tr>
+            <td class="py-0.5" title="Average contribution rank within team (1 = top performer, 5 = lowest)">Avg Contribution Rank</td>
+            <td class="text-right py-0.5">
+              <% rank = @stats[:avg_contribution_rank] %>
+              <% if rank && rank > 0 %>
+                <span class="<%= rank <= 2 ? 'text-green-600' : (rank >= 4 ? 'text-red-600' : '') %>">
+                  #<%= rank %>
+                </span>
+              <% else %>
+                -
+              <% end %>
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>

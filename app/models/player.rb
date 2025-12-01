@@ -4,15 +4,19 @@ class Player < ApplicationRecord
   has_many :lobby_players
   has_many :lobbies, through: :lobby_players
 
-  # Use battletag as URL param instead of id
+  # Use nickname as URL param if unique, otherwise battletag
   def to_param
-    battletag.presence || id.to_s
+    if nickname.present? && Player.where(nickname: nickname).count == 1
+      nickname
+    else
+      battletag.presence || id.to_s
+    end
   end
 
-  # Find by battletag or id
+  # Find by nickname, battletag, or id
   def self.find_by_battletag_or_id(param)
     return find_by(id: param) if param.to_s.match?(/\A\d+\z/)
-    find_by(battletag: param) || find_by(id: param)
+    find_by(nickname: param) || find_by(battletag: param) || find_by(id: param)
   end
 
   # Returns the player's rank by custom rating (1 = highest)

@@ -356,6 +356,7 @@
             <thead>
               <tr class="border-b">
                 <th class="text-left py-1">Faction</th>
+                <th class="text-center py-1" title="Percentage of games played with this faction">Play%</th>
                 <th class="text-center py-1">W/L</th>
                 <th class="text-center py-1">Win%</th>
                 <th class="text-center py-1" title="Average Contribution Rank">Avg Rank</th>
@@ -371,6 +372,7 @@
                 <% fs = stats[:faction_stats][faction.id] %>
                 <% next unless fs && fs[:games] > 0 %>
                 <% efs = event_stats&.dig(:faction_stats, faction.id) %>
+                <% play_pct = stats[:total_matches] > 0 ? (fs[:games].to_f / stats[:total_matches] * 100).round(1) : 0 %>
                 <tr class="border-b border-gray-100">
                   <td class="py-1">
                     <span class="inline-flex items-center gap-1.5">
@@ -378,6 +380,7 @@
                       <%= link_to faction.name, faction_path(faction), class: "text-blue-600 hover:underline" %>
                     </span>
                   </td>
+                  <td class="text-center py-1 text-gray-500"><%= play_pct %>%</td>
                   <td class="text-center py-1">
                     <span class="text-green-600"><%= fs[:wins] %></span>/<span class="text-red-600"><%= fs[:losses] %></span>
                   </td>
@@ -409,6 +412,7 @@
             <thead>
               <tr class="border-b">
                 <th class="text-left py-1">Faction</th>
+                <th class="text-center py-1" title="Percentage of games played with this faction">Play%</th>
                 <th class="text-center py-1">W/L</th>
                 <th class="text-center py-1">Win%</th>
                 <th class="text-center py-1" title="Average Contribution Rank">Avg Rank</th>
@@ -424,6 +428,7 @@
                 <% fs = stats[:faction_stats][faction.id] %>
                 <% next unless fs && fs[:games] > 0 %>
                 <% efs = event_stats&.dig(:faction_stats, faction.id) %>
+                <% play_pct = stats[:total_matches] > 0 ? (fs[:games].to_f / stats[:total_matches] * 100).round(1) : 0 %>
                 <tr class="border-b border-gray-100">
                   <td class="py-1">
                     <span class="inline-flex items-center gap-1.5">
@@ -431,6 +436,7 @@
                       <%= link_to faction.name, faction_path(faction), class: "text-blue-600 hover:underline" %>
                     </span>
                   </td>
+                  <td class="text-center py-1 text-gray-500"><%= play_pct %>%</td>
                   <td class="text-center py-1">
                     <span class="text-green-600"><%= fs[:wins] %></span>/<span class="text-red-600"><%= fs[:losses] %></span>
                   </td>

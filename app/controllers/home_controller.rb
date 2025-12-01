@@ -1,7 +1,24 @@
 class HomeController < ApplicationController
   def index
+    @map_version = params[:map_version]
+    @available_map_versions = Rails.cache.fetch(["available_map_versions", StatsCacheKey.key]) do
+      Match.where(ignored: false)
+        .where.not(map_version: nil)
+        .distinct
+        .pluck(:map_version)
+        .sort_by do |v|
+          match = v.match(/^(\d+)\.(\d+)([a-zA-Z]*)/)
+          if match
+            [match[1].to_i, match[2].to_i, match[3].to_s]
+          else
+            [0, 0, v]
+          end
+        end
+        .reverse
+    end
+
     @underdog_stats = calculate_underdog_stats
-    @good_vs_evil_stats = calculate_good_vs_evil_stats
+    @good_vs_evil_stats = calculate_good_vs_evil_stats(@map_version)
     @matches_count = Match.where(ignored: false).count
     # Players who have played at least one valid (non-ignored) match
     @players_count = Player.joins(:matches).where(matches: { ignored: false }).distinct.count
@@ -56,8 +73,10 @@ class HomeController < ApplicationController
     }
   end
 
-  def calculate_good_vs_evil_stats
+  def calculate_good_vs_evil_stats(map_version = nil)
     matches_with_result = Match.where(ignored: false).where.not(good_victory: nil)
+    matches_with_result = matches_with_result.where(map_version: map_version) if map_version.present?
+
     total = matches_with_result.count
     good_wins = matches_with_result.where(good_victory: true).count
     evil_wins = total - good_wins

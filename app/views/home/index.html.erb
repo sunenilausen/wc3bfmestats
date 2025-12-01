@@ -36,8 +36,21 @@
       </p>
     </div>
 
-    <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-      <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Good vs Evil</h2>
+  </div>
+  <% end %>
+
+  <%# Good vs Evil - outside cache because it depends on map_version param %>
+  <div class="mt-4">
+    <div class="bg-white rounded-lg shadow p-6 border border-gray-200 max-w-md">
+      <div class="flex justify-between items-start mb-2">
+        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Good vs Evil</h2>
+        <%= form_with url: root_path, method: :get, local: true, class: "flex items-center" do %>
+          <%= select_tag :map_version,
+            options_for_select([["All versions", ""]] + @available_map_versions.map { |v| [v, v] }, @map_version),
+            class: "text-xs border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50",
+            onchange: "this.form.submit()" %>
+        <% end %>
+      </div>
       <div class="mt-2 flex items-baseline gap-2">
         <span class="text-2xl font-bold text-green-600"><%= @good_vs_evil_stats[:good_percentage] %>%</span>
         <span class="text-gray-400">vs</span>
@@ -50,7 +63,6 @@
       </p>
     </div>
   </div>
-  <% end %>
 
   <div class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
     <% if @my_lobby %>

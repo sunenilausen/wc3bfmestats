@@ -9,20 +9,22 @@ class FactionsController < ApplicationController
   # GET /factions/1 or /factions/1.json
   def show
     @map_version = params[:map_version]
-    @available_map_versions = Match.where(ignored: false)
-      .where.not(map_version: nil)
-      .distinct
-      .pluck(:map_version)
-      .sort_by do |v|
-        # Extract major.minor and suffix (e.g., "4.5e" -> [4, 5, "e"])
-        match = v.match(/^(\d+)\.(\d+)([a-zA-Z]*)/)
-        if match
-          [match[1].to_i, match[2].to_i, match[3].to_s]
-        else
-          [0, 0, v]
+    @available_map_versions = Rails.cache.fetch(["available_map_versions", StatsCacheKey.key]) do
+      Match.where(ignored: false)
+        .where.not(map_version: nil)
+        .distinct
+        .pluck(:map_version)
+        .sort_by do |v|
+          # Extract major.minor and suffix (e.g., "4.5e" -> [4, 5, "e"])
+          match = v.match(/^(\d+)\.(\d+)([a-zA-Z]*)/)
+          if match
+            [match[1].to_i, match[2].to_i, match[3].to_s]
+          else
+            [0, 0, v]
+          end
         end
-      end
-      .reverse
+        .reverse
+    end
 
     cache_key = ["faction_stats", @faction.id, @map_version, StatsCacheKey.key]
 

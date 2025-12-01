@@ -55,14 +55,12 @@ The `uploaded_at` field on Match represents when the replay was **first uploaded
 - Stored in `PredictionWeight` model, retrained every 20 new matches
 
 **Features used:**
-- ELO rating (relative to 1500 baseline)
-- Hero K/D ratio (hero kills / hero deaths)
+- Custom Rating (CR) relative to 1300 baseline
 - Hero kill contribution % (player's share of team hero kills)
 - Unit kill contribution % (player's share of team unit kills)
 - Castle raze contribution % (player's share of team castles razed)
 - Team heal contribution % (player's share of team healing to teammates)
-- Enemy ELO diff (player's ELO vs enemy team average - accounts for lobby strength)
-- Games played (experience factor)
+- Hero uptime % (percentage of match time heroes are alive)
 
 **Confidence adjustment:**
 Players with few games have their score pulled toward 50 to prevent inflated scores from small sample sizes:
@@ -80,7 +78,7 @@ final_score = 50 + (raw_score - 50) * confidence
 
 **New player defaults:**
 When adding an unknown player to a lobby (via "New Player" option), the defaults are:
-- ELO: 1300
+- Custom Rating: 1300
 - Glicko-2: 1200
 - ML Score: 35
 
@@ -108,10 +106,12 @@ Test maps (containing "test" in filename) are automatically marked as `ignored: 
 ## Statistics Calculators
 
 - **PlayerStatsCalculator**: Calculates per-player stats (wins, losses, top hero killer, etc.)
-- **FactionStatsCalculator**: Calculates per-faction stats across all players
-- **FactionEventStatsCalculator**: Calculates event-based stats from replay data (hero uptime, base uptime, hero K/D)
+- **FactionStatsCalculator**: Calculates per-faction stats across all players, supports optional `map_version` filter
+- **FactionEventStatsCalculator**: Calculates event-based stats from replay data (hero uptime, base uptime, hero K/D), supports optional `map_version` filter
 
 Stats handle ties by sharing credit (e.g., if 2 players tie for top hero killer, each gets 0.5).
+
+The faction show page includes a map version dropdown to filter stats by specific game versions (e.g., "4.5e").
 
 ## Stats Caching
 
@@ -120,16 +120,20 @@ Stats are cached using `StatsCacheKey` to avoid recalculating on every page load
 - **Cache key** is based on `Match.maximum(:updated_at)`, `Match.count`, and `Appearance.maximum(:updated_at)`
 - **Auto-invalidation**: Cache invalidates automatically when matches or appearances are updated
 - **Manual invalidation**: Run `bin/rails runner "StatsCacheKey.invalidate!"` to force cache refresh
+- **Deploy invalidation**: The `.kamal/hooks/post-deploy` hook automatically invalidates cache after each deploy
+
+**Cached pages include:**
+- Home page (stats cards, recent lobby/match)
+- Matches index (paginated, per-user admin status)
+- Match show (individual match details)
+- Faction show (stats filtered by optional `map_version` parameter)
 
 **When to invalidate cache:**
 - After running backfill migrations that update appearance data
 - After deploying code that changes how stats are calculated
 - After any manual data fixes
 
-**On deploy**, always run:
-```bash
-bin/rails runner "StatsCacheKey.invalidate!"
-```
+Note: Kamal deploys automatically invalidate cache via the post-deploy hook.
 
 ## Authentication & Authorization
 

@@ -13,11 +13,11 @@
     <% end %>
   </div>
 
-  <div class="mt-4">
-    <div>
+  <div class="mt-4 flex flex-col xl:flex-row gap-6">
+    <div class="flex-1 min-w-0">
       <strong class="block font-medium mb-1">Appearances:</strong>
-      <% good_appearances = match.appearances.select { |a| a.faction&.good? } %>
-      <% evil_appearances = match.appearances.select { |a| a.faction && !a.faction.good? } %>
+      <% good_appearances = match.appearances.select { |a| a.faction&.good? }.sort_by { |a| a.faction_id } %>
+      <% evil_appearances = match.appearances.select { |a| a.faction && !a.faction.good? }.sort_by { |a| a.faction_id } %>
       <ul class="list-disc pl-5">
         <li class="font-semibold mb-2">Forces of Middle Earth (<%= match.good_victory ? "Victory" : "Defeat" %>) </li>
         <% if good_appearances.any? %>
@@ -39,7 +39,7 @@
     </div>
 
     <% if match.wc3stats_replay&.chatlog&.any? || match.wc3stats_replay&.events&.any? %>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+      <div class="xl:w-80 flex-shrink-0 space-y-4">
         <% if match.wc3stats_replay&.chatlog&.any? %>
           <div>
             <strong class="block font-medium mb-2">Chat History:</strong>

@@ -11,8 +11,6 @@
             <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Self Heal">SH</th>
             <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Team Heal">TH</th>
             <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Total Heal">Heal</th>
-            <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Heal Contribution %">H%</th>
-            <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Team Heal Contribution %">TH%</th>
             <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Custom Rating">CR</th>
             <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Custom Rating Change">+/-</th>
         </tr>
@@ -34,20 +32,12 @@
             <td class="px-2 py-1"><%= sum_total_heal(appearances) %></td>
             <td class="px-2 py-1"></td>
             <td class="px-2 py-1"></td>
-            <td class="px-2 py-1"></td>
-            <td class="px-2 py-1"></td>
-            <td class="px-2 py-1"></td>
-            <td class="px-2 py-1"></td>
         </tr>
         <tr class="font-bold bg-gray-100">
             <td class="px-2 py-1">/min</td>
             <td class="px-2 py-1"></td>
             <td class="px-2 py-1"><%= per_minute_unit_kills(appearances) %></td>
             <td class="px-2 py-1"><%= per_minute_hero_kills(appearances) %></td>
-            <td class="px-2 py-1"></td>
-            <td class="px-2 py-1"></td>
-            <td class="px-2 py-1"></td>
-            <td class="px-2 py-1"></td>
             <td class="px-2 py-1"></td>
             <td class="px-2 py-1"></td>
             <td class="px-2 py-1"></td>
@@ -68,8 +58,6 @@
             <td class="px-2 py-1"><%= avg_self_heal(appearances) %></td>
             <td class="px-2 py-1"><%= avg_team_heal(appearances) %></td>
             <td class="px-2 py-1"><%= avg_total_heal(appearances) %></td>
-            <td class="px-2 py-1"></td>
-            <td class="px-2 py-1"></td>
             <td class="px-2 py-1"><%= avg_custom_rating(appearances) %></td>
             <td class="px-2 py-1"></td>
         </tr>

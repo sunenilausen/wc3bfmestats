@@ -1,6 +1,5 @@
 class HomeController < ApplicationController
   def index
-    @map_version = params[:map_version]
     @available_map_versions = Rails.cache.fetch(["available_map_versions", StatsCacheKey.key]) do
       Match.where(ignored: false)
         .where.not(map_version: nil)
@@ -16,6 +15,9 @@ class HomeController < ApplicationController
         end
         .reverse
     end
+
+    # Default to newest map version if not specified
+    @map_version = params[:map_version].presence || @available_map_versions.first
 
     @underdog_stats = calculate_underdog_stats
     @good_vs_evil_stats = calculate_good_vs_evil_stats(@map_version)

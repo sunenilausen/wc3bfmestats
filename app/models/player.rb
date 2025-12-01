@@ -13,10 +13,12 @@ class Player < ApplicationRecord
     end
   end
 
-  # Find by nickname, battletag, or id
+  # Find by nickname, battletag, or id (case-insensitive for nickname)
   def self.find_by_battletag_or_id(param)
     return find_by(id: param) if param.to_s.match?(/\A\d+\z/)
-    find_by(nickname: param) || find_by(battletag: param) || find_by(id: param)
+    where("LOWER(nickname) = ?", param.to_s.downcase).first ||
+      find_by(battletag: param) ||
+      find_by(id: param)
   end
 
   # Returns the player's rank by custom rating (1 = highest)

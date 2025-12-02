@@ -13,8 +13,8 @@
   <div id="lobbies" class="mt-4 space-y-3">
     <% if @lobbies.any? %>
       <% @lobbies.each do |lobby| %>
-        <% good_players = lobby.lobby_players.select { |lp| lp.faction&.good? && lp.player }.map { |lp| lp.player.nickname } %>
-        <% evil_players = lobby.lobby_players.select { |lp| lp.faction && !lp.faction.good? && lp.player }.map { |lp| lp.player.nickname } %>
+        <% good_players = lobby.lobby_players.select { |lp| lp.faction&.good? && lp.player }.map { |lp| player_display_name(lp.player) } %>
+        <% evil_players = lobby.lobby_players.select { |lp| lp.faction && !lp.faction.good? && lp.player }.map { |lp| player_display_name(lp.player) } %>
         <div class="bg-white rounded-lg shadow border border-gray-200 p-4">
           <div class="flex justify-between items-start gap-4">
             <div class="flex-1">

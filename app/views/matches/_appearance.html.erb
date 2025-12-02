@@ -1,7 +1,7 @@
 <div id="<%= dom_id appearance %>" class="w-full sm:w-auto my-5 space-y-5">
   <div>
     <strong class="block font-medium mb-1">Player:</strong>
-    <%= appearance.player.nickname + " (CR: #{appearance.player.custom_rating&.round || 1300})" %>
+    <%= player_display_name(appearance.player) + " (CR: #{appearance.player.custom_rating&.round || 1300})" %>
   </div>
   <div>
     <strong class="block font-medium mb-1">Faction:</strong>

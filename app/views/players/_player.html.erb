@@ -53,6 +53,12 @@
             <td class="py-0.5">Battletag</td>
             <td class="text-right py-0.5"><%= player.battletag %></td>
           </tr>
+          <% if player.alternative_name.present? %>
+            <tr>
+              <td class="py-0.5">Also known as</td>
+              <td class="text-right py-0.5"><%= player.alternative_name %></td>
+            </tr>
+          <% end %>
           <tr>
             <td class="py-0.5">Region</td>
             <td class="text-right py-0.5"><%= player.region || "-" %></td>

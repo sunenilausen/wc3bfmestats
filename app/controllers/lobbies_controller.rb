@@ -200,7 +200,7 @@ class LobbiesController < ApplicationController
         }
       end
 
-      @players_for_select = Player.order(:nickname).select(:id, :nickname, :ml_score, :custom_rating)
+      @players_for_select = Player.order(:nickname).select(:id, :nickname, :alternative_name, :ml_score, :custom_rating)
 
       # Build player search data with games played count and ML score
       @players_search_data = @players_for_select.map do |player|
@@ -209,6 +209,7 @@ class LobbiesController < ApplicationController
         {
           id: player.id,
           nickname: player.nickname,
+          alternativeName: player.alternative_name,
           customRating: player.custom_rating&.round || 1300,
           mlScore: player.ml_score,
           wins: stats[:wins],
@@ -226,7 +227,7 @@ class LobbiesController < ApplicationController
                                     .pluck(:player_id)
 
       recent_players_data = Player.where(id: recent_player_ids)
-                                  .pluck(:id, :nickname, :ml_score, :custom_rating)
+                                  .pluck(:id, :nickname, :alternative_name, :ml_score, :custom_rating)
                                   .index_by(&:first)
 
       # Get last match date for each player
@@ -239,7 +240,7 @@ class LobbiesController < ApplicationController
       @recent_players = recent_player_ids.map do |player_id|
         data = recent_players_data[player_id]
         next unless data
-        id, nickname, ml_score, custom_rating = data
+        id, nickname, alternative_name, ml_score, custom_rating = data
         stats = @player_stats[id] || { wins: 0, losses: 0 }
         last_date = last_match_dates[id]
         formatted_date = if last_date.is_a?(String)
@@ -250,6 +251,7 @@ class LobbiesController < ApplicationController
         {
           id: id,
           nickname: nickname,
+          alternativeName: alternative_name,
           mlScore: ml_score,
           customRating: custom_rating&.round || 1300,
           wins: stats[:wins],

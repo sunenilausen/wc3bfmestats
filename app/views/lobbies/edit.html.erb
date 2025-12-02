@@ -130,16 +130,17 @@
     container.innerHTML = recentPlayers.map(p => {
       const isAssigned = assignedIds.has(String(p.id));
       const mlScoreColor = p.mlScore >= 55 ? 'text-green-600' : (p.mlScore <= 45 ? 'text-red-600' : 'text-gray-600');
+      const displayName = p.alternativeName ? `${p.nickname} (${p.alternativeName})` : p.nickname;
       return `
         <div class="player-card p-2 bg-gray-50 border border-gray-200 rounded transition-colors ${isAssigned ? 'already-assigned' : ''}"
              draggable="${!isAssigned}"
              data-player-id="${p.id}"
-             data-player-name="${p.nickname}"
-             ondragstart="handlePlayerDragStart(event, ${p.id}, '${p.nickname}')"
+             data-player-name="${displayName}"
+             ondragstart="handlePlayerDragStart(event, ${p.id}, '${displayName.replace(/'/g, "\\'")}')"
              ondragend="handlePlayerDragEnd(event)"
              onclick="assignPlayer(${p.id}, this)">
           <div class="flex justify-between items-center">
-            <span class="font-medium text-sm">${p.nickname}</span>
+            <span class="font-medium text-sm">${p.nickname}${p.alternativeName ? ` <span class="text-gray-400 font-normal">(${p.alternativeName})</span>` : ''}</span>
             <div class="flex items-center gap-1">
               <a href="/players/${p.id}" class="text-gray-400 hover:text-blue-600" title="View player" onclick="event.stopPropagation()">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -247,7 +248,11 @@
     const assignedIds = getAssignedPlayerIds();
 
     const filtered = allPlayers.filter(p => {
-      if (searchTerm && !p.nickname.toLowerCase().includes(searchTerm)) return false;
+      if (searchTerm) {
+        const matchesNickname = p.nickname.toLowerCase().includes(searchTerm);
+        const matchesAltName = p.alternativeName && p.alternativeName.toLowerCase().includes(searchTerm);
+        if (!matchesNickname && !matchesAltName) return false;
+      }
       return true;
     });
 
@@ -273,16 +278,17 @@
     html += filtered.slice(0, 50).map(p => {
       const isAssigned = assignedIds.has(String(p.id));
       const mlScoreColor = p.mlScore >= 55 ? 'text-green-600' : (p.mlScore <= 45 ? 'text-red-600' : 'text-gray-600');
+      const displayName = p.alternativeName ? `${p.nickname} (${p.alternativeName})` : p.nickname;
       return `
         <div class="player-card p-2 bg-gray-50 border border-gray-200 rounded transition-colors ${isAssigned ? 'already-assigned' : ''}"
              draggable="${!isAssigned}"
              data-player-id="${p.id}"
-             data-player-name="${p.nickname}"
-             ondragstart="handlePlayerDragStart(event, ${p.id}, '${p.nickname}')"
+             data-player-name="${displayName}"
+             ondragstart="handlePlayerDragStart(event, ${p.id}, '${displayName.replace(/'/g, "\\'")}')"
              ondragend="handlePlayerDragEnd(event)"
              onclick="assignPlayer(${p.id}, this)">
           <div class="flex justify-between items-center">
-            <span class="font-medium text-sm">${p.nickname}</span>
+            <span class="font-medium text-sm">${p.nickname}${p.alternativeName ? ` <span class="text-gray-400 font-normal">(${p.alternativeName})</span>` : ''}</span>
             <div class="flex items-center gap-1">
               <a href="/players/${p.id}" class="text-gray-400 hover:text-blue-600" title="View player" onclick="event.stopPropagation()">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">

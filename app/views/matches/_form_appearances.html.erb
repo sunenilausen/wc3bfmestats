@@ -16,7 +16,7 @@
                             value="<%= player.id %>" <%= "selected" if (player.id == appearance.player_id || index == @match.appearances.index(appearance)) %>
                             data-cr="<%= player.custom_rating&.round || 1300 %>"
                         >
-                            <%= "#{player.nickname} - #{player.custom_rating&.round || 1300}" %>
+                            <%= "#{player_display_name(player)} - #{player.custom_rating&.round || 1300}" %>
                         </option>
                     <% end %>
                 </select>

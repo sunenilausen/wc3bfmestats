@@ -66,7 +66,7 @@
           <% @players.each do |player| %>
             <tr>
               <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
-                <%= player.nickname %>
+                <%= player_display_name_html(player) %>
                 <% if player.custom_rating_games_played.to_i < 30 %>
                   <span class="text-xs bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded ml-1">NEW</span>
                 <% end %>

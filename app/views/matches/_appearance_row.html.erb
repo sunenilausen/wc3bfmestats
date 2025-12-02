@@ -1,10 +1,10 @@
 <tr>
-  <td class="px-2 py-1 font-medium">
+  <td class="px-2 py-1 font-medium whitespace-nowrap">
     <% if appearance.faction %>
       <span style="display: inline-block; width: 14px; height: 14px; background-color: <%= appearance.faction.color %>; border-radius: 3px; margin-right: 6px; vertical-align: middle;"></span>
     <% end %>
     <% if appearance.player %>
-      <%= link_to appearance.player.nickname, player_path(appearance.player) %>
+      <%= link_to appearance.player.nickname, player_path(appearance.player) %><% if appearance.player.alternative_name.present? %> <span class="text-gray-400 font-normal">(<%= appearance.player.alternative_name %>)</span><% end %>
     <% else %>
       <span class="text-gray-400">Unknown</span>
     <% end %>

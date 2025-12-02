@@ -10,7 +10,10 @@ class PlayersController < ApplicationController
 
     @players = Player.all
     if params[:search].present?
-      @players = @players.where("LOWER(nickname) LIKE :search OR LOWER(battletag) LIKE :search", search: "%#{params[:search].downcase}%")
+      @players = @players.where(
+        "LOWER(nickname) LIKE :search OR LOWER(battletag) LIKE :search OR LOWER(alternative_name) LIKE :search",
+        search: "%#{params[:search].downcase}%"
+      )
     end
 
     # Filter by minimum games played
@@ -154,6 +157,9 @@ class PlayersController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def player_params
-      params.expect(player: [ :battletag, :nickname, :battlenet_name, :region, :battlenet_number ])
+      params.expect(player: [
+        :battletag, :nickname, :alternative_name, :region,
+        :custom_rating_seed, :elo_rating_seed, :glicko2_rating_seed
+      ])
     end
 end

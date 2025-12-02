@@ -83,7 +83,7 @@
         <select name="lobby[observer_ids][]" multiple class="hidden" id="observer-select" data-action="change->auto-submit#submit">
           <% @players_for_select.each do |player| %>
             <option value="<%= player.id %>" <%= "selected" if lobby.observer_ids.include?(player.id) %>>
-              <%= player.nickname %>
+              <%= player_display_name(player) %>
             </option>
           <% end %>
         </select>
@@ -98,7 +98,7 @@
             <% obs_event_stats = @event_stats&.dig(observer.id) %>
             <tr>
               <td class="px-4 py-2 whitespace-nowrap text-sm" colspan="2">
-                <%= link_to observer.nickname, player_path(observer), class: "text-blue-600 hover:underline" %>
+                <%= link_to player_display_name_html(observer), player_path(observer), class: "text-blue-600 hover:underline" %>
               </td>
               <td class="px-4 py-2 whitespace-nowrap text-sm"><%= observer.custom_rating&.round || "-" %></td>
               <td class="px-4 py-2 whitespace-nowrap text-sm">

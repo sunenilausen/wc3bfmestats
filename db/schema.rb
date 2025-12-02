@@ -10,9 +10,11 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_30_160159) do
+ActiveRecord::Schema[8.1].define(version: 2025_12_02_135038) do
   create_table "appearances", force: :cascade do |t|
     t.integer "castles_razed"
+    t.integer "contribution_bonus"
+    t.integer "contribution_rank"
     t.datetime "created_at", null: false
     t.integer "custom_rating"
     t.integer "custom_rating_change"
@@ -25,7 +27,9 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_30_160159) do
     t.integer "hero_kills"
     t.boolean "ignore_hero_kills", default: false, null: false
     t.boolean "ignore_unit_kills", default: false, null: false
+    t.boolean "is_mvp", default: false
     t.integer "match_id", null: false
+    t.float "performance_score"
     t.integer "player_id", null: false
     t.integer "self_heal"
     t.integer "team_heal"

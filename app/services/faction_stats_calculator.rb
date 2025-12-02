@@ -79,18 +79,13 @@ class FactionStatsCalculator
       # Get team appearances
       team_appearances = match.appearances.select { |a| a.faction.good? == player_good }
 
-      has_top_hero_kills_for_mvp = false
-      has_top_unit_kills_for_mvp = false
-
       # Hero kill stats - skip if nil or flagged to ignore
       if !appearance.hero_kills.nil? && !appearance.ignore_hero_kills?
         total_hero_kills += appearance.hero_kills
 
         team_with_hero = team_appearances.select { |a| !a.hero_kills.nil? && !a.ignore_hero_kills? }
         if team_with_hero.any?
-          sorted_hero_kills = team_with_hero.map(&:hero_kills).sort.reverse
-          max_hero = sorted_hero_kills[0]
-          second_hero = sorted_hero_kills[1] || 0
+          max_hero = team_with_hero.map(&:hero_kills).max
 
           if appearance.hero_kills == max_hero && max_hero > 0
             # Share credit when tied - if 2 players tied, each gets 0.5
@@ -98,11 +93,6 @@ class FactionStatsCalculator
             share = 1.0 / tied_count
             times_top_hero += share
             ps[:top_hero] += share
-
-            # For MVP: must have strictly more than second place (no ties)
-            if max_hero > second_hero
-              has_top_hero_kills_for_mvp = true
-            end
           end
 
           team_total = team_with_hero.sum(&:hero_kills)
@@ -131,30 +121,25 @@ class FactionStatsCalculator
           if team_total > 0
             unit_contributions << (appearance.unit_kills.to_f / team_total * 100)
           end
-
-          # Check for MVP with adjusted unit kills (1.25x for Minas Morgul and Fellowship)
-          adjusted_unit_kills = team_with_unit.map do |a|
-            base = a.unit_kills
-            if MVP_UNIT_KILL_BOOST_FACTIONS.include?(a.faction.name)
-              (base * MVP_UNIT_KILL_BOOST).round
-            else
-              base
-            end
-          end
-
-          my_adjusted_unit_kills = appearance.unit_kills
-          if MVP_UNIT_KILL_BOOST_FACTIONS.include?(appearance.faction.name)
-            my_adjusted_unit_kills = (appearance.unit_kills * MVP_UNIT_KILL_BOOST).round
-          end
-
-          max_adjusted = adjusted_unit_kills.max
-          has_top_unit_kills_for_mvp = (my_adjusted_unit_kills == max_adjusted)
         end
       end
 
-      # MVP: top hero kills (strictly more than 2nd) AND top adjusted unit kills on winning team
-      if player_won && has_top_hero_kills_for_mvp && has_top_unit_kills_for_mvp
+      # MVP: use stored is_mvp field (set by CustomRatingRecalculator)
+      if appearance.is_mvp?
         times_mvp += 1
+      end
+
+      # Contribution rank: use stored value if available
+      if appearance.contribution_rank
+        contribution_ranks << appearance.contribution_rank
+      elsif team_appearances.size >= 2
+        # Fallback: calculate if not stored
+        ranked = team_appearances.map do |a|
+          { appearance: a, score: performance_score(a, team_appearances, match) }
+        end.sort_by { |r| -r[:score] }
+
+        rank = ranked.index { |r| r[:appearance].id == appearance.id }
+        contribution_ranks << (rank + 1) if rank
       end
 
       # Duration for per-minute stats
@@ -193,16 +178,6 @@ class FactionStatsCalculator
             team_heal_contributions << (appearance.team_heal.to_f / team_total * 100)
           end
         end
-      end
-
-      # Contribution rank
-      if team_appearances.size >= 2
-        ranked = team_appearances.map do |a|
-          { appearance: a, score: performance_score(a, team_appearances, match) }
-        end.sort_by { |r| -r[:score] }
-
-        rank = ranked.index { |r| r[:appearance].id == appearance.id }
-        contribution_ranks << (rank + 1) if rank
       end
     end
 

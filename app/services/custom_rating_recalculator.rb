@@ -164,25 +164,37 @@ class CustomRatingRecalculator
         new_player_bonus = bonus_for_win(player.custom_rating_bonus_wins, player.custom_rating)
       end
 
+      # Calculate performance score and rank
+      ranked_team = is_good ? good_ranked : evil_ranked
+      rank_entry = ranked_team.find { |r| r[:appearance].id == appearance.id }
+      rank_index = ranked_team.index { |r| r[:appearance].id == appearance.id } || (ranked_team.size - 1)
+      perf_score = rank_entry ? rank_entry[:score] : 0.0
+
       # Add contribution bonus based on performance ranking (skip if anyone has 0 unit kills)
       contribution_bonus = 0
       unless skip_contribution_bonus
-        ranked_team = is_good ? good_ranked : evil_ranked
-        rank_index = ranked_team.index { |r| r[:appearance].id == appearance.id } || (ranked_team.size - 1)
         contribution_bonus = calculate_contribution_bonus(rank_index, won)
       end
 
       # MVP bonus: +1 for having both top unit kills AND top hero kills on winning team
       mvp_bonus = 0
+      is_mvp = false
       if won
         team_appearances = is_good ? good_appearances : evil_appearances
         mvp_bonus = calculate_mvp_bonus(appearance, team_appearances)
+        is_mvp = mvp_bonus > 0
       end
 
       total_change = base_change + new_player_bonus + contribution_bonus + mvp_bonus
 
       appearance.custom_rating = player.custom_rating
       appearance.custom_rating_change = total_change
+
+      # Store contribution/performance data for faster queries
+      appearance.contribution_rank = rank_index + 1
+      appearance.contribution_bonus = contribution_bonus + mvp_bonus
+      appearance.is_mvp = is_mvp
+      appearance.performance_score = perf_score.round(2)
 
       player.custom_rating += total_change
       player.custom_rating_games_played = player.custom_rating_games_played.to_i + 1

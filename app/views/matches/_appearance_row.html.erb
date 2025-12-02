@@ -47,15 +47,14 @@
     <%= appearance.total_heal || "-" %>
   </td>
   <td class="px-2 py-1">
-    <% contrib = contribution_bonus_for_appearance(appearance, appearances) %>
-    <% if contrib[:ignored] %>
+    <% if appearance.contribution_rank.nil? %>
       <span class="text-gray-400">-</span>
     <% else %>
-      <span class="text-gray-500">#<%= contrib[:rank] %></span>
-      <span class="<%= contrib[:bonus] > 0 ? 'text-green-600' : (contrib[:bonus] < 0 ? 'text-red-600' : 'text-gray-400') %>">
-        <%= contrib[:bonus] >= 0 ? '+' : '' %><%= contrib[:bonus] %>
+      <span class="text-gray-500">#<%= appearance.contribution_rank %></span>
+      <span class="<%= appearance.contribution_bonus.to_i > 0 ? 'text-green-600' : (appearance.contribution_bonus.to_i < 0 ? 'text-red-600' : 'text-gray-400') %>">
+        <%= appearance.contribution_bonus.to_i >= 0 ? '+' : '' %><%= appearance.contribution_bonus.to_i %>
       </span>
-      <% if contrib[:mvp] %>
+      <% if appearance.is_mvp? %>
         <span class="text-yellow-500" title="MVP: Top unit kills and hero kills">★</span>
       <% end %>
     <% end %>

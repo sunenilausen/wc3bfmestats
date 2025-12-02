@@ -1,5 +1,9 @@
 Rails.application.routes.draw do
-  resources :lobbies, except: [ :destroy ]
+  resources :lobbies, except: [ :destroy ] do
+    member do
+      post :balance
+    end
+  end
   resources :wc3stats_replays
   resources :appearances, only: [ :index, :show ]
   resources :matches do

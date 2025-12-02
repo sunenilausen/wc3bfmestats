@@ -1,6 +1,6 @@
 class LobbiesController < ApplicationController
-  before_action :set_lobby, only: %i[ show edit update ]
-  before_action :ensure_lobby_owner, only: %i[ edit update ]
+  before_action :set_lobby, only: %i[ show edit update balance ]
+  before_action :ensure_lobby_owner, only: %i[ edit update balance ]
 
   # GET /lobbies or /lobbies.json
   def index
@@ -131,6 +131,16 @@ class LobbiesController < ApplicationController
       format.turbo_stream { head :ok }
       format.html { redirect_to edit_lobby_path(@lobby), status: :see_other }
       format.json { render :show, status: :ok, location: @lobby }
+    end
+  end
+
+  # POST /lobbies/1/balance
+  def balance
+    result = LobbyBalancer.new(@lobby).balance!
+
+    respond_to do |format|
+      format.json { render json: result }
+      format.html { redirect_to edit_lobby_path(@lobby), notice: result[:message] }
     end
   end
 

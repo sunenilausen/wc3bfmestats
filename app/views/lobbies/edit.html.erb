@@ -5,6 +5,9 @@
     <div class="flex items-center gap-4 mb-1">
       <h1 class="font-bold text-2xl">Editing lobby</h1>
       <%= link_to "View", @lobby, class: "text-sm px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded" %>
+      <button type="button" id="balance-btn" onclick="balanceLobby()" class="text-sm px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded font-medium">
+        ⚖️ Auto-Balance
+      </button>
     </div>
 
     <%= render partial: "lobby", locals: { lobby: @lobby, editable: true } %>
@@ -871,6 +874,46 @@
   window.handleNewPlayerDragStart = handleNewPlayerDragStart;
   window.assignNewPlayer = assignNewPlayer;
   window.setNewPlayerSlot = setNewPlayerSlot;
+
+  // Balance lobby function
+  async function balanceLobby() {
+    const btn = document.getElementById('balance-btn');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Balancing...';
+
+    try {
+      const response = await fetch('<%= balance_lobby_path(@lobby) %>', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        if (result.swaps_count > 0) {
+          // Reload the page to show updated lobby
+          window.location.reload();
+        } else {
+          btn.innerHTML = '✓ Already balanced';
+          setTimeout(() => { btn.innerHTML = originalText; btn.disabled = false; }, 2000);
+        }
+      } else {
+        alert('Balance failed: ' + result.message);
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    } catch (error) {
+      alert('Balance failed: ' + error.message);
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }
+  }
+  window.balanceLobby = balanceLobby;
 
   // Event listeners
   document.getElementById('player-search-input').addEventListener('input', renderPlayerResults);

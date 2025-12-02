@@ -24,16 +24,32 @@ class MlScoreRecalculator
     # Batch query: team totals per match for kill contribution calculation
     match_ids = Match.where(ignored: false).pluck(:id)
 
-    team_totals = Appearance.joins(:faction)
+    # Hero kills team totals (excluding ignored)
+    hero_kill_totals = Appearance.joins(:faction)
       .where(match_id: match_ids)
-      .where.not(hero_kills: nil, unit_kills: nil)
+      .where.not(hero_kills: nil)
+      .where(ignore_hero_kills: [false, nil])
       .group(:match_id, "factions.good")
-      .pluck(:match_id, Arel.sql("factions.good"), Arel.sql("SUM(hero_kills)"), Arel.sql("SUM(unit_kills)"))
+      .pluck(:match_id, Arel.sql("factions.good"), Arel.sql("SUM(hero_kills)"))
 
-    team_totals_by_match = {}
-    team_totals.each do |match_id, is_good, hk, uk|
-      team_totals_by_match[match_id] ||= {}
-      team_totals_by_match[match_id][is_good] = { hero_kills: hk.to_i, unit_kills: uk.to_i }
+    hero_kill_totals_by_match = {}
+    hero_kill_totals.each do |match_id, is_good, hk|
+      hero_kill_totals_by_match[match_id] ||= {}
+      hero_kill_totals_by_match[match_id][is_good] = hk.to_i
+    end
+
+    # Unit kills team totals (excluding ignored)
+    unit_kill_totals = Appearance.joins(:faction)
+      .where(match_id: match_ids)
+      .where.not(unit_kills: nil)
+      .where(ignore_unit_kills: [false, nil])
+      .group(:match_id, "factions.good")
+      .pluck(:match_id, Arel.sql("factions.good"), Arel.sql("SUM(unit_kills)"))
+
+    unit_kill_totals_by_match = {}
+    unit_kill_totals.each do |match_id, is_good, uk|
+      unit_kill_totals_by_match[match_id] ||= {}
+      unit_kill_totals_by_match[match_id][is_good] = uk.to_i
     end
 
     # Batch query: castle raze team totals
@@ -63,11 +79,19 @@ class MlScoreRecalculator
       team_heal_by_match[match_id][is_good] = th.to_i
     end
 
-    # Get all player appearances with faction info
-    player_appearances = Appearance.joins(:match, :faction)
+    # Get hero kill appearances (excluding ignored)
+    hero_kill_appearances = Appearance.joins(:match, :faction)
       .where(matches: { ignored: false })
-      .where.not(hero_kills: nil, unit_kills: nil)
-      .pluck(:player_id, :match_id, "factions.good", :hero_kills, :unit_kills)
+      .where.not(hero_kills: nil)
+      .where(ignore_hero_kills: [false, nil])
+      .pluck(:player_id, :match_id, "factions.good", :hero_kills)
+
+    # Get unit kill appearances (excluding ignored)
+    unit_kill_appearances = Appearance.joins(:match, :faction)
+      .where(matches: { ignored: false })
+      .where.not(unit_kills: nil)
+      .where(ignore_unit_kills: [false, nil])
+      .pluck(:player_id, :match_id, "factions.good", :unit_kills)
 
     # Get castle raze appearances separately (may have different nulls)
     castle_appearances = Appearance.joins(:match, :faction)
@@ -85,16 +109,18 @@ class MlScoreRecalculator
     # Calculate average kill contributions per player
     player_contributions = Hash.new { |h, k| h[k] = { hk_contribs: [], uk_contribs: [], cr_contribs: [], th_contribs: [], enemy_elo_diffs: [] } }
 
-    player_appearances.each do |player_id, match_id, is_good, hk, uk|
-      team = team_totals_by_match.dig(match_id, is_good)
-      next unless team
+    hero_kill_appearances.each do |player_id, match_id, is_good, hk|
+      team_total = hero_kill_totals_by_match.dig(match_id, is_good)
+      next unless team_total && team_total > 0
 
-      if team[:hero_kills] > 0
-        player_contributions[player_id][:hk_contribs] << (hk.to_f / team[:hero_kills] * 100)
-      end
-      if team[:unit_kills] > 0
-        player_contributions[player_id][:uk_contribs] << (uk.to_f / team[:unit_kills] * 100)
-      end
+      player_contributions[player_id][:hk_contribs] << (hk.to_f / team_total * 100)
+    end
+
+    unit_kill_appearances.each do |player_id, match_id, is_good, uk|
+      team_total = unit_kill_totals_by_match.dig(match_id, is_good)
+      next unless team_total && team_total > 0
+
+      player_contributions[player_id][:uk_contribs] << (uk.to_f / team_total * 100)
     end
 
     castle_appearances.each do |player_id, match_id, is_good, cr|

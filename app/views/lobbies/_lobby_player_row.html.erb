@@ -46,6 +46,9 @@
               ondragstart="handleSlotDragStart(event, <%= lp.player_id %>, '<%= lp.player.nickname %>', <%= index %>)"
               ondragend="handlePlayerDragEnd(event)">
           <%= lp.player.nickname %>
+          <% if lp.player.custom_rating_games_played.to_i < 30 %>
+            <span class="text-xs bg-yellow-100 text-yellow-800 px-1 py-0.5 rounded">NEW</span>
+          <% end %>
           <%= link_to player_path(lp.player), class: "text-gray-400 hover:text-blue-600", title: "View player", onclick: "event.stopPropagation()" do %>
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -58,6 +61,9 @@
       <% end %>
     <% elsif lp.player %>
       <%= link_to lp.player.nickname, player_path(lp.player), class: "text-blue-600 hover:underline" %>
+      <% if lp.player.custom_rating_games_played.to_i < 30 %>
+        <span class="text-xs bg-yellow-100 text-yellow-800 px-1 py-0.5 rounded ml-1">NEW</span>
+      <% end %>
     <% elsif lp.is_new_player? %>
       <span class="text-green-700">New Player</span>
     <% else %>

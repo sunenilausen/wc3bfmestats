@@ -42,7 +42,12 @@
         <tbody>
           <tr>
             <td class="py-0.5">Nickname</td>
-            <td class="text-right py-0.5"><%= player.nickname %></td>
+            <td class="text-right py-0.5">
+              <%= player.nickname %>
+              <% if player.custom_rating_games_played.to_i < 30 %>
+                <span class="text-xs bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded ml-1">NEW</span>
+              <% end %>
+            </td>
           </tr>
           <tr>
             <td class="py-0.5">Battletag</td>
@@ -69,9 +74,6 @@
                 <% cr_percentile = (ranks[:cr_rank].to_f / ranks[:cr_total] * 100).round %>
                 <span class="text-gray-500">(#<%= ranks[:cr_rank] %> - top<%= cr_percentile %>%)</span>
               <% end %>
-              <% if player.custom_rating_bonus_wins.to_i > 0 %>
-                <span class="text-xs text-blue-500" title="Bonus wins remaining">(+<%= player.custom_rating_bonus_wins %>)</span>
-              <% end %>
             </td>
           </tr>
           <tr>
@@ -89,6 +91,14 @@
             <td class="py-0.5">CR Range</td>
             <td class="text-right py-0.5"><%= lowest_custom || "-" %> - <%= highest_custom || "-" %></td>
           </tr>
+          <% if player.custom_rating_bonus_wins.to_i > 0 %>
+            <tr>
+              <td class="py-0.5">Bonus Wins Left</td>
+              <td class="text-right py-0.5">
+                <span class="text-blue-600 font-medium">+<%= player.custom_rating_bonus_wins %></span>
+              </td>
+            </tr>
+          <% end %>
         </tbody>
       </table>
     </div>

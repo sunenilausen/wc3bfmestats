@@ -55,7 +55,14 @@
       </div>
     </nav>
 
-    <main class="container mx-auto mt-28 px-5 flex">
+    <% if RatingRecalculationStatus.in_progress? %>
+      <div class="fixed top-16 left-0 right-0 z-20 bg-yellow-100 border-b border-yellow-300 px-4 py-2 text-center text-yellow-800">
+        <span class="inline-block animate-spin mr-2">&#8635;</span>
+        Ratings are being recalculated. Player ratings may be temporarily inaccurate.
+      </div>
+    <% end %>
+
+    <main class="container mx-auto mt-28 px-5 flex <%= 'mt-36' if RatingRecalculationStatus.in_progress? %>">
       <%= yield %>
     </main>
   </body>

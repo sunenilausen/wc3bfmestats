@@ -18,9 +18,12 @@ class CustomRatingRecalculator
   end
 
   def call
+    RatingRecalculationStatus.start!
     reset_all_ratings
     recalculate_all_matches
     self
+  ensure
+    RatingRecalculationStatus.finish!
   end
 
   private

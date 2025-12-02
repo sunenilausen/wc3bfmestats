@@ -152,7 +152,7 @@ class PlayerStatsCalculator
   def process_kill_stats(appearance, team_appearances, player_won, match, stats, faction_id)
     faction_stats = stats[:faction_stats][faction_id]
 
-    has_top_hero_kills = false
+    has_top_hero_kills_for_mvp = false
     has_top_unit_kills_for_mvp = false
 
     # Hero kills - skip if nil or flagged to ignore
@@ -160,14 +160,21 @@ class PlayerStatsCalculator
       team_with_hero_kills = team_appearances.select { |a| !a.hero_kills.nil? && !a.ignore_hero_kills? }
 
       if team_with_hero_kills.any?
-        max_hero_kills = team_with_hero_kills.map(&:hero_kills).max
+        sorted_hero_kills = team_with_hero_kills.map(&:hero_kills).sort.reverse
+        max_hero_kills = sorted_hero_kills[0]
+        second_hero_kills = sorted_hero_kills[1] || 0
+
         if appearance.hero_kills == max_hero_kills && max_hero_kills > 0
-          has_top_hero_kills = true
           # Share credit when tied - if 2 players tied, each gets 0.5
           tied_count = team_with_hero_kills.count { |a| a.hero_kills == max_hero_kills }
           share = 1.0 / tied_count
           stats[:times_top_hero_kills] += share
           faction_stats[:times_top_hero_kills] += share
+
+          # For MVP: must have strictly more than second place (no ties)
+          if max_hero_kills > second_hero_kills
+            has_top_hero_kills_for_mvp = true
+          end
         end
 
         team_total = team_with_hero_kills.sum(&:hero_kills)
@@ -220,8 +227,8 @@ class PlayerStatsCalculator
       end
     end
 
-    # MVP: top hero kills AND top adjusted unit kills on winning team (non-ignored match)
-    if player_won && !match.ignored? && has_top_hero_kills && has_top_unit_kills_for_mvp
+    # MVP: top hero kills (strictly more than 2nd) AND top adjusted unit kills on winning team (non-ignored match)
+    if player_won && !match.ignored? && has_top_hero_kills_for_mvp && has_top_unit_kills_for_mvp
       stats[:times_mvp] += 1
       faction_stats[:times_mvp] += 1
     end

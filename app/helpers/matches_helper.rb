@@ -291,16 +291,19 @@ module MatchesHelper
 
     return false unless has_top_unit_kills
 
-    # Check top hero kills
+    # Check top hero kills (must have strictly more than second place)
     valid_hero_kills = team_appearances.select { |a| a.hero_kills && !a.ignore_hero_kills? }
     return false unless valid_hero_kills.any?
 
-    max_hero_kills = valid_hero_kills.map(&:hero_kills).max
+    sorted_hero_kills = valid_hero_kills.map(&:hero_kills).sort.reverse
+    max_hero_kills = sorted_hero_kills[0]
+    second_hero_kills = sorted_hero_kills[1] || 0
+
     return false if max_hero_kills == 0
+    return false unless appearance.hero_kills && !appearance.ignore_hero_kills?
 
-    has_top_hero_kills = appearance.hero_kills && !appearance.ignore_hero_kills? && appearance.hero_kills == max_hero_kills
-
-    has_top_hero_kills
+    # Must have top hero kills AND strictly more than second place
+    appearance.hero_kills == max_hero_kills && max_hero_kills > second_hero_kills
   end
 
   # Calculate performance score (uses same weights as MlScoreRecalculator)

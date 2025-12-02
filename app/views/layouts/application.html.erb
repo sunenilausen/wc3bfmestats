@@ -31,6 +31,11 @@
       <a href="/" class="text-2xl font-bold text-blue-700">WC3BFMEStats <span class="text-xs font-normal bg-yellow-400 text-yellow-900 px-1.5 py-0.5 rounded">BETA</span><%= " (dev)" if Rails.env.development? %></a>
       <ul class="flex space-x-8">
         <li>
+          <%= form_with url: players_path, method: :get, local: true, class: "flex items-center" do %>
+            <%= text_field_tag :search, params[:search], placeholder: "Search player...", class: "text-sm border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 py-1 px-2 w-32" %>
+          <% end %>
+        </li>
+        <li>
           <%= link_to players_path, class: "text-gray-700 hover:text-blue-600 font-semibold px-4 py-2 rounded transition-colors duration-200" do %>
             Players <span class="text-xs text-gray-400">(<%= Player.joins(:matches).where(matches: { ignored: false }).distinct.count %>)</span>
           <% end %>

@@ -10,7 +10,7 @@ class PlayersController < ApplicationController
 
     @players = Player.all
     if params[:search].present?
-      @players = @players.where("nickname LIKE :search OR battletag LIKE :search", search: "%#{params[:search]}%")
+      @players = @players.where("LOWER(nickname) LIKE :search OR LOWER(battletag) LIKE :search", search: "%#{params[:search].downcase}%")
     end
 
     # Filter by minimum games played

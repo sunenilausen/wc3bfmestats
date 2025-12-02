@@ -70,8 +70,18 @@ module Wc3stats
       )
     end
 
+    # Minimum game length in seconds (2 minutes)
+    MIN_GAME_LENGTH = 120
+
     def should_ignore_match?
-      wc3stats_replay.test_map? || wc3stats_replay.incomplete_game?
+      wc3stats_replay.test_map? ||
+        wc3stats_replay.incomplete_game? ||
+        too_short?
+    end
+
+    def too_short?
+      game_length = wc3stats_replay.game_length
+      game_length.present? && game_length < MIN_GAME_LENGTH
     end
 
     def determine_good_victory

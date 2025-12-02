@@ -17,7 +17,12 @@ class HomeController < ApplicationController
     end
 
     # Default to newest map version if not specified
-    @map_version = params[:map_version].presence || @available_map_versions.first
+    # If map_version param exists (even if empty), use it; otherwise default to newest
+    @map_version = if params.key?(:map_version)
+      params[:map_version].presence  # nil if "All versions" selected
+    else
+      @available_map_versions.first  # default to newest on first visit
+    end
 
     @underdog_stats = calculate_underdog_stats
     @good_vs_evil_stats = calculate_good_vs_evil_stats(@map_version)

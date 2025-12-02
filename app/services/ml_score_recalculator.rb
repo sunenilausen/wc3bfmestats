@@ -1,7 +1,17 @@
 # Recalculates ML scores for all players
 class MlScoreRecalculator
+  # Hardcoded weights (manually tuned, not auto-trained)
+  WEIGHTS = {
+    elo: 0.006,
+    hero_kill_contribution: 0.045,
+    unit_kill_contribution: 0.025,
+    castle_raze_contribution: 0.01,
+    team_heal_contribution: 0.005,
+    hero_uptime: 0.005
+  }.freeze
+
   def call
-    weights = PredictionWeight.current.weights_hash
+    weights = WEIGHTS
     player_ids = Player.pluck(:id)
     return if player_ids.empty?
 
@@ -145,13 +155,13 @@ class MlScoreRecalculator
       # log(1) = 0, log(10) ≈ 2.3, log(50) ≈ 3.9, log(100) ≈ 4.6
       games_played_log = total_matches > 0 ? Math.log(total_matches + 1) : 0
 
-      # Minimum weights to ensure all features contribute positively
-      elo_weight = [weights[:elo], 0.001].max
-      hero_kill_weight = [weights[:hero_kill_contribution], 0.005].max
-      unit_kill_weight = [weights[:unit_kill_contribution], 0.005].max
-      castle_raze_weight = [weights[:castle_raze_contribution], 0.005].max
-      team_heal_weight = [weights[:team_heal_contribution], 0.005].max
-      hero_uptime_weight = [weights[:hero_uptime], 0.005].max
+      # Use hardcoded weights directly
+      elo_weight = weights[:elo]
+      hero_kill_weight = weights[:hero_kill_contribution]
+      unit_kill_weight = weights[:unit_kill_contribution]
+      castle_raze_weight = weights[:castle_raze_contribution]
+      team_heal_weight = weights[:team_heal_contribution]
+      hero_uptime_weight = weights[:hero_uptime]
 
       raw_score = 0.0
       raw_score += elo_weight * (elo - 1300)

@@ -3,7 +3,7 @@ class CustomRatingRecalculator
   MAX_BONUS_WINS = 20         # Number of wins that get bonus points
 
   # Variable K-factor settings
-  K_FACTOR_NEW_PLAYER = 40    # K-factor for players with < 30 games
+  K_FACTOR_BRAND_NEW = 50     # K-factor for players with 0 games
   K_FACTOR_NORMAL = 30        # K-factor after 30 games
   K_FACTOR_HIGH_RATED = 20    # K-factor at 1800+ rating
   GAMES_UNTIL_NORMAL_K = 30   # Games until K drops from new player to normal
@@ -69,11 +69,16 @@ class CustomRatingRecalculator
     # Low K if currently at 1800+
     return K_FACTOR_HIGH_RATED if player.custom_rating >= RATING_FOR_LOW_K
 
-    # New player K if < 30 games
-    return K_FACTOR_NEW_PLAYER if player.custom_rating_games_played.to_i < GAMES_UNTIL_NORMAL_K
+    games_played = player.custom_rating_games_played.to_i
 
-    # Normal K otherwise
-    K_FACTOR_NORMAL
+    # Gradually decrease K from 50 (brand new) to 30 (at 30 games)
+    if games_played < GAMES_UNTIL_NORMAL_K
+      # Linear interpolation: 50 at 0 games, 30 at 30 games
+      progress = games_played.to_f / GAMES_UNTIL_NORMAL_K
+      (K_FACTOR_BRAND_NEW - (K_FACTOR_BRAND_NEW - K_FACTOR_NORMAL) * progress).round
+    else
+      K_FACTOR_NORMAL
+    end
   end
 
   def recalculate_all_matches
@@ -112,6 +117,10 @@ class CustomRatingRecalculator
     good_ranked = rank_by_performance(good_appearances, match)
     evil_ranked = rank_by_performance(evil_appearances, match)
 
+    # Calculate match experience factor (0.0 to 1.0) based on all players' games played
+    # Matches with new players have reduced rating impact for everyone
+    match_experience = calculate_match_experience(match.appearances)
+
     # Apply changes to all players (each player uses their own K-factor)
     match.appearances.each do |appearance|
       player = appearance.player
@@ -132,6 +141,9 @@ class CustomRatingRecalculator
       # Use player's individual K-factor
       k_factor = k_factor_for_player(player)
       base_change = (k_factor * (actual - expected)).round
+
+      # Apply match experience factor to base change (reduce impact when new players present)
+      base_change = (base_change * match_experience).round
 
       # Add individual bonus for wins if player has bonus wins remaining
       new_player_bonus = 0
@@ -167,10 +179,11 @@ class CustomRatingRecalculator
     end
   end
 
-  # Calculate performance score for an appearance (same as ML score but without rating)
+  # Calculate performance score for an appearance (uses same weights as MlScoreRecalculator)
   def performance_score(appearance, match)
     # Get team appearances for contribution calculations
     team_appearances = match.appearances.select { |a| a.faction.good? == appearance.faction.good? }
+    weights = MlScoreRecalculator::WEIGHTS
 
     score = 0.0
 
@@ -179,7 +192,7 @@ class CustomRatingRecalculator
       team_hero_kills = team_appearances.sum { |a| (a.hero_kills && !a.ignore_hero_kills?) ? a.hero_kills : 0 }
       if team_hero_kills > 0
         hk_contrib = [(appearance.hero_kills.to_f / team_hero_kills) * 100, 40.0].min
-        score += (hk_contrib - 20.0) * 0.25
+        score += (hk_contrib - 20.0) * weights[:hero_kill_contribution]
       end
     end
 
@@ -188,7 +201,7 @@ class CustomRatingRecalculator
       team_unit_kills = team_appearances.sum { |a| (a.unit_kills && !a.ignore_unit_kills?) ? a.unit_kills : 0 }
       if team_unit_kills > 0
         uk_contrib = [(appearance.unit_kills.to_f / team_unit_kills) * 100, 40.0].min
-        score += (uk_contrib - 20.0) * 0.2
+        score += (uk_contrib - 20.0) * weights[:unit_kill_contribution]
       end
     end
 
@@ -197,7 +210,7 @@ class CustomRatingRecalculator
       team_castles = team_appearances.sum { |a| a.castles_razed || 0 }
       if team_castles > 0
         cr_contrib = [(appearance.castles_razed.to_f / team_castles) * 100, 30.0].min
-        score += (cr_contrib - 20.0) * 0.2
+        score += (cr_contrib - 20.0) * weights[:castle_raze_contribution]
       end
     end
 
@@ -206,14 +219,14 @@ class CustomRatingRecalculator
       team_heal_total = team_appearances.sum { |a| (a.team_heal && a.team_heal > 0) ? a.team_heal : 0 }
       if team_heal_total > 0
         th_contrib = [(appearance.team_heal.to_f / team_heal_total) * 100, 40.0].min
-        score += (th_contrib - 20.0) * 0.15
+        score += (th_contrib - 20.0) * weights[:team_heal_contribution]
       end
     end
 
     # Hero uptime (0-100%)
     hero_uptime = calculate_hero_uptime(appearance, match)
     if hero_uptime
-      score += (hero_uptime - 80.0) * 0.2  # Baseline 80% uptime
+      score += (hero_uptime - 80.0) * weights[:hero_uptime]
     end
 
     score
@@ -278,5 +291,18 @@ class CustomRatingRecalculator
   def calculate_contribution_bonus(rank_index, _team_size, _won)
     # Same for both teams: 1st +1, 2nd +1, 3rd 0, 4th -1, 5th -1
     CONTRIBUTION_BONUS[rank_index] || 0
+  end
+
+  # Calculate match experience factor (0.0 to 1.0) based on all players' games played
+  # Returns 1.0 if all players have 30+ games, lower if new players are present
+  def calculate_match_experience(appearances)
+    return 1.0 if appearances.empty?
+
+    experience_sum = appearances.sum do |a|
+      games = a.player&.custom_rating_games_played.to_i
+      [games.to_f / GAMES_UNTIL_NORMAL_K, 1.0].min
+    end
+
+    experience_sum / appearances.size
   end
 end

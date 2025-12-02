@@ -13,8 +13,8 @@ namespace :custom_rating do
     puts "  Total bonus possible: #{(1..max_bonus).sum} points"
     puts
     puts "K-factor:"
-    puts "  New player (<#{CustomRatingRecalculator::GAMES_UNTIL_NORMAL_K} games): #{CustomRatingRecalculator::K_FACTOR_NEW_PLAYER}"
-    puts "  Normal: #{CustomRatingRecalculator::K_FACTOR_NORMAL}"
+    puts "  Brand new (0 games): #{CustomRatingRecalculator::K_FACTOR_BRAND_NEW}"
+    puts "  Gradually decreases to #{CustomRatingRecalculator::K_FACTOR_NORMAL} at #{CustomRatingRecalculator::GAMES_UNTIL_NORMAL_K} games"
     puts "  High rated (#{CustomRatingRecalculator::RATING_FOR_LOW_K}+): #{CustomRatingRecalculator::K_FACTOR_HIGH_RATED}"
     puts "  Permanent low K at: #{CustomRatingRecalculator::RATING_FOR_PERMANENT_LOW_K}+"
     puts

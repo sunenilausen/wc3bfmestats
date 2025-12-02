@@ -128,9 +128,11 @@ class MatchesControllerTest < ActionDispatch::IntegrationTest
     assert_not_nil good_appearance.custom_rating_change, "Good team appearance should have custom_rating_change set"
     assert_not_nil evil_appearance.custom_rating_change, "Evil team appearance should have custom_rating_change set"
 
-    # Evil team won (good_victory: false), so good should lose and evil should gain
-    assert_operator good_appearance.custom_rating_change, :<, 0, "Losing team should have negative custom_rating_change"
-    assert_operator evil_appearance.custom_rating_change, :>, 0, "Winning team should have positive custom_rating_change"
+    # Evil team won (good_victory: false)
+    # Note: With contribution bonuses, top performers on losing team might have small positive changes
+    # The key is that winners gain more than losers on average
+    assert evil_appearance.custom_rating_change > good_appearance.custom_rating_change,
+      "Winning team should have higher custom_rating_change than losing team"
 
     # Verify player ratings were updated (CustomRatingRecalculator recalculates from scratch)
     players(:one).reload

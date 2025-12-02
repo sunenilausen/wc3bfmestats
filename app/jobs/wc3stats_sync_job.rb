@@ -254,11 +254,6 @@ class Wc3statsSyncJob < ApplicationJob
     custom = CustomRatingRecalculator.new
     custom.call
 
-    # Retrain prediction model if enough new matches
-    if PredictionWeight.retrain_if_needed!
-      Rails.logger.info "Wc3statsSyncJob: Retrained ML prediction model"
-    end
-
     Rails.logger.info "Wc3statsSyncJob: Recalculating ML scores"
     ml = MlScoreRecalculator.new
     ml.call

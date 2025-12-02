@@ -419,28 +419,8 @@ namespace :wc3stats do
     end
     puts
 
-    # Step 10: Train prediction model
-    puts "Step 10: Training ML prediction model..."
-    trainer = PredictionModelTrainer.new
-    model = trainer.train
-    if model
-      puts "  Model trained on #{model.games_trained_on} games"
-      puts "  Accuracy: #{model.accuracy}%"
-      puts "  Weights:"
-      puts "    CR: #{model.elo_weight.round(4)}"
-      puts "    Hero K/D: #{model.hero_kd_weight.round(4)}"
-      puts "    HK%: #{model.hero_kill_contribution_weight.round(4)}"
-      puts "    UK%: #{model.unit_kill_contribution_weight.round(4)}"
-      puts "    CK%: #{model.castle_raze_contribution_weight.round(4)}"
-      puts "    Enemy CR Diff: #{model.enemy_elo_diff_weight.round(4)}"
-      puts "    Games: #{model.games_played_weight.round(4)}"
-    else
-      puts "  No training data available"
-    end
-    puts
-
-    # Step 11: Recalculate ML scores for all players
-    puts "Step 11: Recalculating ML scores for all players..."
+    # Step 10: Recalculate ML scores for all players (using hardcoded weights)
+    puts "Step 10: Recalculating ML scores for all players..."
     MlScoreRecalculator.new.call
     puts "  Updated ML scores for #{Player.count} players"
     puts

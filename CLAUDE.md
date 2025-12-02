@@ -50,8 +50,29 @@ The `uploaded_at` field on Match represents when the replay was **first uploaded
 - Effective rating: 20% individual + 80% team average vs opponent team average
 - New player bonus: First 20 wins get decreasing bonus points (20, 19, 18... 1)
 
+**Match experience factor:**
+Rating changes are reduced when new players are in the match to protect established players from volatile new player ratings:
+- Each player's experience = min(games_played / 30, 1.0)
+- Match experience = average of all 10 players' experience
+- Base rating change is multiplied by match experience factor
+
+Examples:
+- 10 veterans (30+ games): 100% rating change
+- 8 veterans + 2 new players (0 games): ~87% rating change
+- 5 veterans + 5 brand new players: ~50% rating change
+
+Note: New player bonuses and contribution bonuses are NOT affected by this factor.
+
 **Contribution bonus system:**
-Players are ranked within their team by performance score (calculated from hero kill %, unit kill %, castle raze %, and team heal % contributions - same as ML score but without the rating component).
+Players are ranked within their team by performance score. The performance score uses these weights (all contribution stats capped at stated max):
+
+| Stat | Weight | Max |
+|------|--------|-----|
+| Hero kills % | 0.25 | 40% |
+| Unit kills % | 0.20 | 40% |
+| Castle raze % | 0.20 | 30% |
+| Hero uptime | 0.20 | - |
+| Team heal % | 0.15 | 40% |
 
 - **Both teams** (net 0 points distributed):
   - 1st place: +1

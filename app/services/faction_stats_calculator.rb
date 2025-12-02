@@ -1,5 +1,9 @@
 # Computes all faction statistics efficiently in minimal passes
 class FactionStatsCalculator
+  # Factions that get a 1.33x unit kill multiplier for MVP calculation (support factions)
+  MVP_UNIT_KILL_BOOST_FACTIONS = [ "Minas Morgul", "Fellowship" ].freeze
+  MVP_UNIT_KILL_BOOST = 1.5
+
   attr_reader :faction, :map_version
 
   def initialize(faction, map_version: nil)
@@ -11,7 +15,7 @@ class FactionStatsCalculator
     appearances = faction.appearances
       .joins(:match)
       .where(matches: { ignored: false })
-      .includes(:player, :match, match: { appearances: :faction })
+      .includes(:player, :faction, match: [:wc3stats_replay, { appearances: :faction }])
 
     if map_version.present?
       appearances = appearances.where(matches: { map_version: map_version })
@@ -27,7 +31,9 @@ class FactionStatsCalculator
       avg_castles_razed: 0,
       times_top_hero_kills: 0,
       times_top_unit_kills: 0,
+      times_mvp: 0,
       total_games: 0,
+      total_wins: 0,
       top_winrate_players: [],
       most_wins_players: [],
       top_hero_killers: [],
@@ -50,6 +56,8 @@ class FactionStatsCalculator
     total_minutes = 0.0
     times_top_hero = 0.0
     times_top_unit = 0.0
+    times_mvp = 0
+    total_wins = 0
 
     appearances.each do |appearance|
       match = appearance.match
@@ -63,10 +71,16 @@ class FactionStatsCalculator
 
       # Win check
       player_won = (player_good && match.good_victory?) || (!player_good && !match.good_victory?)
-      ps[:wins] += 1 if player_won
+      if player_won
+        ps[:wins] += 1
+        total_wins += 1
+      end
 
       # Get team appearances
       team_appearances = match.appearances.select { |a| a.faction.good? == player_good }
+
+      has_top_hero_kills = false
+      has_top_unit_kills_for_mvp = false
 
       # Hero kill stats - skip if nil or flagged to ignore
       if !appearance.hero_kills.nil? && !appearance.ignore_hero_kills?
@@ -75,7 +89,8 @@ class FactionStatsCalculator
         team_with_hero = team_appearances.select { |a| !a.hero_kills.nil? && !a.ignore_hero_kills? }
         if team_with_hero.any?
           max_hero = team_with_hero.map(&:hero_kills).max
-          if appearance.hero_kills == max_hero
+          if appearance.hero_kills == max_hero && max_hero > 0
+            has_top_hero_kills = true
             # Share credit when tied - if 2 players tied, each gets 0.5
             tied_count = team_with_hero.count { |a| a.hero_kills == max_hero }
             share = 1.0 / tied_count
@@ -109,7 +124,30 @@ class FactionStatsCalculator
           if team_total > 0
             unit_contributions << (appearance.unit_kills.to_f / team_total * 100)
           end
+
+          # Check for MVP with adjusted unit kills (1.25x for Minas Morgul and Fellowship)
+          adjusted_unit_kills = team_with_unit.map do |a|
+            base = a.unit_kills
+            if MVP_UNIT_KILL_BOOST_FACTIONS.include?(a.faction.name)
+              (base * MVP_UNIT_KILL_BOOST).round
+            else
+              base
+            end
+          end
+
+          my_adjusted_unit_kills = appearance.unit_kills
+          if MVP_UNIT_KILL_BOOST_FACTIONS.include?(appearance.faction.name)
+            my_adjusted_unit_kills = (appearance.unit_kills * MVP_UNIT_KILL_BOOST).round
+          end
+
+          max_adjusted = adjusted_unit_kills.max
+          has_top_unit_kills_for_mvp = (my_adjusted_unit_kills == max_adjusted)
         end
+      end
+
+      # MVP: top hero kills AND top adjusted unit kills on winning team
+      if player_won && has_top_hero_kills && has_top_unit_kills_for_mvp
+        times_mvp += 1
       end
 
       # Duration for per-minute stats
@@ -183,6 +221,9 @@ class FactionStatsCalculator
     stats[:times_top_unit_kills] = times_top_unit
     stats[:top_hero_kills_pct] = total_games > 0 ? (times_top_hero.to_f / total_games * 100).round(1) : 0
     stats[:top_unit_kills_pct] = total_games > 0 ? (times_top_unit.to_f / total_games * 100).round(1) : 0
+    stats[:times_mvp] = times_mvp
+    stats[:total_wins] = total_wins
+    stats[:mvp_pct] = total_wins > 0 ? (times_mvp.to_f / total_wins * 100).round(1) : 0
 
     # Player leaderboards
     player_data = player_stats.values

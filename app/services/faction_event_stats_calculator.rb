@@ -77,7 +77,7 @@ class FactionEventStatsCalculator
 
     replay_ids = replay_query.pluck("matches.wc3stats_replay_id").uniq
 
-    Wc3statsReplay.includes(match: :appearances).where(id: replay_ids).find_each do |replay|
+    Wc3statsReplay.includes(match: { appearances: :faction }).where(id: replay_ids).find_each do |replay|
       next unless replay.match.present?
 
       match_length = replay.game_length || replay.match.seconds

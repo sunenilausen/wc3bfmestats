@@ -85,6 +85,14 @@
             <td class="text-right py-0.5"><%= number_with_precision(@stats[:times_top_unit_kills], precision: 1) %>x (<%= @stats[:top_unit_kills_pct] %>%)</td>
           </tr>
           <tr>
+            <% mvp_tooltip = "Top hero kills AND top unit kills on winning team" %>
+            <% if ["Minas Morgul", "Fellowship"].include?(@faction.name) %>
+              <% mvp_tooltip += " (unit kills × 1.5 for this faction)" %>
+            <% end %>
+            <td class="py-0.5" title="<%= mvp_tooltip %>"><span class="text-yellow-500">★</span> MVP</td>
+            <td class="text-right py-0.5"><%= @stats[:times_mvp] %>x</td>
+          </tr>
+          <tr>
             <td class="py-0.5">Avg Castle Raze Share</td>
             <td class="text-right py-0.5"><%= @stats[:avg_castle_raze_contribution] %>%</td>
           </tr>

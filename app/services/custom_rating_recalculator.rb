@@ -1,6 +1,6 @@
 class CustomRatingRecalculator
   DEFAULT_RATING = 1300
-  MAX_BONUS_WINS = 20         # Number of wins that get bonus points
+  MAX_BONUS_WINS = 15         # Number of wins that get bonus points
 
   # Variable K-factor settings
   K_FACTOR_BRAND_NEW = 50     # K-factor for players with 0 games
@@ -56,9 +56,17 @@ class CustomRatingRecalculator
     (MAX_BONUS_WINS * ratio).round.clamp(0, MAX_BONUS_WINS)
   end
 
-  # Bonus amount decreases from 20 (first win) to 1 (20th win)
-  def bonus_for_win(bonus_wins_remaining)
-    bonus_wins_remaining.clamp(0, MAX_BONUS_WINS)
+  # Bonus amount decreases from 30 (first win) to 2 (15th win) in steps of 2
+  # Additionally scaled by how far below 1500 the player is
+  # At 1300: full bonus, at 1400: 50% bonus, at 1500+: no bonus
+  def bonus_for_win(bonus_wins_remaining, current_rating)
+    return 0 if current_rating >= 1500
+
+    # 15 wins remaining = 30 pts, 14 = 28, 13 = 26, ..., 1 = 2
+    base_bonus = bonus_wins_remaining.clamp(0, MAX_BONUS_WINS) * 2
+    # Scale by distance from 1500 (1300 = 100%, 1400 = 50%, 1500 = 0%)
+    rating_scale = (1500 - current_rating) / (1500.0 - DEFAULT_RATING)
+    (base_bonus * rating_scale).round
   end
 
   # Variable K-factor based on games played and rating
@@ -98,8 +106,9 @@ class CustomRatingRecalculator
   INDIVIDUAL_WEIGHT = 0.2  # 1/5 own rating
   TEAM_WEIGHT = 0.8        # 4/5 team average
 
-  # Contribution bonus points (same for both teams)
-  CONTRIBUTION_BONUS = [ 1, 1, 0, -1, -1 ]  # 1st, 2nd, 3rd, 4th, 5th
+  # Contribution bonus points
+  CONTRIBUTION_BONUS_WIN = [ 2, 1, 1, 0, -1 ]   # 1st, 2nd, 3rd, 4th, 5th (winners)
+  CONTRIBUTION_BONUS_LOSS = [ 1, 1, 0, -1, -1 ] # 1st, 2nd, 3rd, 4th, 5th (losers)
 
   def calculate_and_update_ratings(match)
     return if match.appearances.empty?
@@ -149,9 +158,10 @@ class CustomRatingRecalculator
       base_change = (base_change * match_experience).round
 
       # Add individual bonus for wins if player has bonus wins remaining
+      # Bonus scales down as player approaches 1500 rating
       new_player_bonus = 0
       if won && player.custom_rating_bonus_wins.to_i > 0
-        new_player_bonus = bonus_for_win(player.custom_rating_bonus_wins)
+        new_player_bonus = bonus_for_win(player.custom_rating_bonus_wins, player.custom_rating)
       end
 
       # Add contribution bonus based on performance ranking (skip if anyone has 0 unit kills)
@@ -159,10 +169,17 @@ class CustomRatingRecalculator
       unless skip_contribution_bonus
         ranked_team = is_good ? good_ranked : evil_ranked
         rank_index = ranked_team.index { |r| r[:appearance].id == appearance.id } || (ranked_team.size - 1)
-        contribution_bonus = calculate_contribution_bonus(rank_index, ranked_team.size, won)
+        contribution_bonus = calculate_contribution_bonus(rank_index, won)
       end
 
-      total_change = base_change + new_player_bonus + contribution_bonus
+      # MVP bonus: +1 for having both top unit kills AND top hero kills on winning team
+      mvp_bonus = 0
+      if won
+        team_appearances = is_good ? good_appearances : evil_appearances
+        mvp_bonus = calculate_mvp_bonus(appearance, team_appearances)
+      end
+
+      total_change = base_change + new_player_bonus + contribution_bonus + mvp_bonus
 
       appearance.custom_rating = player.custom_rating
       appearance.custom_rating_change = total_change
@@ -294,9 +311,50 @@ class CustomRatingRecalculator
   end
 
   # Calculate contribution bonus based on rank within team
-  def calculate_contribution_bonus(rank_index, _team_size, _won)
-    # Same for both teams: 1st +1, 2nd +1, 3rd 0, 4th -1, 5th -1
-    CONTRIBUTION_BONUS[rank_index] || 0
+  def calculate_contribution_bonus(rank_index, won)
+    bonus_array = won ? CONTRIBUTION_BONUS_WIN : CONTRIBUTION_BONUS_LOSS
+    bonus_array[rank_index] || 0
+  end
+
+  # Factions that get a 1.33x unit kill multiplier for MVP calculation (support factions)
+  MVP_UNIT_KILL_BOOST_FACTIONS = [ "Minas Morgul", "Fellowship" ].freeze
+  MVP_UNIT_KILL_BOOST = 1.5
+
+  # MVP bonus: +1 for having both top unit kills AND top hero kills on team
+  def calculate_mvp_bonus(appearance, team_appearances)
+    # Check top unit kills (with 1.25x boost for Minas Morgul and Fellowship)
+    valid_unit_kills = team_appearances.select { |a| a.unit_kills && !a.ignore_unit_kills? }
+    return 0 unless valid_unit_kills.any?
+
+    adjusted_unit_kills = valid_unit_kills.map do |a|
+      base = a.unit_kills
+      if MVP_UNIT_KILL_BOOST_FACTIONS.include?(a.faction.name)
+        (base * MVP_UNIT_KILL_BOOST).round
+      else
+        base
+      end
+    end
+
+    my_unit_kills = appearance.unit_kills
+    if appearance.unit_kills && !appearance.ignore_unit_kills? && MVP_UNIT_KILL_BOOST_FACTIONS.include?(appearance.faction.name)
+      my_unit_kills = (appearance.unit_kills * MVP_UNIT_KILL_BOOST).round
+    end
+
+    max_adjusted_unit_kills = adjusted_unit_kills.max
+    has_top_unit_kills = my_unit_kills && my_unit_kills == max_adjusted_unit_kills
+
+    return 0 unless has_top_unit_kills
+
+    # Check top hero kills
+    valid_hero_kills = team_appearances.select { |a| a.hero_kills && !a.ignore_hero_kills? }
+    return 0 unless valid_hero_kills.any?
+
+    max_hero_kills = valid_hero_kills.map(&:hero_kills).max
+    return 0 if max_hero_kills == 0
+
+    has_top_hero_kills = appearance.hero_kills && !appearance.ignore_hero_kills? && appearance.hero_kills == max_hero_kills
+
+    has_top_hero_kills ? 1 : 0
   end
 
   # Calculate match experience factor (0.0 to 1.0) based on all players' games played

@@ -23,6 +23,7 @@ class PlayerStatsCalculator
       ally_elo_diffs: [],
       times_top_hero_kills: 0,
       times_top_unit_kills: 0,
+      times_mvp: 0,
       hero_kill_contributions: [],
       unit_kill_contributions: [],
       castle_raze_contributions: [],
@@ -49,6 +50,7 @@ class PlayerStatsCalculator
       losses: 0,
       times_top_hero_kills: 0,
       times_top_unit_kills: 0,
+      times_mvp: 0,
       hero_kill_contributions: [],
       unit_kill_contributions: [],
       castle_raze_contributions: [],
@@ -87,8 +89,8 @@ class PlayerStatsCalculator
     # Underdog/favorite calculation
     process_cr_stats(appearance, team_appearances, opponent_appearances, player_won, stats)
 
-    # Kill stats
-    process_kill_stats(appearance, team_appearances, player_good, stats, faction_id)
+    # Kill stats and MVP
+    process_kill_stats(appearance, team_appearances, player_won, match, stats, faction_id)
 
     # Castles razed contribution
     process_castle_stats(appearance, team_appearances, stats, faction_id)
@@ -143,8 +145,15 @@ class PlayerStatsCalculator
     end
   end
 
-  def process_kill_stats(appearance, team_appearances, player_good, stats, faction_id)
+  # Factions that get a 1.33x unit kill multiplier for MVP calculation (support factions)
+  MVP_UNIT_KILL_BOOST_FACTIONS = [ "Minas Morgul", "Fellowship" ].freeze
+  MVP_UNIT_KILL_BOOST = 1.5
+
+  def process_kill_stats(appearance, team_appearances, player_won, match, stats, faction_id)
     faction_stats = stats[:faction_stats][faction_id]
+
+    has_top_hero_kills = false
+    has_top_unit_kills_for_mvp = false
 
     # Hero kills - skip if nil or flagged to ignore
     if !appearance.hero_kills.nil? && !appearance.ignore_hero_kills?
@@ -152,7 +161,8 @@ class PlayerStatsCalculator
 
       if team_with_hero_kills.any?
         max_hero_kills = team_with_hero_kills.map(&:hero_kills).max
-        if appearance.hero_kills == max_hero_kills
+        if appearance.hero_kills == max_hero_kills && max_hero_kills > 0
+          has_top_hero_kills = true
           # Share credit when tied - if 2 players tied, each gets 0.5
           tied_count = team_with_hero_kills.count { |a| a.hero_kills == max_hero_kills }
           share = 1.0 / tied_count
@@ -189,7 +199,31 @@ class PlayerStatsCalculator
           stats[:unit_kill_contributions] << contribution
           faction_stats[:unit_kill_contributions] << contribution
         end
+
+        # Check for MVP with adjusted unit kills (1.25x for Minas Morgul and Fellowship)
+        adjusted_unit_kills = team_with_unit_kills.map do |a|
+          base = a.unit_kills
+          if MVP_UNIT_KILL_BOOST_FACTIONS.include?(a.faction.name)
+            (base * MVP_UNIT_KILL_BOOST).round
+          else
+            base
+          end
+        end
+
+        my_adjusted_unit_kills = appearance.unit_kills
+        if MVP_UNIT_KILL_BOOST_FACTIONS.include?(appearance.faction.name)
+          my_adjusted_unit_kills = (appearance.unit_kills * MVP_UNIT_KILL_BOOST).round
+        end
+
+        max_adjusted = adjusted_unit_kills.max
+        has_top_unit_kills_for_mvp = (my_adjusted_unit_kills == max_adjusted)
       end
+    end
+
+    # MVP: top hero kills AND top adjusted unit kills on winning team (non-ignored match)
+    if player_won && !match.ignored? && has_top_hero_kills && has_top_unit_kills_for_mvp
+      stats[:times_mvp] += 1
+      faction_stats[:times_mvp] += 1
     end
   end
 

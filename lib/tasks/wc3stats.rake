@@ -425,6 +425,12 @@ namespace :wc3stats do
     puts "  Updated ML scores for #{Player.count} players"
     puts
 
+    # Step 11: Invalidate stats cache
+    puts "Step 11: Invalidating stats cache..."
+    StatsCacheKey.invalidate!
+    puts "  Cache invalidated"
+    puts
+
     # Final summary
     puts "=" * 60
     puts "Sync Complete"
@@ -673,6 +679,42 @@ namespace :wc3stats do
     puts "=" * 60
     puts "  Updated: #{updated}"
     puts "  Skipped: #{skipped}"
+    puts "=" * 60
+  end
+
+  desc "Recalculate ratings and scores: CR, ML scores, then invalidate cache"
+  task recalculate: :environment do
+    puts "=" * 60
+    puts "Recalculating Ratings and Scores"
+    puts "=" * 60
+    puts
+
+    # Step 1: Recalculate Custom Ratings
+    puts "Step 1: Recalculating Custom Ratings..."
+    custom_rating_recalculator = CustomRatingRecalculator.new
+    custom_rating_recalculator.call
+
+    puts "  Matches processed: #{custom_rating_recalculator.matches_processed}"
+    if custom_rating_recalculator.errors.any?
+      puts "  Errors: #{custom_rating_recalculator.errors.count}"
+      custom_rating_recalculator.errors.first(3).each { |e| puts "    - #{e}" }
+    end
+    puts
+
+    # Step 2: Recalculate ML scores
+    puts "Step 2: Recalculating ML scores..."
+    MlScoreRecalculator.new.call
+    puts "  Updated ML scores for #{Player.count} players"
+    puts
+
+    # Step 3: Invalidate cache
+    puts "Step 3: Invalidating stats cache..."
+    StatsCacheKey.invalidate!
+    puts "  Cache invalidated"
+    puts
+
+    puts "=" * 60
+    puts "Recalculation Complete"
     puts "=" * 60
   end
 

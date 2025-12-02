@@ -48,10 +48,17 @@
   </td>
   <td class="px-2 py-1">
     <% contrib = contribution_bonus_for_appearance(appearance, appearances) %>
-    <span class="text-gray-500">#<%= contrib[:rank] %></span>
-    <span class="<%= contrib[:bonus] > 0 ? 'text-green-600' : (contrib[:bonus] < 0 ? 'text-red-600' : 'text-gray-400') %>">
-      <%= contrib[:bonus] >= 0 ? '+' : '' %><%= contrib[:bonus] %>
-    </span>
+    <% if contrib[:ignored] %>
+      <span class="text-gray-400">-</span>
+    <% else %>
+      <span class="text-gray-500">#<%= contrib[:rank] %></span>
+      <span class="<%= contrib[:bonus] > 0 ? 'text-green-600' : (contrib[:bonus] < 0 ? 'text-red-600' : 'text-gray-400') %>">
+        <%= contrib[:bonus] >= 0 ? '+' : '' %><%= contrib[:bonus] %>
+      </span>
+      <% if contrib[:mvp] %>
+        <span class="text-yellow-500" title="MVP: Top unit kills and hero kills">★</span>
+      <% end %>
+    <% end %>
   </td>
   <td class="px-2 py-1">
     <%= appearance.custom_rating&.round %>

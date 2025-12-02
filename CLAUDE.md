@@ -48,7 +48,7 @@ The `uploaded_at` field on Match represents when the replay was **first uploaded
 - Default rating: 1300
 - Variable K-factor: 40 (new player < 30 games), 30 (normal), 20 (1800+ or reached 2000)
 - Effective rating: 20% individual + 80% team average vs opponent team average
-- New player bonus: First 20 wins get decreasing bonus points (20, 19, 18... 1)
+- New player bonus: First 15 wins get decreasing bonus points (30, 28, 26... 2), scaled by distance from 1500 rating (full bonus at 1300, 50% at 1400, 0% at 1500+)
 
 **Match experience factor:**
 Rating changes are reduced when new players are in the match to protect established players from volatile new player ratings:
@@ -74,12 +74,22 @@ Players are ranked within their team by performance score. The performance score
 | Hero uptime | 0.20 | - |
 | Team heal % | 0.15 | 40% |
 
-- **Both teams** (net 0 points distributed):
+- **Winning team** (net +3 points distributed):
+  - 1st place: +2
+  - 2nd place: +1
+  - 3rd place: +1
+  - 4th place: 0
+  - 5th place: -1
+
+- **Losing team** (net 0 points distributed):
   - 1st place: +1
   - 2nd place: +1
   - 3rd place: 0
   - 4th place: -1
   - 5th place: -1
+
+- **MVP bonus** (winning team only): +1 for having both top unit kills AND top hero kills on team (shown as ★)
+  - Minas Morgul and Fellowship get their unit kills multiplied by 1.5x for MVP calculation (support faction adjustment)
 
 ### When Ratings are Recalculated
 - On match create (MatchesController#create)

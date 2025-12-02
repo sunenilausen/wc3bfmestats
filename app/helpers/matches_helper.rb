@@ -232,6 +232,11 @@ module MatchesHelper
   def contribution_bonus_for_appearance(appearance, appearances)
     match = appearance.match
 
+    # No contribution points or MVP for ignored matches
+    if match.ignored?
+      return { rank: nil, bonus: 0, score: 0, mvp: false, ignored: true }
+    end
+
     # Calculate performance scores for all team members
     ranked = appearances.map do |a|
       { appearance: a, score: performance_score_for_appearance(a, appearances) }
@@ -243,10 +248,59 @@ module MatchesHelper
     is_good = appearance.faction.good?
     won = (is_good && match.good_victory?) || (!is_good && !match.good_victory?)
 
-    # Same for both teams: 1st +1, 2nd +1, 3rd 0, 4th -1, 5th -1
-    bonus = [ 1, 1, 0, -1, -1 ][rank_index] || 0
+    # Winners: +2, +1, +1, 0, -1 | Losers: +1, +1, 0, -1, -1
+    bonus_array = won ? [ 2, 1, 1, 0, -1 ] : [ 1, 1, 0, -1, -1 ]
+    bonus = bonus_array[rank_index] || 0
 
-    { rank: rank_index + 1, bonus: bonus, score: ranked[rank_index][:score].round(1) }
+    # Check for MVP (top unit kills AND top hero kills on winning team)
+    mvp = false
+    if won
+      mvp = is_mvp?(appearance, appearances)
+      bonus += 1 if mvp
+    end
+
+    { rank: rank_index + 1, bonus: bonus, score: ranked[rank_index][:score].round(1), mvp: mvp, ignored: false }
+  end
+
+  # Factions that get a 1.33x unit kill multiplier for MVP calculation (support factions)
+  MVP_UNIT_KILL_BOOST_FACTIONS = [ "Minas Morgul", "Fellowship" ].freeze
+  MVP_UNIT_KILL_BOOST = 1.5
+
+  # Check if player has both top unit kills AND top hero kills on their team
+  def is_mvp?(appearance, team_appearances)
+    # Check top unit kills (with 1.25x boost for Minas Morgul and Fellowship)
+    valid_unit_kills = team_appearances.select { |a| a.unit_kills && !a.ignore_unit_kills? }
+    return false unless valid_unit_kills.any?
+
+    adjusted_unit_kills = valid_unit_kills.map do |a|
+      base = a.unit_kills
+      if MVP_UNIT_KILL_BOOST_FACTIONS.include?(a.faction.name)
+        (base * MVP_UNIT_KILL_BOOST).round
+      else
+        base
+      end
+    end
+
+    my_unit_kills = appearance.unit_kills
+    if appearance.unit_kills && !appearance.ignore_unit_kills? && MVP_UNIT_KILL_BOOST_FACTIONS.include?(appearance.faction.name)
+      my_unit_kills = (appearance.unit_kills * MVP_UNIT_KILL_BOOST).round
+    end
+
+    max_adjusted_unit_kills = adjusted_unit_kills.max
+    has_top_unit_kills = my_unit_kills && my_unit_kills == max_adjusted_unit_kills
+
+    return false unless has_top_unit_kills
+
+    # Check top hero kills
+    valid_hero_kills = team_appearances.select { |a| a.hero_kills && !a.ignore_hero_kills? }
+    return false unless valid_hero_kills.any?
+
+    max_hero_kills = valid_hero_kills.map(&:hero_kills).max
+    return false if max_hero_kills == 0
+
+    has_top_hero_kills = appearance.hero_kills && !appearance.ignore_hero_kills? && appearance.hero_kills == max_hero_kills
+
+    has_top_hero_kills
   end
 
   # Calculate performance score (uses same weights as MlScoreRecalculator)

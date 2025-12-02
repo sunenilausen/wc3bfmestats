@@ -537,8 +537,20 @@
               </td>
               <td class="px-2 py-1 text-center whitespace-nowrap"><%= appearance.hero_kills || '-' %></td>
               <td class="px-2 py-1 text-center whitespace-nowrap"><%= appearance.unit_kills || '-' %></td>
-              <td class="px-2 py-1 text-center whitespace-nowrap"><%= heroes_lost_for_appearance(appearance) || '-' %></td>
-              <td class="px-2 py-1 text-center whitespace-nowrap"><%= bases_lost_for_appearance(appearance) || '-' %></td>
+              <td class="px-2 py-1 text-center whitespace-nowrap">
+                <% if appearance.heroes_lost && appearance.heroes_total %>
+                  <%= appearance.heroes_lost %>/<%= appearance.heroes_total %>
+                <% else %>
+                  <%= heroes_lost_for_appearance(appearance) || '-' %>
+                <% end %>
+              </td>
+              <td class="px-2 py-1 text-center whitespace-nowrap">
+                <% if appearance.bases_lost && appearance.bases_total %>
+                  <%= appearance.bases_lost %>/<%= appearance.bases_total %>
+                <% else %>
+                  <%= bases_lost_for_appearance(appearance) || '-' %>
+                <% end %>
+              </td>
               <td class="px-2 py-1 text-center whitespace-nowrap"><%= appearance.castles_razed || '-' %></td>
               <td class="px-2 py-1 text-center whitespace-nowrap">
                 <% if appearance.custom_rating_change %>

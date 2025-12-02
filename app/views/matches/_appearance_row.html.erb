@@ -22,7 +22,11 @@
     <%= appearance.castles_razed || "-" %>
   </td>
   <td class="px-2 py-1">
-    <%= heroes_lost_for_appearance(appearance) || "-" %>
+    <% if appearance.heroes_lost && appearance.heroes_total %>
+      <%= appearance.heroes_lost %>/<%= appearance.heroes_total %>
+    <% else %>
+      <%= heroes_lost_for_appearance(appearance) || "-" %>
+    <% end %>
   </td>
   <td class="px-2 py-1">
     <% uptime = calculate_hero_uptime_for_appearance(appearance, appearance.match) %>
@@ -35,7 +39,11 @@
     <% end %>
   </td>
   <td class="px-2 py-1">
-    <%= bases_lost_for_appearance(appearance) || "-" %>
+    <% if appearance.bases_lost && appearance.bases_total %>
+      <%= appearance.bases_lost %>/<%= appearance.bases_total %>
+    <% else %>
+      <%= bases_lost_for_appearance(appearance) || "-" %>
+    <% end %>
   </td>
   <td class="px-2 py-1">
     <%= appearance.self_heal || "-" %>

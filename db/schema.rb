@@ -10,8 +10,11 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_12_02_135038) do
+ActiveRecord::Schema[8.1].define(version: 2025_12_02_142018) do
   create_table "appearances", force: :cascade do |t|
+    t.integer "bases_lost"
+    t.integer "bases_total"
+    t.float "castle_raze_pct"
     t.integer "castles_razed"
     t.integer "contribution_bonus"
     t.integer "contribution_rank"
@@ -24,7 +27,11 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_02_135038) do
     t.float "glicko2_rating"
     t.float "glicko2_rating_change"
     t.float "glicko2_rating_deviation"
+    t.float "heal_pct"
+    t.float "hero_kill_pct"
     t.integer "hero_kills"
+    t.integer "heroes_lost"
+    t.integer "heroes_total"
     t.boolean "ignore_hero_kills", default: false, null: false
     t.boolean "ignore_unit_kills", default: false, null: false
     t.boolean "is_mvp", default: false
@@ -33,7 +40,11 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_02_135038) do
     t.integer "player_id", null: false
     t.integer "self_heal"
     t.integer "team_heal"
+    t.float "team_heal_pct"
+    t.boolean "top_hero_kills", default: false
+    t.boolean "top_unit_kills", default: false
     t.integer "total_heal"
+    t.float "unit_kill_pct"
     t.integer "unit_kills"
     t.datetime "updated_at", null: false
     t.index ["faction_id"], name: "index_appearances_on_faction_id"

@@ -274,9 +274,11 @@ class LobbiesController < ApplicationController
       players_by_id = Player.where(id: player_ids).index_by(&:id)
 
       # Preload all appearances with necessary associations in optimized queries
+      # Filter out ignored matches
       appearances_by_player = Appearance
+        .joins(:match)
         .includes(:faction, match: { appearances: :faction })
-        .where(player_id: player_ids)
+        .where(player_id: player_ids, matches: { ignored: false })
         .order("matches.uploaded_at DESC")
         .group_by(&:player_id)
 

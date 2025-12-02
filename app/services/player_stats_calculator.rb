@@ -152,21 +152,14 @@ class PlayerStatsCalculator
   def process_kill_stats(appearance, team_appearances, player_won, match, stats, faction_id)
     faction_stats = stats[:faction_stats][faction_id]
 
-    # Hero kills - skip if nil or flagged to ignore
-    if !appearance.hero_kills.nil? && !appearance.ignore_hero_kills?
+    # Hero kills - use stored values if available
+    if appearance.hero_kill_pct
+      stats[:hero_kill_contributions] << appearance.hero_kill_pct
+      faction_stats[:hero_kill_contributions] << appearance.hero_kill_pct
+    elsif !appearance.hero_kills.nil? && !appearance.ignore_hero_kills?
+      # Fallback: calculate if not stored
       team_with_hero_kills = team_appearances.select { |a| !a.hero_kills.nil? && !a.ignore_hero_kills? }
-
       if team_with_hero_kills.any?
-        max_hero_kills = team_with_hero_kills.map(&:hero_kills).max
-
-        if appearance.hero_kills == max_hero_kills && max_hero_kills > 0
-          # Share credit when tied - if 2 players tied, each gets 0.5
-          tied_count = team_with_hero_kills.count { |a| a.hero_kills == max_hero_kills }
-          share = 1.0 / tied_count
-          stats[:times_top_hero_kills] += share
-          faction_stats[:times_top_hero_kills] += share
-        end
-
         team_total = team_with_hero_kills.sum(&:hero_kills)
         if team_total > 0
           contribution = (appearance.hero_kills.to_f / team_total * 100)
@@ -176,25 +169,77 @@ class PlayerStatsCalculator
       end
     end
 
-    # Unit kills - skip if flagged to ignore
-    if appearance.unit_kills.present? && !appearance.ignore_unit_kills?
-      team_with_unit_kills = team_appearances.select { |a| a.unit_kills.present? && !a.ignore_unit_kills? }
-
-      if team_with_unit_kills.any?
-        max_unit_kills = team_with_unit_kills.map(&:unit_kills).max
-        if appearance.unit_kills == max_unit_kills
-          # Share credit when tied - if 2 players tied, each gets 0.5
-          tied_count = team_with_unit_kills.count { |a| a.unit_kills == max_unit_kills }
+    # Top hero kills - use stored flag if available, otherwise calculate with tie-sharing
+    if appearance.top_hero_kills?
+      # When stored, we count ties separately so just add 1
+      # However we need to handle tie-sharing for backwards compatibility
+      team_with_hero_kills = team_appearances.select { |a| !a.hero_kills.nil? && !a.ignore_hero_kills? }
+      if team_with_hero_kills.any?
+        max_hero_kills = team_with_hero_kills.map(&:hero_kills).max
+        tied_count = team_with_hero_kills.count { |a| a.top_hero_kills? }
+        tied_count = 1 if tied_count == 0 # Fallback if flags not yet populated
+        share = 1.0 / tied_count
+        stats[:times_top_hero_kills] += share
+        faction_stats[:times_top_hero_kills] += share
+      else
+        stats[:times_top_hero_kills] += 1
+        faction_stats[:times_top_hero_kills] += 1
+      end
+    elsif !appearance.hero_kills.nil? && !appearance.ignore_hero_kills? && appearance.top_hero_kills.nil?
+      # Fallback: calculate if flag not stored (for backwards compatibility)
+      team_with_hero_kills = team_appearances.select { |a| !a.hero_kills.nil? && !a.ignore_hero_kills? }
+      if team_with_hero_kills.any?
+        max_hero_kills = team_with_hero_kills.map(&:hero_kills).max
+        if appearance.hero_kills == max_hero_kills && max_hero_kills > 0
+          tied_count = team_with_hero_kills.count { |a| a.hero_kills == max_hero_kills }
           share = 1.0 / tied_count
-          stats[:times_top_unit_kills] += share
-          faction_stats[:times_top_unit_kills] += share
+          stats[:times_top_hero_kills] += share
+          faction_stats[:times_top_hero_kills] += share
         end
+      end
+    end
 
+    # Unit kills - use stored values if available
+    if appearance.unit_kill_pct
+      stats[:unit_kill_contributions] << appearance.unit_kill_pct
+      faction_stats[:unit_kill_contributions] << appearance.unit_kill_pct
+    elsif appearance.unit_kills.present? && !appearance.ignore_unit_kills?
+      # Fallback: calculate if not stored
+      team_with_unit_kills = team_appearances.select { |a| a.unit_kills.present? && !a.ignore_unit_kills? }
+      if team_with_unit_kills.any?
         team_total = team_with_unit_kills.sum(&:unit_kills)
         if team_total > 0
           contribution = (appearance.unit_kills.to_f / team_total * 100)
           stats[:unit_kill_contributions] << contribution
           faction_stats[:unit_kill_contributions] << contribution
+        end
+      end
+    end
+
+    # Top unit kills - use stored flag if available, otherwise calculate with tie-sharing
+    if appearance.top_unit_kills?
+      # When stored, we count ties separately so just add 1
+      team_with_unit_kills = team_appearances.select { |a| a.unit_kills.present? && !a.ignore_unit_kills? }
+      if team_with_unit_kills.any?
+        tied_count = team_with_unit_kills.count { |a| a.top_unit_kills? }
+        tied_count = 1 if tied_count == 0 # Fallback if flags not yet populated
+        share = 1.0 / tied_count
+        stats[:times_top_unit_kills] += share
+        faction_stats[:times_top_unit_kills] += share
+      else
+        stats[:times_top_unit_kills] += 1
+        faction_stats[:times_top_unit_kills] += 1
+      end
+    elsif appearance.unit_kills.present? && !appearance.ignore_unit_kills? && appearance.top_unit_kills.nil?
+      # Fallback: calculate if flag not stored (for backwards compatibility)
+      team_with_unit_kills = team_appearances.select { |a| a.unit_kills.present? && !a.ignore_unit_kills? }
+      if team_with_unit_kills.any?
+        max_unit_kills = team_with_unit_kills.map(&:unit_kills).max
+        if appearance.unit_kills == max_unit_kills
+          tied_count = team_with_unit_kills.count { |a| a.unit_kills == max_unit_kills }
+          share = 1.0 / tied_count
+          stats[:times_top_unit_kills] += share
+          faction_stats[:times_top_unit_kills] += share
         end
       end
     end
@@ -213,14 +258,20 @@ class PlayerStatsCalculator
     stats[:castles_razed_values] << appearance.castles_razed
     faction_stats[:castles_razed_values] << appearance.castles_razed
 
-    team_with_castles = team_appearances.select { |a| a.castles_razed.present? }
-
-    if team_with_castles.any?
-      team_total = team_with_castles.sum(&:castles_razed)
-      if team_total > 0
-        contribution = (appearance.castles_razed.to_f / team_total * 100)
-        stats[:castle_raze_contributions] << contribution
-        faction_stats[:castle_raze_contributions] << contribution
+    # Use stored percentage if available
+    if appearance.castle_raze_pct
+      stats[:castle_raze_contributions] << appearance.castle_raze_pct
+      faction_stats[:castle_raze_contributions] << appearance.castle_raze_pct
+    else
+      # Fallback: calculate if not stored
+      team_with_castles = team_appearances.select { |a| a.castles_razed.present? }
+      if team_with_castles.any?
+        team_total = team_with_castles.sum(&:castles_razed)
+        if team_total > 0
+          contribution = (appearance.castles_razed.to_f / team_total * 100)
+          stats[:castle_raze_contributions] << contribution
+          faction_stats[:castle_raze_contributions] << contribution
+        end
       end
     end
   end
@@ -228,10 +279,13 @@ class PlayerStatsCalculator
   def process_heal_stats(appearance, team_appearances, stats, faction_id)
     faction_stats = stats[:faction_stats][faction_id]
 
-    # Total heal contribution (self_heal + team_heal)
-    if appearance.total_heal.present? && appearance.total_heal > 0
+    # Total heal contribution - use stored percentage if available
+    if appearance.heal_pct
+      stats[:heal_contributions] << appearance.heal_pct
+      faction_stats[:heal_contributions] << appearance.heal_pct
+    elsif appearance.total_heal.present? && appearance.total_heal > 0
+      # Fallback: calculate if not stored
       team_with_heal = team_appearances.select { |a| a.total_heal.present? && a.total_heal > 0 }
-
       if team_with_heal.any?
         team_total = team_with_heal.sum(&:total_heal)
         if team_total > 0
@@ -242,10 +296,13 @@ class PlayerStatsCalculator
       end
     end
 
-    # Team heal contribution (healing others)
-    if appearance.team_heal.present? && appearance.team_heal > 0
+    # Team heal contribution - use stored percentage if available
+    if appearance.team_heal_pct
+      stats[:team_heal_contributions] << appearance.team_heal_pct
+      faction_stats[:team_heal_contributions] << appearance.team_heal_pct
+    elsif appearance.team_heal.present? && appearance.team_heal > 0
+      # Fallback: calculate if not stored
       team_with_team_heal = team_appearances.select { |a| a.team_heal.present? && a.team_heal > 0 }
-
       if team_with_team_heal.any?
         team_total = team_with_team_heal.sum(&:team_heal)
         if team_total > 0

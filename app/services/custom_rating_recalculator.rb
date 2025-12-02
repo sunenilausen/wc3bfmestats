@@ -196,6 +196,12 @@ class CustomRatingRecalculator
       appearance.is_mvp = is_mvp
       appearance.performance_score = perf_score.round(2)
 
+      # Store contribution percentages and kill stats
+      team_appearances = is_good ? good_appearances : evil_appearances
+      store_contribution_percentages(appearance, team_appearances)
+      store_kill_stats(appearance, team_appearances)
+      store_hero_base_losses(appearance, match)
+
       player.custom_rating += total_change
       player.custom_rating_games_played = player.custom_rating_games_played.to_i + 1
 
@@ -383,5 +389,134 @@ class CustomRatingRecalculator
     end
 
     experience_sum / appearances.size
+  end
+
+  # Store contribution percentages on appearance for faster queries
+  def store_contribution_percentages(appearance, team_appearances)
+    # Hero kill contribution
+    if appearance.hero_kills && !appearance.ignore_hero_kills?
+      team_hero_kills = team_appearances.sum { |a| (a.hero_kills && !a.ignore_hero_kills?) ? a.hero_kills : 0 }
+      if team_hero_kills > 0
+        appearance.hero_kill_pct = (appearance.hero_kills.to_f / team_hero_kills * 100).round(1)
+      end
+    end
+
+    # Unit kill contribution
+    if appearance.unit_kills && !appearance.ignore_unit_kills?
+      team_unit_kills = team_appearances.sum { |a| (a.unit_kills && !a.ignore_unit_kills?) ? a.unit_kills : 0 }
+      if team_unit_kills > 0
+        appearance.unit_kill_pct = (appearance.unit_kills.to_f / team_unit_kills * 100).round(1)
+      end
+    end
+
+    # Castle raze contribution
+    if appearance.castles_razed
+      team_castles = team_appearances.sum { |a| a.castles_razed || 0 }
+      if team_castles > 0
+        appearance.castle_raze_pct = (appearance.castles_razed.to_f / team_castles * 100).round(1)
+      end
+    end
+
+    # Total heal contribution
+    if appearance.total_heal && appearance.total_heal > 0
+      team_heal = team_appearances.sum { |a| (a.total_heal && a.total_heal > 0) ? a.total_heal : 0 }
+      if team_heal > 0
+        appearance.heal_pct = (appearance.total_heal.to_f / team_heal * 100).round(1)
+      end
+    end
+
+    # Team heal contribution (healing others)
+    if appearance.team_heal && appearance.team_heal > 0
+      team_team_heal = team_appearances.sum { |a| (a.team_heal && a.team_heal > 0) ? a.team_heal : 0 }
+      if team_team_heal > 0
+        appearance.team_heal_pct = (appearance.team_heal.to_f / team_team_heal * 100).round(1)
+      end
+    end
+  end
+
+  # Store top hero/unit kills flags
+  def store_kill_stats(appearance, team_appearances)
+    # Top hero kills
+    if appearance.hero_kills && !appearance.ignore_hero_kills?
+      team_with_hero = team_appearances.select { |a| a.hero_kills && !a.ignore_hero_kills? }
+      if team_with_hero.any?
+        max_hero = team_with_hero.map(&:hero_kills).max
+        appearance.top_hero_kills = (appearance.hero_kills == max_hero && max_hero > 0)
+      end
+    end
+
+    # Top unit kills
+    if appearance.unit_kills && !appearance.ignore_unit_kills?
+      team_with_unit = team_appearances.select { |a| a.unit_kills && !a.ignore_unit_kills? }
+      if team_with_unit.any?
+        max_unit = team_with_unit.map(&:unit_kills).max
+        appearance.top_unit_kills = (appearance.unit_kills == max_unit)
+      end
+    end
+  end
+
+  # Store heroes and bases lost from replay events
+  def store_hero_base_losses(appearance, match)
+    replay = match.wc3stats_replay
+    return unless replay&.events&.any?
+
+    faction = appearance.faction
+    return unless faction
+
+    match_length = replay.game_length || match.seconds
+    return unless match_length && match_length > 0
+
+    # Heroes lost
+    extra_heroes = FactionEventStatsCalculator::EXTRA_HEROES rescue []
+    core_hero_names = faction.heroes.reject { |h| extra_heroes.include?(h) }
+
+    if core_hero_names.any?
+      hero_death_events = replay.events.select do |e|
+        e["eventName"] == "heroDeath" && e["time"] && e["time"] <= match_length
+      end
+
+      heroes_died = 0
+      core_hero_names.each do |hero_name|
+        hero_events = hero_death_events.select do |event|
+          replay.fix_encoding(event["args"]&.first&.gsub("\\", "")) == hero_name
+        end
+        heroes_died += 1 if hero_events.any?
+      end
+
+      appearance.heroes_lost = heroes_died
+      appearance.heroes_total = core_hero_names.size
+    end
+
+    # Bases lost
+    base_names = faction.bases
+    return if base_names.empty? # Fellowship has no bases
+
+    ring_events = Faction::RING_EVENTS rescue []
+    base_death_events = replay.events.select do |e|
+      e["eventName"] != "heroDeath" &&
+        !ring_events.include?(replay.fix_encoding(e["args"]&.first&.gsub("\\", ""))) &&
+        e["time"] && e["time"] <= match_length
+    end
+
+    # Filter end-game mass base deaths
+    end_threshold = match_length - 30
+    end_game_events = base_death_events.select { |e| e["time"] && e["time"] >= end_threshold }
+    if end_game_events.size >= 3
+      end_game_times = end_game_events.map { |e| e["time"] }
+      if end_game_times.max - end_game_times.min <= 15
+        base_death_events = base_death_events.reject { |e| e["time"] && e["time"] >= end_threshold }
+      end
+    end
+
+    bases_died = 0
+    base_names.each do |base_name|
+      base_events = base_death_events.select do |event|
+        replay.fix_encoding(event["args"]&.first&.gsub("\\", "")) == base_name
+      end
+      bases_died += 1 if base_events.any?
+    end
+
+    appearance.bases_lost = bases_died
+    appearance.bases_total = base_names.size
   end
 end

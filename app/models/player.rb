@@ -4,20 +4,15 @@ class Player < ApplicationRecord
   has_many :lobby_players
   has_many :lobbies, through: :lobby_players
 
-  # Use nickname as URL param if unique, otherwise battletag
+  # Always use battletag as URL param for consistency
   def to_param
-    if nickname.present? && Player.where(nickname: nickname).count == 1
-      nickname
-    else
-      battletag.presence || id.to_s
-    end
+    battletag.presence || id.to_s
   end
 
-  # Find by nickname, battletag, or id (case-insensitive for nickname)
+  # Find by battletag, nickname, or id (battletag first, then nickname, then id)
   def self.find_by_battletag_or_id(param)
-    return find_by(id: param) if param.to_s.match?(/\A\d+\z/)
-    where("LOWER(nickname) = ?", param.to_s.downcase).first ||
-      find_by(battletag: param) ||
+    find_by(battletag: param) ||
+      where("LOWER(nickname) = ?", param.to_s.downcase).first ||
       find_by(id: param)
   end
 

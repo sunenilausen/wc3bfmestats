@@ -8,7 +8,7 @@ Rails.application.routes.draw do
     end
   end
   resources :factions, except: [ :new, :create, :destroy ]
-  resources :players
+  resources :players, constraints: { id: /[^\/]+/ }
   devise_for :users
   get "home/index"
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html

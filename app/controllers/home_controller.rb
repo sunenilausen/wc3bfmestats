@@ -26,6 +26,7 @@ class HomeController < ApplicationController
 
     @underdog_stats = calculate_underdog_stats
     @good_vs_evil_stats = calculate_good_vs_evil_stats(@map_version)
+    @avg_match_time = calculate_avg_match_time(@map_version)
     @matches_count = Match.where(ignored: false).count
     # Players who have played at least one valid (non-ignored) match
     @players_count = Player.joins(:matches).where(matches: { ignored: false }).distinct.count
@@ -94,6 +95,24 @@ class HomeController < ApplicationController
       total: total,
       good_percentage: total > 0 ? (good_wins.to_f / total * 100).round(1) : 0,
       evil_percentage: total > 0 ? (evil_wins.to_f / total * 100).round(1) : 0
+    }
+  end
+
+  def calculate_avg_match_time(map_version = nil)
+    matches = Match.where(ignored: false).where.not(seconds: nil)
+    matches = matches.where(map_version: map_version) if map_version.present?
+
+    count = matches.count
+    return { avg_seconds: 0, avg_formatted: "-", count: 0 } if count.zero?
+
+    avg_seconds = matches.average(:seconds).to_f.round
+    minutes = avg_seconds / 60
+    formatted = "#{minutes.round}m"
+
+    {
+      avg_seconds: avg_seconds,
+      avg_formatted: formatted,
+      count: count
     }
   end
 end

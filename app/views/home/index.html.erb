@@ -39,28 +39,39 @@
   </div>
   <% end %>
 
-  <%# Good vs Evil - outside cache because it depends on map_version param %>
+  <%# Stats that depend on map_version param - outside cache %>
   <div class="mt-4">
-    <div class="bg-white rounded-lg shadow p-6 border border-gray-200 max-w-md">
-      <div class="flex justify-between items-start mb-2">
+    <div class="mb-3">
+      <%= form_with url: root_path, method: :get, local: true, class: "flex items-center gap-2" do %>
+        <span class="text-sm text-gray-500">Map version:</span>
+        <%= select_tag :map_version,
+          options_for_select([["All versions", ""]] + @available_map_versions.map { |v| [v, v] }, @map_version),
+          class: "text-sm border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50",
+          onchange: "this.form.submit()" %>
+      <% end %>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
+      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
         <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Good vs Evil</h2>
-        <%= form_with url: root_path, method: :get, local: true, class: "flex items-center" do %>
-          <%= select_tag :map_version,
-            options_for_select([["All versions", ""]] + @available_map_versions.map { |v| [v, v] }, @map_version),
-            class: "text-xs border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50",
-            onchange: "this.form.submit()" %>
-        <% end %>
+        <div class="mt-2 flex items-baseline gap-2">
+          <span class="text-2xl font-bold text-green-600"><%= @good_vs_evil_stats[:good_percentage] %>%</span>
+          <span class="text-gray-400">vs</span>
+          <span class="text-2xl font-bold text-red-600"><%= @good_vs_evil_stats[:evil_percentage] %>%</span>
+        </div>
+        <p class="mt-1 text-sm text-gray-500">
+          <span class="text-green-600"><%= @good_vs_evil_stats[:good_wins] %> Good</span> /
+          <span class="text-red-600"><%= @good_vs_evil_stats[:evil_wins] %> Evil</span>
+          wins (<%= @good_vs_evil_stats[:total] %> matches)
+        </p>
       </div>
-      <div class="mt-2 flex items-baseline gap-2">
-        <span class="text-2xl font-bold text-green-600"><%= @good_vs_evil_stats[:good_percentage] %>%</span>
-        <span class="text-gray-400">vs</span>
-        <span class="text-2xl font-bold text-red-600"><%= @good_vs_evil_stats[:evil_percentage] %>%</span>
+
+      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
+        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Avg Match Time</h2>
+        <p class="mt-2 text-3xl font-bold text-blue-600"><%= @avg_match_time[:avg_formatted] %></p>
+        <p class="mt-1 text-sm text-gray-500">
+          across <%= @avg_match_time[:count] %> matches
+        </p>
       </div>
-      <p class="mt-1 text-sm text-gray-500">
-        <span class="text-green-600"><%= @good_vs_evil_stats[:good_wins] %> Good</span> /
-        <span class="text-red-600"><%= @good_vs_evil_stats[:evil_wins] %> Evil</span>
-        wins (<%= @good_vs_evil_stats[:total] %> matches)
-      </p>
     </div>
   </div>
 

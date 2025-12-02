@@ -27,11 +27,13 @@
         <option value="" data-wins="" data-losses="">-- Select Player --</option>
         <% @players_for_select.each do |player| %>
           <% stats = @player_stats[player.id] || { wins: 0, losses: 0 } %>
+          <% games = stats[:wins] + stats[:losses] %>
           <option value="<%= player.id %>"
                   data-custom-rating="<%= player.custom_rating&.round || 1300 %>"
                   data-ml-score="<%= player.ml_score || 50 %>"
                   data-wins="<%= stats[:wins] %>"
                   data-losses="<%= stats[:losses] %>"
+                  data-games="<%= games %>"
                   <%= "selected" if player.id == lp.player_id %>>
             <%= player_display_name(player) %>
           </option>

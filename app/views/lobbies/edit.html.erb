@@ -560,12 +560,40 @@
     });
   }
 
+  // Adaptive weighting constants (matching LobbyWinPredictor service)
+  const GAMES_THRESHOLD = 10;
+  const NEW_PLAYER_CR_WEIGHT = 40;
+  const NEW_PLAYER_ML_WEIGHT = 60;
+  const EXPERIENCED_CR_WEIGHT = 70;
+  const EXPERIENCED_ML_WEIGHT = 30;
+  const CR_MIN = 1200;
+  const CR_MAX = 1800;
+
+  function normalizeCR(cr) {
+    return Math.max(0, Math.min(100, ((cr - CR_MIN) / (CR_MAX - CR_MIN)) * 100));
+  }
+
+  function getWeightsForGames(games) {
+    if (games < GAMES_THRESHOLD) {
+      return { crWeight: NEW_PLAYER_CR_WEIGHT, mlWeight: NEW_PLAYER_ML_WEIGHT };
+    }
+    return { crWeight: EXPERIENCED_CR_WEIGHT, mlWeight: EXPERIENCED_ML_WEIGHT };
+  }
+
+  function computePlayerScore(cr, ml, games) {
+    const { crWeight, mlWeight } = getWeightsForGames(games);
+    const crNorm = normalizeCR(cr);
+    return (crNorm * crWeight + ml * mlWeight) / 100.0;
+  }
+
   function updatePrediction() {
     const rows = document.querySelectorAll('tr.nested-fields');
     let goodScores = [];
     let evilScores = [];
     let goodCRs = [];
     let evilCRs = [];
+    let goodMLs = [];
+    let evilMLs = [];
 
     rows.forEach(row => {
       const team = row.dataset.team;
@@ -574,10 +602,12 @@
       const isNewPlayer = row.dataset.isNewPlayer === 'true';
       let mlScore = null;
       let cr = null;
+      let games = 0;
 
       if (isNewPlayer) {
         mlScore = newPlayerDefaults.ml_score;
         cr = newPlayerDefaults.custom_rating || 1300;
+        games = 0;
       } else {
         const select = row.querySelector('select');
         if (select) {
@@ -585,62 +615,60 @@
           if (selectedOption && selectedOption.dataset.mlScore) {
             mlScore = parseFloat(selectedOption.dataset.mlScore);
             cr = parseFloat(selectedOption.dataset.customRating) || 1300;
+            games = parseInt(selectedOption.dataset.games) || 0;
           }
         }
       }
 
       if (mlScore !== null && !isNaN(mlScore)) {
+        const combinedScore = computePlayerScore(cr, mlScore, games);
         if (team === '1') {
-          goodScores.push(mlScore);
+          goodScores.push(combinedScore);
           goodCRs.push(cr);
+          goodMLs.push(mlScore);
         } else if (team === '2') {
-          evilScores.push(mlScore);
+          evilScores.push(combinedScore);
           evilCRs.push(cr);
+          evilMLs.push(mlScore);
         }
       }
     });
 
-    // Calculate performance score prediction
-    const goodAvg = goodScores.length > 0 ? goodScores.reduce((a, b) => a + b, 0) / goodScores.length : 50;
-    const evilAvg = evilScores.length > 0 ? evilScores.reduce((a, b) => a + b, 0) / evilScores.length : 50;
+    // Calculate combined prediction
+    const goodAvgScore = goodScores.length > 0 ? goodScores.reduce((a, b) => a + b, 0) / goodScores.length : 50;
+    const evilAvgScore = evilScores.length > 0 ? evilScores.reduce((a, b) => a + b, 0) / evilScores.length : 50;
 
-    // Use logistic function to convert score difference to win probability
-    const scoreDiff = goodAvg - evilAvg;
-    const goodExpected = 1 / (1 + Math.exp(-scoreDiff / 15));
+    // Convert score difference to win probability
+    const scoreDiff = goodAvgScore - evilAvgScore;
+    const goodExpected = 1 / (1 + Math.exp(-scoreDiff / 5.0));
     const goodPct = Math.round(goodExpected * 100);
     const evilPct = 100 - goodPct;
 
-    const goodBar = document.getElementById('good-win-bar');
-    const goodPctEl = document.getElementById('good-win-pct');
-    const evilPctEl = document.getElementById('evil-win-pct');
-    const mlGoodAvgEl = document.getElementById('ml-good-avg');
-    const mlEvilAvgEl = document.getElementById('ml-evil-avg');
-
-    if (goodBar) goodBar.style.width = goodPct + '%';
-    if (goodPctEl) goodPctEl.textContent = goodPct + '%';
-    if (evilPctEl) evilPctEl.textContent = evilPct + '%';
-    if (mlGoodAvgEl) mlGoodAvgEl.textContent = goodAvg.toFixed(1);
-    if (mlEvilAvgEl) mlEvilAvgEl.textContent = evilAvg.toFixed(1);
-
-    // Calculate CR prediction using ELO formula
+    // Calculate averages for display
     const goodCRAvg = goodCRs.length > 0 ? goodCRs.reduce((a, b) => a + b, 0) / goodCRs.length : 1300;
     const evilCRAvg = evilCRs.length > 0 ? evilCRs.reduce((a, b) => a + b, 0) / evilCRs.length : 1300;
+    const goodMLAvg = goodMLs.length > 0 ? goodMLs.reduce((a, b) => a + b, 0) / goodMLs.length : 50;
+    const evilMLAvg = evilMLs.length > 0 ? evilMLs.reduce((a, b) => a + b, 0) / evilMLs.length : 50;
 
-    const crGoodExpected = 1 / (1 + Math.pow(10, (evilCRAvg - goodCRAvg) / 400));
-    const crGoodPct = Math.round(crGoodExpected * 100);
-    const crEvilPct = 100 - crGoodPct;
+    // Update combined prediction bar
+    const combinedBar = document.getElementById('combined-win-bar');
+    const combinedGoodPct = document.getElementById('combined-good-pct');
+    const combinedEvilPct = document.getElementById('combined-evil-pct');
 
-    const crGoodBar = document.getElementById('cr-good-win-bar');
-    const crGoodPctEl = document.getElementById('cr-good-win-pct');
-    const crEvilPctEl = document.getElementById('cr-evil-win-pct');
-    const crGoodAvgEl = document.getElementById('cr-good-avg');
-    const crEvilAvgEl = document.getElementById('cr-evil-avg');
+    if (combinedBar) combinedBar.style.width = goodPct + '%';
+    if (combinedGoodPct) combinedGoodPct.textContent = goodPct + '%';
+    if (combinedEvilPct) combinedEvilPct.textContent = evilPct + '%';
 
-    if (crGoodBar) crGoodBar.style.width = crGoodPct + '%';
-    if (crGoodPctEl) crGoodPctEl.textContent = crGoodPct + '%';
-    if (crEvilPctEl) crEvilPctEl.textContent = crEvilPct + '%';
-    if (crGoodAvgEl) crGoodAvgEl.textContent = Math.round(goodCRAvg);
-    if (crEvilAvgEl) crEvilAvgEl.textContent = Math.round(evilCRAvg);
+    // Update detail display
+    const predGoodCR = document.getElementById('pred-good-cr');
+    const predEvilCR = document.getElementById('pred-evil-cr');
+    const predGoodML = document.getElementById('pred-good-ml');
+    const predEvilML = document.getElementById('pred-evil-ml');
+
+    if (predGoodCR) predGoodCR.textContent = Math.round(goodCRAvg);
+    if (predEvilCR) predEvilCR.textContent = Math.round(evilCRAvg);
+    if (predGoodML) predGoodML.textContent = goodMLAvg.toFixed(1);
+    if (predEvilML) predEvilML.textContent = evilMLAvg.toFixed(1);
   }
 
   // Drag handlers

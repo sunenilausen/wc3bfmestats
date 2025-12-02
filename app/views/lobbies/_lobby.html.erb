@@ -155,92 +155,50 @@
       <% end %>
     </table>
 
-    <%# Prediction bar %>
+    <%# Prediction bar - combined CR/ML with adaptive weighting %>
     <% if editable %>
       <div id="prediction" class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-        <h3 class="text-sm font-medium text-gray-700 mb-2">Predicted Outcome</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <div class="text-xs text-gray-500 mb-1">Performance Score (avg: <span id="ml-good-avg" class="text-green-600">-</span> vs <span id="ml-evil-avg" class="text-red-600">-</span>)</div>
-            <div class="flex items-center gap-2">
-              <span class="text-green-700 font-medium text-sm">Good</span>
-              <div class="flex-1 h-5 bg-red-500 rounded-full overflow-hidden">
-                <div id="good-win-bar" class="h-full bg-green-500 transition-all duration-300" style="width: 50%"></div>
-              </div>
-              <span class="text-red-700 font-medium text-sm">Evil</span>
-            </div>
-            <div class="flex justify-between text-xs">
-              <span id="good-win-pct" class="text-green-700">50%</span>
-              <span id="evil-win-pct" class="text-red-700">50%</span>
-            </div>
+        <h3 class="text-sm font-medium text-gray-700 mb-2">Win Prediction</h3>
+        <div class="flex items-center gap-2">
+          <span class="text-green-700 font-bold text-sm w-12">Good</span>
+          <div class="flex-1 h-6 bg-red-500 rounded-full overflow-hidden">
+            <div id="combined-win-bar" class="h-full bg-green-500 transition-all duration-300" style="width: 50%"></div>
           </div>
-          <div>
-            <div class="text-xs text-gray-500 mb-1">Custom Rating (avg: <span id="cr-good-avg" class="text-green-600">-</span> vs <span id="cr-evil-avg" class="text-red-600">-</span>)</div>
-            <div class="flex items-center gap-2">
-              <span class="text-green-700 font-medium text-sm">Good</span>
-              <div class="flex-1 h-5 bg-red-500 rounded-full overflow-hidden">
-                <div id="cr-good-win-bar" class="h-full bg-green-500 transition-all duration-300" style="width: 50%"></div>
-              </div>
-              <span class="text-red-700 font-medium text-sm">Evil</span>
-            </div>
-            <div class="flex justify-between text-xs">
-              <span id="cr-good-win-pct" class="text-green-700">50%</span>
-              <span id="cr-evil-win-pct" class="text-red-700">50%</span>
-            </div>
-          </div>
+          <span class="text-red-700 font-bold text-sm w-12 text-right">Evil</span>
+        </div>
+        <div class="flex justify-between text-sm mt-1">
+          <span id="combined-good-pct" class="text-green-700 font-medium">50%</span>
+          <span class="text-xs text-gray-400">CR+Perf weighted by experience</span>
+          <span id="combined-evil-pct" class="text-red-700 font-medium">50%</span>
+        </div>
+        <div class="flex justify-between text-xs text-gray-500 mt-1">
+          <span>CR: <span id="pred-good-cr" class="text-green-600">-</span> | Perf: <span id="pred-good-ml" class="text-green-600">-</span></span>
+          <span>CR: <span id="pred-evil-cr" class="text-red-600">-</span> | Perf: <span id="pred-evil-ml" class="text-red-600">-</span></span>
         </div>
       </div>
-    <% elsif good_avg_cr > 0 && evil_avg_cr > 0 %>
-      <%# CR and ML Score predictions %>
-      <% cr_good_expected = 1.0 / (1 + 10 ** ((evil_avg_cr - good_avg_cr) / 400.0)) %>
-      <% cr_good_pct = (cr_good_expected * 100).round %>
-      <% cr_evil_pct = 100 - cr_good_pct %>
-      <div class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-        <h3 class="text-sm font-medium text-gray-700 mb-2">Predicted Outcome</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <% if good_avg_ml > 0 && evil_avg_ml > 0 %>
-            <%
-              # Calculate win probability based on performance score difference
-              # Using similar ELO-style formula but scaled for performance scores (0-100 scale)
-              ml_diff = good_avg_ml - evil_avg_ml
-              ml_good_expected = 1.0 / (1 + 10 ** (-ml_diff / 15.0))
-              ml_good_pct = (ml_good_expected * 100).round
-              ml_evil_pct = 100 - ml_good_pct
-            %>
-            <div>
-              <div class="text-xs text-gray-500 mb-1">
-                Performance Score (Good: <%= good_avg_ml %> vs Evil: <%= evil_avg_ml %>)
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="text-green-700 font-medium text-sm">Good</span>
-                <div class="flex-1 h-5 bg-red-500 rounded-full overflow-hidden">
-                  <div class="h-full bg-green-500" style="width: <%= ml_good_pct %>%"></div>
-                </div>
-                <span class="text-red-700 font-medium text-sm">Evil</span>
-              </div>
-              <div class="flex justify-between text-xs">
-                <span class="text-green-700"><%= ml_good_pct %>%</span>
-                <span class="text-red-700"><%= ml_evil_pct %>%</span>
-              </div>
+    <% else %>
+      <% prediction = LobbyWinPredictor.new(lobby).predict %>
+      <% if prediction %>
+        <div class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <h3 class="text-sm font-medium text-gray-700 mb-2">Win Prediction</h3>
+          <div class="flex items-center gap-2">
+            <span class="text-green-700 font-bold text-sm w-12">Good</span>
+            <div class="flex-1 h-6 bg-red-500 rounded-full overflow-hidden">
+              <div class="h-full bg-green-500" style="width: <%= prediction[:good_win_pct] %>%"></div>
             </div>
-          <% end %>
-          <div>
-            <div class="text-xs text-gray-500 mb-1">Custom Rating (Good: <%= good_avg_cr %> vs Evil: <%= evil_avg_cr %>)</div>
-            <div class="flex items-center gap-2">
-              <span class="text-green-700 font-medium text-sm">Good</span>
-              <div class="flex-1 h-5 bg-red-500 rounded-full overflow-hidden">
-                <div class="h-full bg-green-500" style="width: <%= cr_good_pct %>%"></div>
-              </div>
-              <span class="text-red-700 font-medium text-sm">Evil</span>
-            </div>
-            <div class="flex justify-between text-xs">
-              <span class="text-green-700"><%= cr_good_pct %>%</span>
-              <span class="text-red-700"><%= cr_evil_pct %>%</span>
-            </div>
+            <span class="text-red-700 font-bold text-sm w-12 text-right">Evil</span>
+          </div>
+          <div class="flex justify-between text-sm mt-1">
+            <span class="text-green-700 font-medium"><%= prediction[:good_win_pct] %>%</span>
+            <span class="text-xs text-gray-400">CR+Perf weighted by experience</span>
+            <span class="text-red-700 font-medium"><%= prediction[:evil_win_pct] %>%</span>
+          </div>
+          <div class="flex justify-between text-xs text-gray-500 mt-1">
+            <span>CR: <span class="text-green-600"><%= prediction[:good_details][:avg_cr] %></span> | Perf: <span class="text-green-600"><%= prediction[:good_details][:avg_ml] %></span></span>
+            <span>CR: <span class="text-red-600"><%= prediction[:evil_details][:avg_cr] %></span> | Perf: <span class="text-red-600"><%= prediction[:evil_details][:avg_ml] %></span></span>
           </div>
         </div>
-
-      </div>
+      <% end %>
     <% end %>
   <% end %>
 </div>

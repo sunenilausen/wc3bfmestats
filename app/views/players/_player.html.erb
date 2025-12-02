@@ -137,26 +137,35 @@
               <% end %>
             </td>
           </tr>
+          <%
+            underdog_games = stats[:wins_as_underdog] + stats[:losses_as_underdog]
+            favorite_games = stats[:wins_as_favorite] + stats[:losses_as_favorite]
+            total_role_games = underdog_games + favorite_games
+            underdog_rate = total_role_games > 0 ? (underdog_games.to_f / total_role_games * 100).round(1) : 0
+            underdog_winrate = underdog_games > 0 ? (stats[:wins_as_underdog].to_f / underdog_games * 100).round(1) : 0
+            favorite_winrate = favorite_games > 0 ? (stats[:wins_as_favorite].to_f / favorite_games * 100).round(1) : 0
+          %>
           <tr>
-            <% underdog_games = stats[:wins_as_underdog] + stats[:losses_as_underdog] %>
-            <% favorite_games = stats[:wins_as_favorite] + stats[:losses_as_favorite] %>
-            <td class="py-0.5">Team Balance</td>
+            <td class="py-0.5">Underdog Rate</td>
             <td class="text-right py-0.5">
-              <span class="text-gray-600"><%= underdog_games %> as underdog</span> / <span class="text-gray-600"><%= favorite_games %> as favorite</span>
+              <span class="font-medium"><%= underdog_rate %>%</span>
+              <span class="text-gray-500">(<%= underdog_games %> of <%= total_role_games %> games)</span>
             </td>
           </tr>
           <tr>
             <td class="py-0.5">As Underdog</td>
             <td class="text-right py-0.5">
               <span class="text-green-600 font-medium"><%= stats[:wins_as_underdog] %>W</span>/<span class="text-red-600 font-medium"><%= stats[:losses_as_underdog] %>L</span>
-              <span class="text-gray-500">(avg <%= stats[:avg_underdog_elo_diff] %> CR deficit)</span>
+              <span class="font-medium">(<%= underdog_winrate %>%)</span>
+              <span class="text-gray-400 text-xs">avg <%= stats[:avg_underdog_elo_diff] %> CR deficit</span>
             </td>
           </tr>
           <tr>
             <td class="py-0.5">As Favorite</td>
             <td class="text-right py-0.5">
               <span class="text-green-600 font-medium"><%= stats[:wins_as_favorite] %>W</span>/<span class="text-red-600 font-medium"><%= stats[:losses_as_favorite] %>L</span>
-              <span class="text-gray-500">(avg <%= stats[:avg_favorite_elo_diff] %> CR adv)</span>
+              <span class="font-medium">(<%= favorite_winrate %>%)</span>
+              <span class="text-gray-400 text-xs">avg <%= stats[:avg_favorite_elo_diff] %> CR adv</span>
             </td>
           </tr>
           <tr>

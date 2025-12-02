@@ -109,6 +109,9 @@ class CustomRatingRecalculator
 
     return if good_appearances.empty? || evil_appearances.empty?
 
+    # Skip contribution bonus if anyone has 0 unit kills (incomplete/broken data)
+    skip_contribution_bonus = match.appearances.any? { |a| a.unit_kills == 0 }
+
     # Calculate team average ratings
     good_avg = good_appearances.sum { |a| a.player&.custom_rating.to_i } / good_appearances.size.to_f
     evil_avg = evil_appearances.sum { |a| a.player&.custom_rating.to_i } / evil_appearances.size.to_f
@@ -151,10 +154,13 @@ class CustomRatingRecalculator
         new_player_bonus = bonus_for_win(player.custom_rating_bonus_wins)
       end
 
-      # Add contribution bonus based on performance ranking
-      ranked_team = is_good ? good_ranked : evil_ranked
-      rank_index = ranked_team.index { |r| r[:appearance].id == appearance.id } || (ranked_team.size - 1)
-      contribution_bonus = calculate_contribution_bonus(rank_index, ranked_team.size, won)
+      # Add contribution bonus based on performance ranking (skip if anyone has 0 unit kills)
+      contribution_bonus = 0
+      unless skip_contribution_bonus
+        ranked_team = is_good ? good_ranked : evil_ranked
+        rank_index = ranked_team.index { |r| r[:appearance].id == appearance.id } || (ranked_team.size - 1)
+        contribution_bonus = calculate_contribution_bonus(rank_index, ranked_team.size, won)
+      end
 
       total_change = base_change + new_player_bonus + contribution_bonus
 

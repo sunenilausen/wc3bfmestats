@@ -21,8 +21,9 @@ class LobbyBalancerTest < ActiveSupport::TestCase
   end
 
   test "finds swap when teams are imbalanced" do
-    strong = Player.create!(nickname: "Strong", custom_rating: 1700, ml_score: 60, custom_rating_games_played: 50)
-    weak = Player.create!(nickname: "Weak", custom_rating: 1300, ml_score: 40, custom_rating_games_played: 50)
+    # Create very imbalanced scenario: 1800 vs 1200 rating (extreme difference)
+    strong = Player.create!(nickname: "Strong", custom_rating: 1800, ml_score: 80, custom_rating_games_played: 50)
+    weak = Player.create!(nickname: "Weak", custom_rating: 1200, ml_score: 20, custom_rating_games_played: 50)
     medium1 = Player.create!(nickname: "Medium1", custom_rating: 1500, ml_score: 50, custom_rating_games_played: 50)
     medium2 = Player.create!(nickname: "Medium2", custom_rating: 1500, ml_score: 50, custom_rating_games_played: 50)
 
@@ -40,8 +41,9 @@ class LobbyBalancerTest < ActiveSupport::TestCase
   end
 
   test "balance! swaps players and returns result" do
-    strong = Player.create!(nickname: "Strong", custom_rating: 1700, ml_score: 60, custom_rating_games_played: 50)
-    weak = Player.create!(nickname: "Weak", custom_rating: 1300, ml_score: 40, custom_rating_games_played: 50)
+    # Create very imbalanced scenario for reliable swap
+    strong = Player.create!(nickname: "Strong", custom_rating: 1800, ml_score: 80, custom_rating_games_played: 50)
+    weak = Player.create!(nickname: "Weak", custom_rating: 1200, ml_score: 20, custom_rating_games_played: 50)
     medium1 = Player.create!(nickname: "Medium1", custom_rating: 1500, ml_score: 50, custom_rating_games_played: 50)
     medium2 = Player.create!(nickname: "Medium2", custom_rating: 1500, ml_score: 50, custom_rating_games_played: 50)
 

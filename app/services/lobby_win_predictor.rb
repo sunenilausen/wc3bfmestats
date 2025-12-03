@@ -2,6 +2,9 @@
 # New players: rely more on ML score (performance metrics)
 # Experienced players: rely more on CR (win/loss track record)
 #
+# Also factors in faction experience - players who rarely play a faction
+# have their score adjusted toward neutral (50) based on experience.
+#
 # Based on analysis showing:
 # - Pure CR: 75% accuracy
 # - Pure ML: 64% accuracy
@@ -23,10 +26,20 @@ class LobbyWinPredictor
   CR_MIN = 1200
   CR_MAX = 1800
 
+  # Faction experience: minimum games to be fully confident
+  FACTION_GAMES_FOR_FULL_CONFIDENCE = 10
+
+  # Maximum score penalty for no faction experience (in absolute points)
+  # A player with 0 games on a faction loses up to this many points from their score
+  # This represents the disadvantage of playing an unfamiliar faction
+  MAX_FACTION_PENALTY_POINTS = 5.0
+
   attr_reader :lobby
 
   def initialize(lobby)
     @lobby = lobby
+    @faction_experience_cache = {}
+    preload_faction_experience
   end
 
   def predict
@@ -57,7 +70,7 @@ class LobbyWinPredictor
   end
 
   # Compute individual player score for display
-  def player_score(player)
+  def player_score(player, faction = nil)
     return nil unless player
 
     cr = player.custom_rating || 1300
@@ -67,19 +80,46 @@ class LobbyWinPredictor
     cr_weight, ml_weight = weights_for_games(games)
     cr_norm = normalize_cr(cr)
 
-    score = (cr_norm * cr_weight + ml * ml_weight) / 100.0
+    base_score = (cr_norm * cr_weight + ml * ml_weight) / 100.0
+
+    # Apply faction experience adjustment if faction provided
+    if faction
+      faction_games = faction_experience(player.id, faction.id)
+      base_score = apply_faction_confidence(base_score, faction_games)
+    end
 
     {
-      score: score.round(1),
+      score: base_score.round(1),
       cr: cr.round,
       ml: ml.round(1),
       games: games,
       cr_weight: cr_weight,
-      ml_weight: ml_weight
+      ml_weight: ml_weight,
+      faction_games: faction ? faction_experience(player.id, faction.id) : nil
     }
   end
 
+  # Get faction experience for a player
+  def faction_experience(player_id, faction_id)
+    @faction_experience_cache[[player_id, faction_id]] || 0
+  end
+
   private
+
+  def preload_faction_experience
+    player_ids = lobby.lobby_players.filter_map(&:player_id)
+    return if player_ids.empty?
+
+    # Get game counts for each player-faction combination in one query
+    counts = Appearance.joins(:match)
+      .where(player_id: player_ids, matches: { ignored: false })
+      .group(:player_id, :faction_id)
+      .count
+
+    counts.each do |(player_id, faction_id), count|
+      @faction_experience_cache[[player_id, faction_id]] = count
+    end
+  end
 
   def compute_team_scores(lobby_players)
     lobby_players.filter_map do |lp|
@@ -87,12 +127,13 @@ class LobbyWinPredictor
         # New player placeholder: use default values
         new_player_score
       elsif lp.player
-        compute_player_score(lp.player)
+        compute_lobby_player_score(lp)
       end
     end
   end
 
-  def compute_player_score(player)
+  def compute_lobby_player_score(lp)
+    player = lp.player
     cr = player.custom_rating || 1300
     ml = player.ml_score || 50
     games = player.custom_rating_games_played || 0
@@ -100,7 +141,22 @@ class LobbyWinPredictor
     cr_weight, ml_weight = weights_for_games(games)
     cr_norm = normalize_cr(cr)
 
-    (cr_norm * cr_weight + ml * ml_weight) / 100.0
+    base_score = (cr_norm * cr_weight + ml * ml_weight) / 100.0
+
+    # Apply faction experience adjustment
+    faction_games = faction_experience(player.id, lp.faction_id)
+    apply_faction_confidence(base_score, faction_games)
+  end
+
+  def apply_faction_confidence(score, faction_games)
+    # Calculate confidence: 0 games = 0%, 10 games = ~63%, 20 games = ~86%
+    confidence = 1 - Math.exp(-faction_games.to_f / FACTION_GAMES_FOR_FULL_CONFIDENCE)
+
+    # Apply a flat penalty for lack of faction experience
+    # At 0 games: lose MAX_FACTION_PENALTY_POINTS (5 points)
+    # At 10+ games: almost no penalty
+    penalty = (1 - confidence) * MAX_FACTION_PENALTY_POINTS
+    score - penalty
   end
 
   def new_player_score

@@ -571,6 +571,8 @@
   const EXPERIENCED_ML_WEIGHT = 30;
   const CR_MIN = 1200;
   const CR_MAX = 1800;
+  const FACTION_GAMES_FOR_FULL_CONFIDENCE = 10;
+  const MAX_FACTION_PENALTY_POINTS = 5.0;
 
   function normalizeCR(cr) {
     return Math.max(0, Math.min(100, ((cr - CR_MIN) / (CR_MAX - CR_MIN)) * 100));
@@ -583,10 +585,25 @@
     return { crWeight: EXPERIENCED_CR_WEIGHT, mlWeight: EXPERIENCED_ML_WEIGHT };
   }
 
-  function computePlayerScore(cr, ml, games) {
+  function applyFactionConfidence(score, factionGames) {
+    // Calculate confidence: 0 games = 0%, 10 games = ~63%, 20 games = ~86%
+    const confidence = 1 - Math.exp(-factionGames / FACTION_GAMES_FOR_FULL_CONFIDENCE);
+    // Apply flat penalty for lack of faction experience
+    const penalty = (1 - confidence) * MAX_FACTION_PENALTY_POINTS;
+    return score - penalty;
+  }
+
+  function computePlayerScore(cr, ml, games, factionGames = null) {
     const { crWeight, mlWeight } = getWeightsForGames(games);
     const crNorm = normalizeCR(cr);
-    return (crNorm * crWeight + ml * mlWeight) / 100.0;
+    let baseScore = (crNorm * crWeight + ml * mlWeight) / 100.0;
+
+    // Apply faction experience adjustment if provided
+    if (factionGames !== null) {
+      baseScore = applyFactionConfidence(baseScore, factionGames);
+    }
+
+    return baseScore;
   }
 
   function updatePrediction() {
@@ -606,11 +623,15 @@
       let mlScore = null;
       let cr = null;
       let games = 0;
+      let factionGames = null;
+      let playerId = null;
+      let factionId = null;
 
       if (isNewPlayer) {
         mlScore = newPlayerDefaults.ml_score;
         cr = newPlayerDefaults.custom_rating || 1300;
         games = 0;
+        factionGames = 0;
       } else {
         const select = row.querySelector('select');
         if (select) {
@@ -619,12 +640,20 @@
             mlScore = parseFloat(selectedOption.dataset.mlScore);
             cr = parseFloat(selectedOption.dataset.customRating) || 1300;
             games = parseInt(selectedOption.dataset.games) || 0;
+            playerId = selectedOption.value;
+            factionId = select.dataset.factionId;
+
+            // Get faction-specific games from factionStats
+            if (playerId && factionId) {
+              const facWL = getFactionWL(playerId, factionId);
+              factionGames = facWL.wins + facWL.losses;
+            }
           }
         }
       }
 
       if (mlScore !== null && !isNaN(mlScore)) {
-        const combinedScore = computePlayerScore(cr, mlScore, games);
+        const combinedScore = computePlayerScore(cr, mlScore, games, factionGames);
         if (team === '1') {
           goodScores.push(combinedScore);
           goodCRs.push(cr);

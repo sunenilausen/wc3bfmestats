@@ -2,6 +2,12 @@
 # to minimize the win prediction difference from 50/50
 #
 # Uses the same adaptive CR/ML weighting as LobbyWinPredictor
+# Also considers faction experience - prefers swapping players to factions they play
+#
+# Strategy:
+# 1. Find optimal final assignment using ALL possible swap combinations
+# 2. Identify minimal set of swaps to achieve that assignment
+# 3. Faction experience is factored into player scores (like LobbyWinPredictor)
 #
 class LobbyBalancer
   # Use same constants as LobbyWinPredictor
@@ -12,110 +18,98 @@ class LobbyBalancer
   EXPERIENCED_ML_WEIGHT = LobbyWinPredictor::EXPERIENCED_ML_WEIGHT
   CR_MIN = LobbyWinPredictor::CR_MIN
   CR_MAX = LobbyWinPredictor::CR_MAX
+  FACTION_GAMES_FOR_FULL_CONFIDENCE = LobbyWinPredictor::FACTION_GAMES_FOR_FULL_CONFIDENCE
+  MAX_FACTION_PENALTY_POINTS = LobbyWinPredictor::MAX_FACTION_PENALTY_POINTS
+
+  # Minimum improvement threshold to consider a swap worth making (in score units)
+  MIN_IMPROVEMENT_THRESHOLD = 0.5
 
   attr_reader :lobby
 
   def initialize(lobby)
     @lobby = lobby
+    @faction_experience_cache = {}
+    preload_faction_experience
   end
 
   # Returns the best swap to make, or nil if already balanced
   # Format: { good_index: i, evil_index: j, improvement: delta }
   def find_best_swap
-    good_players = lobby.lobby_players.select { |lp| lp.faction&.good? }.sort_by { |lp| lp.faction_id }
-    evil_players = lobby.lobby_players.reject { |lp| lp.faction&.good? }.sort_by { |lp| lp.faction_id }
-
-    # Calculate current scores
-    good_scores = good_players.map { |lp| player_score(lp) }
-    evil_scores = evil_players.map { |lp| player_score(lp) }
-
-    current_diff = team_diff(good_scores, evil_scores).abs
-
-    best_swap = nil
-    best_improvement = 0
-
-    # Try all possible swaps between good and evil players
-    good_players.each_with_index do |good_lp, gi|
-      evil_players.each_with_index do |evil_lp, ei|
-        # Simulate swap
-        new_good_scores = good_scores.dup
-        new_evil_scores = evil_scores.dup
-        new_good_scores[gi] = evil_scores[ei]
-        new_evil_scores[ei] = good_scores[gi]
-
-        new_diff = team_diff(new_good_scores, new_evil_scores).abs
-        improvement = current_diff - new_diff
-
-        if improvement > best_improvement
-          best_improvement = improvement
-          best_swap = {
-            good_lobby_player_id: good_lp.id,
-            evil_lobby_player_id: evil_lp.id,
-            good_faction_id: good_lp.faction_id,
-            evil_faction_id: evil_lp.faction_id,
-            improvement: improvement.round(2),
-            new_diff: new_diff.round(2)
-          }
-        end
-      end
-    end
-
-    best_swap
+    swaps = find_optimal_swaps
+    swaps.first
   end
 
-  # Returns all swaps needed to reach optimal balance
-  # Performs greedy optimization - keeps swapping until no improvement
+  # Returns minimal swaps needed to reach optimal balance
+  # Uses greedy optimization - finds the single best swap at each iteration
   def find_optimal_swaps
     good_players = lobby.lobby_players.select { |lp| lp.faction&.good? }.sort_by { |lp| lp.faction_id }
     evil_players = lobby.lobby_players.reject { |lp| lp.faction&.good? }.sort_by { |lp| lp.faction_id }
 
-    # Build score arrays with player references
-    good_data = good_players.map { |lp| { lp: lp, score: player_score(lp) } }
-    evil_data = evil_players.map { |lp| { lp: lp, score: player_score(lp) } }
+    return [] if good_players.empty? || evil_players.empty?
+
+    good_factions = good_players.map(&:faction)
+    evil_factions = evil_players.map(&:faction)
+
+    # Extract player/new_player data from lobby_players
+    # Use arrays of hashes that we can swap around
+    good_data = good_players.each_with_index.map { |lp, i| { lp: lp, slot: extract_slot_data(lp), faction: good_factions[i] } }
+    evil_data = evil_players.each_with_index.map { |lp, i| { lp: lp, slot: extract_slot_data(lp), faction: evil_factions[i] } }
 
     swaps = []
-    max_iterations = 25 # Prevent infinite loops
+    max_iterations = 10 # Prevent infinite loops
 
     max_iterations.times do
-      good_scores = good_data.map { |d| d[:score] }
-      evil_scores = evil_data.map { |d| d[:score] }
-      current_diff = team_diff(good_scores, evil_scores).abs
+      # Calculate current team diff
+      good_slots = good_data.map { |d| d[:slot] }
+      evil_slots = evil_data.map { |d| d[:slot] }
+      current_diff = calculate_team_diff(good_slots, good_factions, evil_slots, evil_factions)
+
+      # If already balanced enough, stop
+      break if current_diff.abs < 1.0
 
       best_swap = nil
-      best_improvement = 0
+      best_new_diff = current_diff.abs
 
+      # Try ALL possible swaps (any good player with any evil player)
       good_data.each_with_index do |gd, gi|
         evil_data.each_with_index do |ed, ei|
-          # Simulate swap
-          new_good_scores = good_scores.dup
-          new_evil_scores = evil_scores.dup
-          new_good_scores[gi] = evil_scores[ei]
-          new_evil_scores[ei] = good_scores[gi]
+          # Simulate swap: good[gi] goes to evil faction[ei], evil[ei] goes to good faction[gi]
+          new_good_slots = good_slots.dup
+          new_evil_slots = evil_slots.dup
+          new_good_slots[gi] = ed[:slot]
+          new_evil_slots[ei] = gd[:slot]
 
-          new_diff = team_diff(new_good_scores, new_evil_scores).abs
-          improvement = current_diff - new_diff
+          new_diff = calculate_team_diff(new_good_slots, good_factions, new_evil_slots, evil_factions)
 
-          if improvement > 0.01 && improvement > best_improvement
-            best_improvement = improvement
+          # Check if this improves balance
+          if new_diff.abs < best_new_diff - 0.01
+            best_new_diff = new_diff.abs
             best_swap = { gi: gi, ei: ei }
           end
         end
       end
 
+      # If no improvement found, stop
       break unless best_swap
 
-      # Perform the swap in our data structures
+      # Check if improvement is significant enough
+      improvement = current_diff.abs - best_new_diff
+      break if improvement < MIN_IMPROVEMENT_THRESHOLD && swaps.empty?
+      break if improvement < 0.1 && !swaps.empty? # Stop if marginal improvement after first swap
+
       gi, ei = best_swap[:gi], best_swap[:ei]
+
+      # Record the swap using original lobby_player IDs
       swaps << {
         good_lobby_player_id: good_data[gi][:lp].id,
         evil_lobby_player_id: evil_data[ei][:lp].id,
-        good_faction_id: good_data[gi][:lp].faction_id,
-        evil_faction_id: evil_data[ei][:lp].faction_id
+        good_faction_id: good_factions[gi].id,
+        evil_faction_id: evil_factions[ei].id
       }
 
-      # Swap scores
-      good_data[gi][:score], evil_data[ei][:score] = evil_data[ei][:score], good_data[gi][:score]
-      # Swap player references too
+      # Perform the swap in our data structures
+      # The SLOTS swap (players move), but FACTIONS stay fixed
+      good_data[gi][:slot], evil_data[ei][:slot] = evil_data[ei][:slot], good_data[gi][:slot]
       good_data[gi][:lp], evil_data[ei][:lp] = evil_data[ei][:lp], good_data[gi][:lp]
     end
 
@@ -160,24 +154,74 @@ class LobbyBalancer
 
   private
 
-  def player_score(lp)
-    if lp.is_new_player? && lp.player_id.nil?
-      compute_score(NewPlayerDefaults.custom_rating, NewPlayerDefaults.ml_score, 0)
-    elsif lp.player
-      compute_score(
-        lp.player.custom_rating || 1300,
-        lp.player.ml_score || 50,
-        lp.player.custom_rating_games_played || 0
-      )
-    else
-      nil
+  def preload_faction_experience
+    player_ids = lobby.lobby_players.filter_map(&:player_id)
+    return if player_ids.empty?
+
+    counts = Appearance.joins(:match)
+      .where(player_id: player_ids, matches: { ignored: false })
+      .group(:player_id, :faction_id)
+      .count
+
+    counts.each do |(player_id, faction_id), count|
+      @faction_experience_cache[[player_id, faction_id]] = count
     end
   end
 
-  def compute_score(cr, ml, games)
+  def faction_experience(player_id, faction_id)
+    @faction_experience_cache[[player_id, faction_id]] || 0
+  end
+
+  def extract_slot_data(lp)
+    if lp.is_new_player? && lp.player_id.nil?
+      { player_id: nil, is_new_player: true, cr: NewPlayerDefaults.custom_rating, ml: NewPlayerDefaults.ml_score, games: 0 }
+    elsif lp.player
+      { player_id: lp.player_id, is_new_player: false, cr: lp.player.custom_rating || 1300, ml: lp.player.ml_score || 50, games: lp.player.custom_rating_games_played || 0 }
+    else
+      { player_id: nil, is_new_player: false, cr: nil, ml: nil, games: 0 }
+    end
+  end
+
+  def calculate_team_diff(good_slots, good_factions, evil_slots, evil_factions)
+    good_scores = good_slots.each_with_index.filter_map do |slot, i|
+      compute_score_for_slot(slot, good_factions[i])
+    end
+
+    evil_scores = evil_slots.each_with_index.filter_map do |slot, i|
+      compute_score_for_slot(slot, evil_factions[i])
+    end
+
+    return 0 if good_scores.empty? || evil_scores.empty?
+
+    good_avg = good_scores.sum / good_scores.size
+    evil_avg = evil_scores.sum / evil_scores.size
+    good_avg - evil_avg
+  end
+
+  def compute_score_for_slot(slot, faction)
+    return nil if slot[:cr].nil?
+
+    cr = slot[:cr]
+    ml = slot[:ml]
+    games = slot[:games]
+
     cr_weight, ml_weight = weights_for_games(games)
     cr_norm = normalize_cr(cr)
-    (cr_norm * cr_weight + ml * ml_weight) / 100.0
+    base_score = (cr_norm * cr_weight + ml * ml_weight) / 100.0
+
+    # Apply faction experience adjustment if we have a player
+    if slot[:player_id] && faction
+      faction_games = faction_experience(slot[:player_id], faction.id)
+      apply_faction_confidence(base_score, faction_games)
+    else
+      base_score
+    end
+  end
+
+  def apply_faction_confidence(score, faction_games)
+    confidence = 1 - Math.exp(-faction_games.to_f / FACTION_GAMES_FOR_FULL_CONFIDENCE)
+    penalty = (1 - confidence) * MAX_FACTION_PENALTY_POINTS
+    score - penalty
   end
 
   def weights_for_games(games)
@@ -190,15 +234,5 @@ class LobbyBalancer
 
   def normalize_cr(cr)
     ((cr - CR_MIN) / (CR_MAX - CR_MIN).to_f * 100).clamp(0, 100)
-  end
-
-  def team_diff(good_scores, evil_scores)
-    good_valid = good_scores.compact
-    evil_valid = evil_scores.compact
-    return 0 if good_valid.empty? || evil_valid.empty?
-
-    good_avg = good_valid.sum / good_valid.size
-    evil_avg = evil_valid.sum / evil_valid.size
-    good_avg - evil_avg
   end
 end

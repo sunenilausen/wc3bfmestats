@@ -121,10 +121,20 @@ class LobbyBalancer
     swaps = find_optimal_swaps
     return { success: true, swaps: [], message: "Already balanced" } if swaps.empty?
 
+    swap_details = []
+
     ActiveRecord::Base.transaction do
       swaps.each do |swap|
-        good_lp = LobbyPlayer.find(swap[:good_lobby_player_id])
-        evil_lp = LobbyPlayer.find(swap[:evil_lobby_player_id])
+        good_lp = LobbyPlayer.includes(:player, :faction).find(swap[:good_lobby_player_id])
+        evil_lp = LobbyPlayer.includes(:player, :faction).find(swap[:evil_lobby_player_id])
+
+        # Record swap details before swapping
+        swap_details << {
+          player1: good_lp.player&.nickname || "New Player",
+          faction1: good_lp.faction&.name,
+          player2: evil_lp.player&.nickname || "New Player",
+          faction2: evil_lp.faction&.name
+        }
 
         # Swap the players between factions
         good_player_id = good_lp.player_id
@@ -144,6 +154,7 @@ class LobbyBalancer
     {
       success: true,
       swaps: swaps,
+      swap_details: swap_details,
       swaps_count: swaps.size,
       prediction: prediction,
       message: "Balanced with #{swaps.size} swap#{swaps.size == 1 ? '' : 's'}"

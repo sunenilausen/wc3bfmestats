@@ -28,7 +28,8 @@
         <input type="text"
                id="player-search-input"
                placeholder="Search by name..."
-               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+               onkeydown="if(event.key === 'Enter') event.preventDefault();">
       </div>
 
       <div id="player-search-results" class="space-y-1 h-[728px] overflow-y-auto">
@@ -924,7 +925,7 @@
 
   // Submit form and track the save
   function submitFormWithTracking() {
-    const form = document.querySelector('form');
+    const form = document.getElementById('lobby-form');
     if (!form) return;
 
     showSaveStatus(true);
@@ -961,6 +962,45 @@
     await new Promise(r => setTimeout(r, 150));
   }
 
+  // Show toast notification
+  function showToast(message, duration = 8000) {
+    // Remove any existing toast
+    const existingToast = document.getElementById('balance-toast');
+    if (existingToast) existingToast.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'balance-toast';
+    toast.className = 'fixed top-20 right-4 z-50 bg-green-600 text-white px-4 py-3 rounded-lg shadow-lg max-w-md';
+    toast.innerHTML = `
+      <div class="flex items-start gap-3">
+        <div class="flex-1">
+          <div class="font-medium mb-1">Auto-Balance Complete</div>
+          <div class="text-sm text-green-100">${message}</div>
+        </div>
+        <button onclick="this.parentElement.parentElement.remove()" class="text-green-200 hover:text-white text-xl leading-none">&times;</button>
+      </div>
+    `;
+    document.body.appendChild(toast);
+
+    // Auto-dismiss after duration
+    setTimeout(() => {
+      if (toast.parentElement) {
+        toast.style.transition = 'opacity 0.3s';
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }
+    }, duration);
+  }
+
+  // Check for stored swap message on page load
+  function checkForSwapMessage() {
+    const swapMessage = sessionStorage.getItem('balanceSwapMessage');
+    if (swapMessage) {
+      sessionStorage.removeItem('balanceSwapMessage');
+      showToast(swapMessage);
+    }
+  }
+
   // Balance lobby function
   async function balanceLobby() {
     const btn = document.getElementById('balance-btn');
@@ -987,6 +1027,15 @@
 
       if (result.success) {
         if (result.swaps_count > 0) {
+          // Build swap message
+          const swapMessages = result.swap_details.map(swap =>
+            `${swap.player1} (${swap.faction1}) ↔ ${swap.player2} (${swap.faction2})`
+          );
+          const message = swapMessages.join('<br>');
+
+          // Store message for after reload
+          sessionStorage.setItem('balanceSwapMessage', message);
+
           // Reload the page to show updated lobby
           window.location.reload();
         } else {
@@ -1094,6 +1143,7 @@
     }
   }
   window.resetLobby = resetLobby;
+  window.submitFormWithTracking = submitFormWithTracking;
 
   // Event listeners
   document.getElementById('player-search-input').addEventListener('input', renderPlayerResults);
@@ -1115,6 +1165,7 @@
     renderObservers();
     updateAverageElos();
     updatePrediction();
+    checkForSwapMessage();
   });
   document.addEventListener('turbo:load', () => {
     renderPlayerResults();
@@ -1122,5 +1173,6 @@
     renderObservers();
     updateAverageElos();
     updatePrediction();
+    checkForSwapMessage();
   });
 </script>

@@ -10,7 +10,7 @@
 <% col_count = editable ? 6 : 13 %>
 
 <div id="<%= dom_id lobby %>" class="w-full sm:w-auto <%= editable ? 'mt-2 space-y-5' : 'my-5 space-y-5' %>" data-controller="<%= 'auto-submit' if editable %>">
-  <%= simple_form_for(lobby, data: editable ? { auto_submit_target: "form", turbo_action: "replace" } : {}) do |f| %>
+  <%= simple_form_for(lobby, html: { id: "lobby-form" }, data: editable ? { auto_submit_target: "form", turbo_action: "replace" } : {}) do |f| %>
     <% if editable %>
       <%= f.error_notification %>
       <%= f.error_notification message: f.object.errors[:base].to_sentence if f.object.errors[:base].present? %>

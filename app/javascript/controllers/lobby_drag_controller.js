@@ -95,17 +95,22 @@ export default class extends Controller {
       window.updateSlotDisplay(targetIndex, data.playerId, data.playerName)
     }
 
-    // Trigger form submit
-    const form = this.element.querySelector("form")
-    if (form) form.requestSubmit()
+    // Trigger form submit using the tracked submit function or fallback to direct form
+    if (typeof window.submitFormWithTracking === "function") {
+      window.submitFormWithTracking()
+    } else {
+      const form = document.getElementById('lobby-form') || this.element.querySelector("form")
+      if (form) form.requestSubmit()
+    }
 
-    // Update all lists
+    // Update all lists and prediction immediately
+    if (typeof window.updateAverageElos === "function") window.updateAverageElos()
+    if (typeof window.updatePrediction === "function") window.updatePrediction()
+
     setTimeout(() => {
       if (typeof window.renderPlayerResults === "function") window.renderPlayerResults()
       if (typeof window.renderRecentPlayers === "function") window.renderRecentPlayers()
       if (typeof window.renderObservers === "function") window.renderObservers()
-      if (typeof window.updateAverageElos === "function") window.updateAverageElos()
-      if (typeof window.updatePrediction === "function") window.updatePrediction()
     }, 100)
   }
 
@@ -131,5 +136,9 @@ export default class extends Controller {
     if (typeof window.addObserver === "function") {
       window.addObserver(data.playerId)
     }
+
+    // Update prediction after moving player to observers
+    if (typeof window.updateAverageElos === "function") window.updateAverageElos()
+    if (typeof window.updatePrediction === "function") window.updatePrediction()
   }
 }

@@ -8,6 +8,9 @@
       <button type="button" id="balance-btn" onclick="balanceLobby()" class="text-sm px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded font-medium">
         ⚖️ Auto-Balance
       </button>
+      <button type="button" id="last-match-btn" onclick="populateFromLastMatch()" class="text-sm px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded font-medium">
+        📋 Last Match
+      </button>
       <button type="button" id="reset-btn" onclick="resetLobby()" class="text-sm px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded font-medium">
         🗑️ Reset All
       </button>
@@ -75,6 +78,10 @@
   <%= raw @faction_stats.transform_keys { |k| "#{k[0]}_#{k[1]}" }.to_json %>
 </script>
 
+<script id="last-match-data" type="application/json">
+  <%= raw @last_match_players.to_json %>
+</script>
+
 <style>
   .drop-zone-active {
     outline: 2px dashed #cbd5e1;
@@ -106,6 +113,7 @@
   const recentPlayers = JSON.parse(document.getElementById('recent-players-data').textContent);
   const newPlayerDefaults = JSON.parse(document.getElementById('new-player-defaults').textContent);
   const factionStats = JSON.parse(document.getElementById('faction-stats-data').textContent);
+  const lastMatchPlayers = JSON.parse(document.getElementById('last-match-data').textContent);
 
   // Helper to get faction W/L for a player
   function getFactionWL(playerId, factionId) {
@@ -997,6 +1005,55 @@
     }
   }
   window.balanceLobby = balanceLobby;
+
+  // Populate lobby from last match
+  async function populateFromLastMatch() {
+    if (Object.keys(lastMatchPlayers).length === 0) {
+      alert('No recent match found');
+      return;
+    }
+
+    const btn = document.getElementById('last-match-btn');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Loading...';
+
+    try {
+      // Wait for any pending saves first
+      await waitForPendingSaves();
+
+      // Set each player select to the corresponding player from the last match
+      document.querySelectorAll('select[name*="player_id"]').forEach(select => {
+        const factionId = select.dataset.factionId;
+        const playerId = lastMatchPlayers[factionId];
+
+        if (playerId) {
+          select.value = String(playerId);
+        } else {
+          select.value = '';
+        }
+
+        // Clear is_new_player flag
+        const slotIndex = select.id.replace('player-select-', '');
+        const isNewPlayerField = document.getElementById('is-new-player-' + slotIndex);
+        if (isNewPlayerField) {
+          isNewPlayerField.value = '0';
+        }
+      });
+
+      // Submit the form and wait
+      submitFormWithTracking();
+      await waitForPendingSaves();
+
+      // Reload to get fresh state
+      window.location.reload();
+    } catch (error) {
+      alert('Failed to load last match: ' + error.message);
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }
+  }
+  window.populateFromLastMatch = populateFromLastMatch;
 
   // Reset lobby - clear all player slots
   async function resetLobby() {

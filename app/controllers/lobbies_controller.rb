@@ -71,6 +71,18 @@ class LobbiesController < ApplicationController
 
     preload_player_stats
     @new_player_defaults = NewPlayerDefaults.all
+
+    # Get last match data for "Last Match" button (most recently uploaded non-ignored match)
+    @last_match = Match.includes(appearances: [:faction, :player])
+                       .where(ignored: false)
+                       .order(uploaded_at: :desc)
+                       .first
+    @last_match_players = {}
+    if @last_match
+      @last_match.appearances.each do |appearance|
+        @last_match_players[appearance.faction_id] = appearance.player_id
+      end
+    end
   end
 
   # POST /lobbies or /lobbies.json

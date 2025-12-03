@@ -8,6 +8,10 @@
       <button type="button" id="balance-btn" onclick="balanceLobby()" class="text-sm px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded font-medium">
         ⚖️ Auto-Balance
       </button>
+      <button type="button" id="reset-btn" onclick="resetLobby()" class="text-sm px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded font-medium">
+        🗑️ Reset All
+      </button>
+      <span id="save-status" class="text-xs text-gray-400 hidden">Saving...</span>
     </div>
 
     <%= render partial: "lobby", locals: { lobby: @lobby, editable: true } %>
@@ -215,8 +219,7 @@
       option.selected = false;
       observerSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
-      const form = document.querySelector('form');
-      if (form) form.requestSubmit();
+      submitFormWithTracking();
 
       setTimeout(() => {
         renderPlayerResults();
@@ -235,8 +238,7 @@
       option.selected = true;
       observerSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
-      const form = document.querySelector('form');
-      if (form) form.requestSubmit();
+      submitFormWithTracking();
 
       setTimeout(() => {
         renderPlayerResults();
@@ -325,9 +327,8 @@
       if (select && !select.value) {
         setSelectValue(select, String(playerId));
 
-        // Trigger form submit
-        const form = document.querySelector('form');
-        if (form) form.requestSubmit();
+        // Trigger form submit with tracking
+        submitFormWithTracking();
 
         // Update UI
         setTimeout(() => {
@@ -414,8 +415,7 @@
     if (row) row.dataset.isNewPlayer = 'true';
 
     // Submit the form to save the new player state
-    const form = document.querySelector('form');
-    if (form) form.requestSubmit();
+    submitFormWithTracking();
 
     // Update averages and prediction
     updateAverageElos();
@@ -774,9 +774,8 @@
       const row = cell?.closest('tr');
       if (row) delete row.dataset.isNewPlayer;
 
-      // Trigger form submit
-      const form = document.querySelector('form');
-      if (form) form.requestSubmit();
+      // Trigger form submit with tracking
+      submitFormWithTracking();
 
       // Update all lists
       setTimeout(() => {
@@ -904,14 +903,69 @@
   window.assignNewPlayer = assignNewPlayer;
   window.setNewPlayerSlot = setNewPlayerSlot;
 
+  // Track pending form submissions
+  let pendingSavePromise = null;
+  let pendingSaveResolve = null;
+
+  function showSaveStatus(show) {
+    const status = document.getElementById('save-status');
+    if (status) {
+      status.classList.toggle('hidden', !show);
+    }
+  }
+
+  // Submit form and track the save
+  function submitFormWithTracking() {
+    const form = document.querySelector('form');
+    if (!form) return;
+
+    showSaveStatus(true);
+
+    // Create promise if not already pending
+    if (!pendingSavePromise) {
+      pendingSavePromise = new Promise((resolve) => {
+        pendingSaveResolve = resolve;
+      });
+    }
+
+    form.requestSubmit();
+  }
+
+  // Listen for form submission completion
+  document.addEventListener('turbo:submit-end', () => {
+    showSaveStatus(false);
+    if (pendingSaveResolve) {
+      // Small delay to ensure server has fully processed
+      setTimeout(() => {
+        pendingSaveResolve();
+        pendingSavePromise = null;
+        pendingSaveResolve = null;
+      }, 100);
+    }
+  });
+
+  // Wait for any pending saves
+  async function waitForPendingSaves() {
+    if (pendingSavePromise) {
+      await pendingSavePromise;
+    }
+    // Extra small delay to be safe
+    await new Promise(r => setTimeout(r, 150));
+  }
+
   // Balance lobby function
   async function balanceLobby() {
     const btn = document.getElementById('balance-btn');
     const originalText = btn.innerHTML;
     btn.disabled = true;
-    btn.innerHTML = '⏳ Balancing...';
+    btn.innerHTML = '⏳ Saving...';
 
     try {
+      // Wait for any pending form submissions
+      await waitForPendingSaves();
+
+      btn.innerHTML = '⏳ Balancing...';
+
       const response = await fetch('<%= balance_lobby_path(@lobby) %>', {
         method: 'POST',
         headers: {
@@ -943,6 +997,46 @@
     }
   }
   window.balanceLobby = balanceLobby;
+
+  // Reset lobby - clear all player slots
+  async function resetLobby() {
+    if (!confirm('Clear all players from this lobby?')) return;
+
+    const btn = document.getElementById('reset-btn');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Resetting...';
+
+    try {
+      // Clear all player selects
+      document.querySelectorAll('select[name*="player_id"]').forEach(select => {
+        select.value = '';
+      });
+
+      // Clear all is_new_player hidden fields
+      document.querySelectorAll('input[name*="is_new_player"]').forEach(input => {
+        input.value = '0';
+      });
+
+      // Clear observers
+      const observerSelect = document.getElementById('observer-select');
+      if (observerSelect) {
+        Array.from(observerSelect.options).forEach(opt => opt.selected = false);
+      }
+
+      // Submit the form and wait for it to complete
+      submitFormWithTracking();
+      await waitForPendingSaves();
+
+      // Reload to get fresh state
+      window.location.reload();
+    } catch (error) {
+      alert('Reset failed: ' + error.message);
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }
+  }
+  window.resetLobby = resetLobby;
 
   // Event listeners
   document.getElementById('player-search-input').addEventListener('input', renderPlayerResults);

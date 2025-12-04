@@ -14,5 +14,6 @@ class Ability
     return unless user&.admin?
 
     can :manage, :all
+    can :merge, Player
   end
 end

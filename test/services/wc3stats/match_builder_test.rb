@@ -177,5 +177,26 @@ module Wc3stats
       # Observers are now created as players (but without appearances)
       assert Player.exists?(battletag: "Observer#5678")
     end
+
+    test "finds player by alternative_battletag" do
+      # Create a player with an alternative battletag (simulating a merged player)
+      merged_player = Player.create!(
+        battletag: "MergedPlayer#9999",
+        nickname: "MergedPlayer",
+        custom_rating: 1500,
+        ml_score: 55.0,
+        alternative_battletags: ["GoodPlayer1#1234"]
+      )
+
+      builder = MatchBuilder.new(@replay)
+      match = builder.call
+
+      # Should find the merged player via alternative_battletags
+      appearance = match.appearances.find_by(faction: Faction.find_by(name: "Gondor"))
+      assert_equal merged_player.id, appearance.player_id
+
+      # Should not create a new player with the alternative battletag
+      assert_nil Player.find_by(battletag: "GoodPlayer1#1234")
+    end
   end
 end

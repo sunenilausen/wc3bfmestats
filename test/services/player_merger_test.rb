@@ -141,4 +141,29 @@ class PlayerMergerTest < ActiveSupport::TestCase
     assert_includes result.message, @mergeable.nickname
     assert_includes result.message, @primary.id.to_s
   end
+
+  test "preserves mergeable battletag in alternative_battletags" do
+    @primary.update!(battletag: "Primary#1234", alternative_battletags: [])
+    @mergeable.update!(battletag: "Mergeable#5678")
+
+    result = PlayerMerger.new(@primary, @mergeable).merge
+
+    assert result.success?
+    @primary.reload
+    assert_includes @primary.alternative_battletags, "Mergeable#5678"
+  end
+
+  test "preserves mergeable alternative_battletags in primary" do
+    @primary.update!(battletag: "Primary#1234", alternative_battletags: ["Old#1111"])
+    @mergeable.update!(battletag: "Mergeable#5678", alternative_battletags: ["AltMerge#9999"])
+
+    result = PlayerMerger.new(@primary, @mergeable).merge
+
+    assert result.success?
+    @primary.reload
+    assert_includes @primary.alternative_battletags, "Old#1111"
+    assert_includes @primary.alternative_battletags, "Mergeable#5678"
+    assert_includes @primary.alternative_battletags, "AltMerge#9999"
+    assert_not_includes @primary.alternative_battletags, "Primary#1234"
+  end
 end

@@ -59,6 +59,12 @@
               <td class="text-right py-0.5"><%= player.alternative_name %></td>
             </tr>
           <% end %>
+          <% if player.alternative_battletags.present? %>
+            <tr>
+              <td class="py-0.5">Alt Battletags</td>
+              <td class="text-right py-0.5 text-gray-500 text-xs"><%= player.alternative_battletags.join(", ") %></td>
+            </tr>
+          <% end %>
           <tr>
             <td class="py-0.5">Region</td>
             <td class="text-right py-0.5"><%= player.region || "-" %></td>

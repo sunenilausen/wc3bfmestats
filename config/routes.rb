@@ -13,6 +13,13 @@ Rails.application.routes.draw do
   end
   resources :factions, except: [ :new, :create, :destroy ]
   resources :players, constraints: { id: /[^\/]+/ }
+
+  namespace :admin do
+    resources :players, only: [], constraints: { id: /[^\/]+/ } do
+      resource :merge, only: [ :new, :create ], controller: "player_merges"
+    end
+  end
+
   devise_for :users
   get "home/index"
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html

@@ -154,6 +154,10 @@ module Wc3stats
       player = Player.find_by(battletag: fixed_battletag) || Player.find_by(battletag: battletag)
       return player if player
 
+      # Check alternative_battletags for merged players
+      player = find_by_alternative_battletag(fixed_battletag) || find_by_alternative_battletag(battletag)
+      return player if player
+
       nickname = fixed_battletag.split("#").first
       Player.create!(
         battletag: fixed_battletag,
@@ -161,6 +165,13 @@ module Wc3stats
         custom_rating: NewPlayerDefaults::CUSTOM_RATING,
         ml_score: NewPlayerDefaults::ML_SCORE
       )
+    end
+
+    def find_by_alternative_battletag(battletag)
+      Player.where("alternative_battletags IS NOT NULL").find_each do |player|
+        return player if player.alternative_battletags&.include?(battletag)
+      end
+      nil
     end
 
     def fix_encoding(str)

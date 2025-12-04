@@ -97,6 +97,28 @@ class PlayerMerger
       end
     end
 
+    # Preserve mergeable's battletag in alternative_battletags for future syncs
+    preserve_alternative_battletags
+
     @primary.save! if @primary.changed?
+  end
+
+  def preserve_alternative_battletags
+    existing = @primary.alternative_battletags || []
+
+    # Add mergeable's primary battletag
+    if @mergeable.battletag.present? && !existing.include?(@mergeable.battletag)
+      existing << @mergeable.battletag
+    end
+
+    # Also merge any alternative_battletags from mergeable
+    (@mergeable.alternative_battletags || []).each do |alt_tag|
+      existing << alt_tag unless existing.include?(alt_tag)
+    end
+
+    # Remove primary's own battletag if it somehow got in there
+    existing.reject! { |tag| tag == @primary.battletag }
+
+    @primary.alternative_battletags = existing
   end
 end

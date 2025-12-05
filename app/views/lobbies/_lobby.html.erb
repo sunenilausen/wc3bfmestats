@@ -9,8 +9,8 @@
 <% evil_avg_cr = evil_with_players.any? ? (evil_with_players.sum { |lp| lp.player.custom_rating.to_i } / evil_with_players.size) : 0 %>
 <% col_count = editable ? 6 : 13 %>
 
-<div id="<%= dom_id lobby %>" class="w-full sm:w-auto <%= editable ? 'mt-2 space-y-5' : 'my-5 space-y-5' %>" data-controller="<%= 'auto-submit' if editable %>">
-  <%= simple_form_for(lobby, html: { id: "lobby-form" }, data: editable ? { auto_submit_target: "form", turbo_action: "replace" } : {}) do |f| %>
+<div id="<%= dom_id lobby %>" class="w-full sm:w-auto <%= editable ? 'mt-2 space-y-5' : 'my-5 space-y-5' %>">
+  <%= simple_form_for(lobby, html: { id: "lobby-form" }, data: editable ? { turbo_action: "replace" } : {}) do |f| %>
     <% if editable %>
       <%= f.error_notification %>
       <%= f.error_notification message: f.object.errors[:base].to_sentence if f.object.errors[:base].present? %>
@@ -80,7 +80,7 @@
       </tbody>
       <% if editable %>
         <%# Hidden select for form submission - managed by JS observers column %>
-        <select name="lobby[observer_ids][]" multiple class="hidden" id="observer-select" data-action="change->auto-submit#submit">
+        <select name="lobby[observer_ids][]" multiple class="hidden" id="observer-select">
           <% @players_for_select.each do |player| %>
             <option value="<%= player.id %>" <%= "selected" if lobby.observer_ids.include?(player.id) %>>
               <%= player_display_name(player) %>

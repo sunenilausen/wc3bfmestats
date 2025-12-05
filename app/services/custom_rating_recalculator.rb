@@ -231,11 +231,14 @@ class CustomRatingRecalculator
 
     score = 0.0
 
-    # Hero kill contribution (0-100%, capped at 40% for scoring)
+    # Hero kill contribution (capped at 20% per hero killed, max 40% for scoring)
     if appearance.hero_kills && !appearance.ignore_hero_kills?
       team_hero_kills = team_appearances.sum { |a| (a.hero_kills && !a.ignore_hero_kills?) ? a.hero_kills : 0 }
       if team_hero_kills > 0
-        hk_contrib = [(appearance.hero_kills.to_f / team_hero_kills) * 100, 40.0].min
+        raw_contrib = (appearance.hero_kills.to_f / team_hero_kills) * 100
+        # Cap at 20% contribution per hero killed
+        max_contrib_by_kills = appearance.hero_kills * 20.0
+        hk_contrib = [raw_contrib, max_contrib_by_kills, 40.0].min
         score += (hk_contrib - 20.0) * weights[:hero_kill_contribution]
       end
     end
@@ -396,11 +399,14 @@ class CustomRatingRecalculator
 
   # Store contribution percentages on appearance for faster queries
   def store_contribution_percentages(appearance, team_appearances)
-    # Hero kill contribution
+    # Hero kill contribution (capped at 20% per hero killed)
     if appearance.hero_kills && !appearance.ignore_hero_kills?
       team_hero_kills = team_appearances.sum { |a| (a.hero_kills && !a.ignore_hero_kills?) ? a.hero_kills : 0 }
       if team_hero_kills > 0
-        appearance.hero_kill_pct = (appearance.hero_kills.to_f / team_hero_kills * 100).round(1)
+        raw_pct = (appearance.hero_kills.to_f / team_hero_kills * 100)
+        # Cap at 20% contribution per hero killed
+        max_pct_by_kills = appearance.hero_kills * 20.0
+        appearance.hero_kill_pct = [raw_pct, max_pct_by_kills].min.round(1)
       end
     end
 

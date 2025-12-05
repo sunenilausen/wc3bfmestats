@@ -157,12 +157,14 @@ class PlayerStatsCalculator
       stats[:hero_kill_contributions] << appearance.hero_kill_pct
       faction_stats[:hero_kill_contributions] << appearance.hero_kill_pct
     elsif !appearance.hero_kills.nil? && !appearance.ignore_hero_kills?
-      # Fallback: calculate if not stored
+      # Fallback: calculate if not stored (capped at 20% per hero killed)
       team_with_hero_kills = team_appearances.select { |a| !a.hero_kills.nil? && !a.ignore_hero_kills? }
       if team_with_hero_kills.any?
         team_total = team_with_hero_kills.sum(&:hero_kills)
         if team_total > 0
-          contribution = (appearance.hero_kills.to_f / team_total * 100)
+          raw_contrib = (appearance.hero_kills.to_f / team_total * 100)
+          max_contrib_by_kills = appearance.hero_kills * 20.0
+          contribution = [raw_contrib, max_contrib_by_kills].min
           stats[:hero_kill_contributions] << contribution
           faction_stats[:hero_kill_contributions] << contribution
         end
@@ -341,11 +343,13 @@ class PlayerStatsCalculator
     weights = MlScoreRecalculator::WEIGHTS
     score = 0.0
 
-    # Hero kill contribution (capped at 40%)
+    # Hero kill contribution (capped at 20% per hero killed, max 40%)
     if appearance.hero_kills && !appearance.ignore_hero_kills?
       team_hero_kills = team_appearances.sum { |a| (a.hero_kills && !a.ignore_hero_kills?) ? a.hero_kills : 0 }
       if team_hero_kills > 0
-        hk_contrib = [(appearance.hero_kills.to_f / team_hero_kills) * 100, 40.0].min
+        raw_contrib = (appearance.hero_kills.to_f / team_hero_kills) * 100
+        max_contrib_by_kills = appearance.hero_kills * 20.0
+        hk_contrib = [raw_contrib, max_contrib_by_kills, 40.0].min
         score += (hk_contrib - 20.0) * weights[:hero_kill_contribution]
       end
     end

@@ -68,11 +68,13 @@ Players are ranked within their team by performance score. The performance score
 
 | Stat | Weight | Max |
 |------|--------|-----|
-| Hero kills % | 0.25 | 40% |
+| Hero kills % | 0.25 | 20% per kill (max 40%) |
 | Unit kills % | 0.20 | 40% |
 | Castle raze % | 0.20 | 30% |
 | Hero uptime | 0.20 | - |
 | Team heal % | 0.15 | 40% |
+
+Note: Hero kill contribution is capped at 20% per hero killed. For example, killing 1 hero caps your contribution at 20% regardless of how many total hero kills your team has.
 
 - **Winning team** (net +3 points distributed):
   - 1st place: +2

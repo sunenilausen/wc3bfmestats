@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_12_03_211511) do
+ActiveRecord::Schema[8.1].define(version: 2025_12_06_164406) do
   create_table "appearances", force: :cascade do |t|
     t.integer "bases_lost"
     t.integer "bases_total"
@@ -103,6 +103,24 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_03_211511) do
     t.index ["wc3stats_replay_id"], name: "index_matches_on_wc3stats_replay_id"
   end
 
+  create_table "player_faction_stats", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "faction_id", null: false
+    t.decimal "faction_rating"
+    t.decimal "faction_score"
+    t.integer "games_played", default: 0, null: false
+    t.float "performance_score", default: 0.0, null: false
+    t.integer "player_id", null: false
+    t.integer "rank"
+    t.datetime "updated_at", null: false
+    t.integer "wins", default: 0, null: false
+    t.index ["faction_id", "performance_score"], name: "index_player_faction_stats_on_faction_id_and_performance_score"
+    t.index ["faction_id", "rank"], name: "index_player_faction_stats_on_faction_id_and_rank"
+    t.index ["faction_id"], name: "index_player_faction_stats_on_faction_id"
+    t.index ["player_id", "faction_id"], name: "index_player_faction_stats_on_player_id_and_faction_id", unique: true
+    t.index ["player_id"], name: "index_player_faction_stats_on_player_id"
+  end
+
   create_table "players", force: :cascade do |t|
     t.json "alternative_battletags", default: []
     t.string "alternative_name"
@@ -175,4 +193,6 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_03_211511) do
   add_foreign_key "lobby_players", "lobbies"
   add_foreign_key "lobby_players", "players"
   add_foreign_key "matches", "wc3stats_replays"
+  add_foreign_key "player_faction_stats", "factions"
+  add_foreign_key "player_faction_stats", "players"
 end

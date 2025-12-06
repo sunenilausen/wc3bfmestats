@@ -3,6 +3,8 @@ class Player < ApplicationRecord
   has_many :matches, through: :appearances
   has_many :lobby_players
   has_many :lobbies, through: :lobby_players
+  has_many :player_faction_stats, dependent: :destroy
+  has_many :ranked_factions, through: :player_faction_stats, source: :faction
 
   # Always use battletag as URL param for consistency
   def to_param

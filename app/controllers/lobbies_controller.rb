@@ -281,6 +281,14 @@ class LobbiesController < ApplicationController
           lastSeen: formatted_date
         }
       end.compact
+
+      # Preload PlayerFactionStats for faction-specific ratings/scores
+      @player_faction_stats = PlayerFactionStat
+        .where(player_id: Player.pluck(:id))
+        .index_by { |pfs| [pfs.player_id, pfs.faction_id] }
+
+      # Get totals per faction for percentile calculation
+      @faction_totals = PlayerFactionStat.where.not(faction_score: nil).group(:faction_id).count
     end
 
     def preload_lobby_player_stats

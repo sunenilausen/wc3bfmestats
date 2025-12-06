@@ -140,6 +140,30 @@
         -
       <% end %>
     </td>
+    <%# Faction Stats (Score/Rating/Rank) for edit mode %>
+    <td class="px-4 py-2 whitespace-nowrap text-sm" id="fac-stats-<%= index %>">
+      <% if lp.player && defined?(player_faction_stats) %>
+        <% pfs = player_faction_stats[[lp.player_id, lp.faction_id]] %>
+        <% if pfs&.faction_score %>
+          <span class="font-medium"><%= pfs.faction_score.round(1) %></span>
+          <% if pfs.rank %>
+            <% total = (faction_totals || {})[lp.faction_id] || 0 %>
+            <% percentile = total > 0 ? (pfs.rank.to_f / total * 100).round : 0 %>
+            <span class="<%= pfs.rank <= 3 ? 'text-yellow-600 font-semibold' : (pfs.rank <= 10 ? 'text-green-600' : 'text-gray-400') %> text-xs">(#<%= pfs.rank %>, t<%= percentile %>%)</span>
+          <% end %>
+          <span class="text-gray-400 text-xs ml-1">R:<%= pfs.faction_rating&.round || '-' %></span>
+        <% elsif pfs&.faction_rating %>
+          <span class="text-gray-400">-</span>
+          <span class="text-gray-400 text-xs ml-1">R:<%= pfs.faction_rating.round %></span>
+        <% else %>
+          <span class="text-gray-400">-</span>
+        <% end %>
+      <% elsif lp.is_new_player? %>
+        <span class="text-gray-400">-</span>
+      <% else %>
+        -
+      <% end %>
+    </td>
   <% end %>
   <% unless editable %>
     <%# Performance Score - use stored ml_score from player %>

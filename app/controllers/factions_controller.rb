@@ -46,6 +46,16 @@ class FactionsController < ApplicationController
     @hero_kills = event_stats[:hero_kills]
     @hero_deaths = event_stats[:hero_deaths]
     @hero_kd_ratio = event_stats[:hero_kd_ratio]
+
+    # Top 10 players by faction score for this faction
+    @top_performers = Rails.cache.fetch(cache_key + ["top_performers"]) do
+      PlayerFactionStat.where(faction: @faction)
+        .where("games_played >= ?", PlayerFactionStatsCalculator::MIN_GAMES_FOR_RANKING)
+        .where.not(faction_score: nil)
+        .order(faction_score: :desc)
+        .limit(10)
+        .includes(:player)
+    end
   end
 
   # GET /factions/1/edit

@@ -387,6 +387,8 @@
 
     <% good_factions = Faction.where(good: true).order(:id) %>
     <% evil_factions = Faction.where(good: false).order(:id) %>
+    <% player_faction_stats = player.player_faction_stats.includes(:faction).index_by(&:faction_id) %>
+    <% faction_totals = PlayerFactionStat.where.not(faction_score: nil).group(:faction_id).count %>
 
     <div class="space-y-6">
       <div>
@@ -396,10 +398,12 @@
             <thead>
               <tr class="border-b">
                 <th class="text-left py-1">Faction</th>
+                <th class="text-center py-1" title="Faction Score (like ML score but faction-specific)">F.Score</th>
+                <th class="text-center py-1" title="Faction-specific rating">F.Rating</th>
                 <th class="text-center py-1" title="Percentage of games played with this faction">Play%</th>
                 <th class="text-center py-1">W/L</th>
                 <th class="text-center py-1">Win%</th>
-                <th class="text-center py-1" title="Average Contribution Rank">Avg Rank</th>
+                <th class="text-center py-1" title="Average Contribution Rank">Avg C.Rank</th>
                 <th class="text-center py-1" title="Hero Uptime %">Hero Up</th>
                 <th class="text-center py-1" title="Hero Kill Contribution %">HK%</th>
                 <th class="text-center py-1" title="Unit Kill Contribution %">UK%</th>
@@ -412,6 +416,7 @@
                 <% fs = stats[:faction_stats][faction.id] %>
                 <% next unless fs && fs[:games] > 0 %>
                 <% efs = event_stats&.dig(:faction_stats, faction.id) %>
+                <% pfs = player_faction_stats[faction.id] %>
                 <% play_pct = stats[:total_matches] > 0 ? (fs[:games].to_f / stats[:total_matches] * 100).round(1) : 0 %>
                 <tr class="border-b border-gray-100">
                   <td class="py-1">
@@ -419,6 +424,25 @@
                       <span class="w-2.5 h-2.5 rounded-full" style="background-color: <%= faction.color_hex %>"></span>
                       <%= link_to faction.name, faction_path(faction), class: "text-blue-600 hover:underline" %>
                     </span>
+                  </td>
+                  <td class="text-center py-1">
+                    <% if pfs&.faction_score %>
+                      <span class="font-medium"><%= pfs.faction_score.round(1) %></span>
+                      <% if pfs.rank %>
+                        <% total = faction_totals[faction.id] || 0 %>
+                        <% percentile = total > 0 ? (pfs.rank.to_f / total * 100).round : 0 %>
+                        <span class="<%= pfs.rank <= 3 ? 'text-yellow-600 font-semibold' : (pfs.rank <= 10 ? 'text-green-600' : 'text-gray-400') %> text-xs">(#<%= pfs.rank %>, t<%= percentile %>%)</span>
+                      <% end %>
+                    <% else %>
+                      <span class="text-gray-400">-</span>
+                    <% end %>
+                  </td>
+                  <td class="text-center py-1">
+                    <% if pfs&.faction_rating %>
+                      <span class="font-medium"><%= pfs.faction_rating.to_i %></span>
+                    <% else %>
+                      <span class="text-gray-400">-</span>
+                    <% end %>
                   </td>
                   <td class="text-center py-1 text-gray-500"><%= play_pct %>%</td>
                   <td class="text-center py-1">
@@ -452,10 +476,12 @@
             <thead>
               <tr class="border-b">
                 <th class="text-left py-1">Faction</th>
+                <th class="text-center py-1" title="Faction Score (like ML score but faction-specific)">F.Score</th>
+                <th class="text-center py-1" title="Faction-specific rating">F.Rating</th>
                 <th class="text-center py-1" title="Percentage of games played with this faction">Play%</th>
                 <th class="text-center py-1">W/L</th>
                 <th class="text-center py-1">Win%</th>
-                <th class="text-center py-1" title="Average Contribution Rank">Avg Rank</th>
+                <th class="text-center py-1" title="Average Contribution Rank">Avg C.Rank</th>
                 <th class="text-center py-1" title="Hero Uptime %">Hero Up</th>
                 <th class="text-center py-1" title="Hero Kill Contribution %">HK%</th>
                 <th class="text-center py-1" title="Unit Kill Contribution %">UK%</th>
@@ -468,6 +494,7 @@
                 <% fs = stats[:faction_stats][faction.id] %>
                 <% next unless fs && fs[:games] > 0 %>
                 <% efs = event_stats&.dig(:faction_stats, faction.id) %>
+                <% pfs = player_faction_stats[faction.id] %>
                 <% play_pct = stats[:total_matches] > 0 ? (fs[:games].to_f / stats[:total_matches] * 100).round(1) : 0 %>
                 <tr class="border-b border-gray-100">
                   <td class="py-1">
@@ -475,6 +502,25 @@
                       <span class="w-2.5 h-2.5 rounded-full" style="background-color: <%= faction.color_hex %>"></span>
                       <%= link_to faction.name, faction_path(faction), class: "text-blue-600 hover:underline" %>
                     </span>
+                  </td>
+                  <td class="text-center py-1">
+                    <% if pfs&.faction_score %>
+                      <span class="font-medium"><%= pfs.faction_score.round(1) %></span>
+                      <% if pfs.rank %>
+                        <% total = faction_totals[faction.id] || 0 %>
+                        <% percentile = total > 0 ? (pfs.rank.to_f / total * 100).round : 0 %>
+                        <span class="<%= pfs.rank <= 3 ? 'text-yellow-600 font-semibold' : (pfs.rank <= 10 ? 'text-green-600' : 'text-gray-400') %> text-xs">(#<%= pfs.rank %>, t<%= percentile %>%)</span>
+                      <% end %>
+                    <% else %>
+                      <span class="text-gray-400">-</span>
+                    <% end %>
+                  </td>
+                  <td class="text-center py-1">
+                    <% if pfs&.faction_rating %>
+                      <span class="font-medium"><%= pfs.faction_rating.to_i %></span>
+                    <% else %>
+                      <span class="text-gray-400">-</span>
+                    <% end %>
                   </td>
                   <td class="text-center py-1 text-gray-500"><%= play_pct %>%</td>
                   <td class="text-center py-1">

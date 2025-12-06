@@ -69,6 +69,8 @@ class Faction < ApplicationRecord
   validates :color, presence: true, inclusion: { in: COLORS }
 
   has_many :appearances
+  has_many :player_faction_stats, dependent: :destroy
+  has_many :ranked_players, through: :player_faction_stats, source: :player
 
   def color_hex
     COLOR_HEX[color] || "#888888"

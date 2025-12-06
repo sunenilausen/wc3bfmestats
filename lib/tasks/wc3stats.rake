@@ -425,8 +425,31 @@ namespace :wc3stats do
     puts "  Updated ML scores for #{Player.count} players"
     puts
 
-    # Step 11: Invalidate stats cache
-    puts "Step 11: Invalidating stats cache..."
+    # Step 11: Calculate player faction stats and rankings
+    puts "Step 11: Calculating player faction stats..."
+    faction_stats_calculator = PlayerFactionStatsCalculator.new
+    faction_stats_calculator.call
+    puts "  Updated #{faction_stats_calculator.stats_updated} player-faction stats"
+    puts
+
+    # Step 12: Calculate faction ratings
+    puts "Step 12: Calculating faction ratings..."
+    faction_rating_recalculator = FactionRatingRecalculator.new
+    faction_rating_recalculator.call
+    puts "  Faction ratings calculated"
+    if faction_rating_recalculator.errors.any?
+      puts "  Errors: #{faction_rating_recalculator.errors.count}"
+    end
+    puts
+
+    # Step 13: Recalculate faction scores with updated ratings
+    puts "Step 13: Recalculating faction scores..."
+    faction_stats_calculator.recalculate_scores_only
+    puts "  Faction scores updated with new ratings"
+    puts
+
+    # Step 14: Invalidate stats cache
+    puts "Step 14: Invalidating stats cache..."
     StatsCacheKey.invalidate!
     puts "  Cache invalidated"
     puts
@@ -707,8 +730,31 @@ namespace :wc3stats do
     puts "  Updated ML scores for #{Player.count} players"
     puts
 
-    # Step 3: Invalidate cache
-    puts "Step 3: Invalidating stats cache..."
+    # Step 3: Calculate player faction stats
+    puts "Step 3: Calculating player faction stats..."
+    faction_stats_calculator = PlayerFactionStatsCalculator.new
+    faction_stats_calculator.call
+    puts "  Updated #{faction_stats_calculator.stats_updated} player-faction stats"
+    puts
+
+    # Step 4: Calculate faction ratings
+    puts "Step 4: Calculating faction ratings..."
+    faction_rating_recalculator = FactionRatingRecalculator.new
+    faction_rating_recalculator.call
+    puts "  Faction ratings calculated"
+    if faction_rating_recalculator.errors.any?
+      puts "  Errors: #{faction_rating_recalculator.errors.count}"
+    end
+    puts
+
+    # Step 5: Recalculate faction scores with updated ratings
+    puts "Step 5: Recalculating faction scores..."
+    faction_stats_calculator.recalculate_scores_only
+    puts "  Faction scores updated with new ratings"
+    puts
+
+    # Step 6: Invalidate cache
+    puts "Step 6: Invalidating stats cache..."
     StatsCacheKey.invalidate!
     puts "  Cache invalidated"
     puts

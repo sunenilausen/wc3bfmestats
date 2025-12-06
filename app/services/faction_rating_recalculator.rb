@@ -14,8 +14,8 @@ class FactionRatingRecalculator
   MAX_WIN_RATE_MODIFIER = 0.15
 
   # Penalty for unproven factions (scales down as games increase)
-  # 0 games = 20% below CR, approaches 0% penalty at MIN_GAMES_FOR_CONFIDENCE
-  UNPROVEN_PENALTY = 0.20
+  # 0 games = 10% below CR, approaches 0% penalty at MIN_GAMES_FOR_CONFIDENCE
+  UNPROVEN_PENALTY = 0.10
 
   attr_reader :errors
 

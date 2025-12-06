@@ -15,8 +15,6 @@ class CustomRatingRecalculator
   def initialize
     @matches_processed = 0
     @errors = []
-    # Track faction games per player: { [player_id, faction_id] => games }
-    @faction_games = Hash.new(0)
   end
 
   def call
@@ -111,11 +109,6 @@ class CustomRatingRecalculator
   INDIVIDUAL_WEIGHT = 0.2  # 1/5 own rating
   TEAM_WEIGHT = 0.8        # 4/5 team average
 
-  # Faction experience settings
-  # Players with few games on a faction are treated as weaker on that faction
-  FACTION_MIN_GAMES_FOR_CONFIDENCE = 10
-  FACTION_UNPROVEN_PENALTY = 0.20  # 20% penalty for 0 games, scales down
-
   # Contribution bonus points
   CONTRIBUTION_BONUS_WIN = [ 2, 1, 1, 0, -1 ]   # 1st, 2nd, 3rd, 4th, 5th (winners)
   CONTRIBUTION_BONUS_LOSS = [ 1, 1, 0, -1, -1 ] # 1st, 2nd, 3rd, 4th, 5th (losers)
@@ -131,10 +124,10 @@ class CustomRatingRecalculator
     # Skip contribution bonus if anyone has 0 unit kills (incomplete/broken data)
     skip_contribution_bonus = match.appearances.any? { |a| a.unit_kills == 0 }
 
-    # Calculate team average ratings (adjusted for faction experience)
-    # Players with few wins on their faction are penalized
-    good_avg = good_appearances.sum { |a| faction_adjusted_rating(a) } / good_appearances.size.to_f
-    evil_avg = evil_appearances.sum { |a| faction_adjusted_rating(a) } / evil_appearances.size.to_f
+    # Calculate team average ratings using regular CR
+    # (Faction ratings are for display only, not used in CR calculation)
+    good_avg = good_appearances.sum { |a| a.player&.custom_rating || DEFAULT_RATING } / good_appearances.size.to_f
+    evil_avg = evil_appearances.sum { |a| a.player&.custom_rating || DEFAULT_RATING } / evil_appearances.size.to_f
 
     # Calculate performance scores and rank players within each team
     good_ranked = rank_by_performance(good_appearances, match)
@@ -226,30 +219,9 @@ class CustomRatingRecalculator
         player.custom_rating_bonus_wins -= 1
       end
 
-      # Track faction games for future matches
-      @faction_games[[player.id, appearance.faction_id]] += 1
-
       player.save!
       appearance.save!
     end
-  end
-
-  # Calculate faction-adjusted rating for opponent strength calculation
-  # Players with few games on a faction are weaker (unproven penalty)
-  def faction_adjusted_rating(appearance)
-    player = appearance.player
-    return DEFAULT_RATING unless player&.custom_rating
-
-    cr = player.custom_rating
-    games = @faction_games[[player.id, appearance.faction_id]]
-
-    # Confidence: 0 at 0 games, 1 at MIN_GAMES_FOR_CONFIDENCE
-    confidence = [games.to_f / FACTION_MIN_GAMES_FOR_CONFIDENCE, 1.0].min
-
-    # Penalty reduces as games increase
-    penalty = FACTION_UNPROVEN_PENALTY * (1 - confidence)
-
-    cr * (1 - penalty)
   end
 
   # Calculate performance score for an appearance (uses same weights as MlScoreRecalculator)

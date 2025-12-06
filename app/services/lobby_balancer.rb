@@ -175,12 +175,12 @@ class LobbyBalancer
       .count
 
     counts.each do |(player_id, faction_id), count|
-      @faction_experience_cache[[player_id, faction_id]] = count
+      @faction_experience_cache[[ player_id, faction_id ]] = count
     end
   end
 
   def faction_experience(player_id, faction_id)
-    @faction_experience_cache[[player_id, faction_id]] || 0
+    @faction_experience_cache[[ player_id, faction_id ]] || 0
   end
 
   def extract_slot_data(lp)
@@ -237,9 +237,9 @@ class LobbyBalancer
 
   def weights_for_games(games)
     if games < GAMES_THRESHOLD
-      [NEW_PLAYER_CR_WEIGHT, NEW_PLAYER_ML_WEIGHT]
+      [ NEW_PLAYER_CR_WEIGHT, NEW_PLAYER_ML_WEIGHT ]
     else
-      [EXPERIENCED_CR_WEIGHT, EXPERIENCED_ML_WEIGHT]
+      [ EXPERIENCED_CR_WEIGHT, EXPERIENCED_ML_WEIGHT ]
     end
   end
 

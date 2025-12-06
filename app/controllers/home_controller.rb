@@ -1,6 +1,6 @@
 class HomeController < ApplicationController
   def index
-    @available_map_versions = Rails.cache.fetch(["available_map_versions", StatsCacheKey.key]) do
+    @available_map_versions = Rails.cache.fetch([ "available_map_versions", StatsCacheKey.key ]) do
       Match.where(ignored: false)
         .where.not(map_version: nil)
         .distinct
@@ -8,9 +8,9 @@ class HomeController < ApplicationController
         .sort_by do |v|
           match = v.match(/^(\d+)\.(\d+)([a-zA-Z]*)/)
           if match
-            [match[1].to_i, match[2].to_i, match[3].to_s]
+            [ match[1].to_i, match[2].to_i, match[3].to_s ]
           else
-            [0, 0, v]
+            [ 0, 0, v ]
           end
         end
         .reverse
@@ -36,7 +36,7 @@ class HomeController < ApplicationController
 
     # Most recent lobby and match
     @recent_lobby = Lobby.order(updated_at: :desc).first
-    @recent_match = Match.where(ignored: false).order(uploaded_at: :desc).includes(appearances: [:player, :faction]).first
+    @recent_match = Match.where(ignored: false).order(uploaded_at: :desc).includes(appearances: [ :player, :faction ]).first
 
     # User's most recent lobby (based on session)
     if session[:lobby_token].present?

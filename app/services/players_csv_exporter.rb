@@ -17,7 +17,7 @@ class PlayersCsvExporter
   private
 
   def headers
-    ["nickname", "battletag", "custom_rating", "ml_score", "matches", "last_appearance", "wins", "losses", "win_rate"]
+    [ "nickname", "battletag", "custom_rating", "ml_score", "matches", "last_appearance", "wins", "losses", "win_rate" ]
   end
 
   def players

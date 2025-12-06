@@ -76,10 +76,10 @@ namespace :ml do
     puts "-" * 76
 
     sorted_weights = weights.weights_hash.except(:bias).map do |key, value|
-      effective = min_weights[key] ? [value, min_weights[key]].max : value
+      effective = min_weights[key] ? [ value, min_weights[key] ].max : value
       range_info = ranges[key]
       impact = range_info ? (effective.abs * range_info[:typical_range]) : 0
-      [key, value, effective, impact]
+      [ key, value, effective, impact ]
     end.sort_by { |_, _, _, impact| -impact }
 
     sorted_weights.each do |key, trained, effective, impact|
@@ -97,5 +97,4 @@ namespace :ml do
     puts "#{"bias".ljust(28)} #{(weights.bias >= 0 ? '+' : '') + weights.bias.round(6).to_s}"
     puts "\nEffective = max(trained, minimum). Impact = effective x typical_range"
   end
-
 end

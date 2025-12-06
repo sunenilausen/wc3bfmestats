@@ -185,7 +185,7 @@ module Wc3stats
         nickname: "MergedPlayer",
         custom_rating: 1500,
         ml_score: 55.0,
-        alternative_battletags: ["GoodPlayer1#1234"]
+        alternative_battletags: [ "GoodPlayer1#1234" ]
       )
 
       builder = MatchBuilder.new(@replay)

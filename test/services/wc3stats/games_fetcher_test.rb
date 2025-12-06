@@ -42,7 +42,7 @@ module Wc3stats
       fetcher = GamesFetcher.new(search_term: "BFME")
       replay_ids = fetcher.call
 
-      assert_equal [231, 233, 719317, 720046, 720371], replay_ids
+      assert_equal [ 231, 233, 719317, 720046, 720371 ], replay_ids
     end
 
     test "returns empty array when API fails" do
@@ -79,7 +79,7 @@ module Wc3stats
 
       assert_equal 3, replay_ids.count
       # Should take the 3 most recent (highest IDs)
-      assert_equal [719317, 720046, 720371], replay_ids
+      assert_equal [ 719317, 720046, 720371 ], replay_ids
     end
 
     test "handles network errors gracefully" do

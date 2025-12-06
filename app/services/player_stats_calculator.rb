@@ -361,7 +361,7 @@ class PlayerStatsCalculator
       if team_hero_kills > 0
         raw_contrib = (appearance.hero_kills.to_f / team_hero_kills) * 100
         max_contrib_by_kills = appearance.hero_kills * 20.0
-        hk_contrib = [raw_contrib, max_contrib_by_kills, 40.0].min
+        hk_contrib = [ raw_contrib, max_contrib_by_kills, 40.0 ].min
         score += (hk_contrib - 20.0) * weights[:hero_kill_contribution]
       end
     end
@@ -370,7 +370,7 @@ class PlayerStatsCalculator
     if appearance.unit_kills && !appearance.ignore_unit_kills?
       team_unit_kills = team_appearances.sum { |a| (a.unit_kills && !a.ignore_unit_kills?) ? a.unit_kills : 0 }
       if team_unit_kills > 0
-        uk_contrib = [(appearance.unit_kills.to_f / team_unit_kills) * 100, 40.0].min
+        uk_contrib = [ (appearance.unit_kills.to_f / team_unit_kills) * 100, 40.0 ].min
         score += (uk_contrib - 20.0) * weights[:unit_kill_contribution]
       end
     end
@@ -379,7 +379,7 @@ class PlayerStatsCalculator
     if appearance.castles_razed
       team_castles = team_appearances.sum { |a| a.castles_razed || 0 }
       if team_castles > 0
-        cr_contrib = [(appearance.castles_razed.to_f / team_castles) * 100, 30.0].min
+        cr_contrib = [ (appearance.castles_razed.to_f / team_castles) * 100, 30.0 ].min
         score += (cr_contrib - 20.0) * weights[:castle_raze_contribution]
       end
     end
@@ -388,7 +388,7 @@ class PlayerStatsCalculator
     if appearance.team_heal && appearance.team_heal > 0
       team_heal_total = team_appearances.sum { |a| (a.team_heal && a.team_heal > 0) ? a.team_heal : 0 }
       if team_heal_total > 0
-        th_contrib = [(appearance.team_heal.to_f / team_heal_total) * 100, 40.0].min
+        th_contrib = [ (appearance.team_heal.to_f / team_heal_total) * 100, 40.0 ].min
         score += (th_contrib - 20.0) * weights[:team_heal_contribution]
       end
     end

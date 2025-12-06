@@ -154,8 +154,8 @@ class PlayerMergerTest < ActiveSupport::TestCase
   end
 
   test "preserves mergeable alternative_battletags in primary" do
-    @primary.update!(battletag: "Primary#1234", alternative_battletags: ["Old#1111"])
-    @mergeable.update!(battletag: "Mergeable#5678", alternative_battletags: ["AltMerge#9999"])
+    @primary.update!(battletag: "Primary#1234", alternative_battletags: [ "Old#1111" ])
+    @mergeable.update!(battletag: "Mergeable#5678", alternative_battletags: [ "AltMerge#9999" ])
 
     result = PlayerMerger.new(@primary, @mergeable).merge
 

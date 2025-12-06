@@ -46,7 +46,7 @@ class PlayerFactionStatsCalculator
     player_faction_data = Hash.new { |h, k| h[k] = { scores: [], wins: 0, games: 0 } }
 
     appearances_data.each do |player_id, faction_id, score, good_victory, faction_good|
-      key = [player_id, faction_id]
+      key = [ player_id, faction_id ]
       player_faction_data[key][:scores] << score
       player_faction_data[key][:games] += 1
 

@@ -25,11 +25,62 @@ class Player < ApplicationRecord
 
     # First try exact match on primary battletag
     player = find_by(battletag: battletag)
+
+    # If exact match found but battletag has no #, check if there's a better match with #
+    # This handles cases where "BlackJacks" exists but "BlackJacks#11628" has more games
+    if player && !battletag.include?("#")
+      better_player = find_better_player_by_nickname(battletag, player)
+      return better_player if better_player
+    end
+
     return player if player
 
     # Then check alternative_battletags (for merged players)
-    where.not(alternative_battletags: nil).find_each do |p|
+    where("alternative_battletags IS NOT NULL AND alternative_battletags != '[]'").find_each do |p|
       return p if p.alternative_battletags&.include?(battletag)
+    end
+
+    # If no # in battletag, try to find by nickname with the most games
+    # This handles cases like "ALPAPOLO" matching "ALPAPOLO#2858"
+    unless battletag.include?("#")
+      best = find_best_player_by_nickname(battletag)
+      return best if best
+    end
+
+    # If battletag has #, check if there's a player with same nickname (without #)
+    if battletag.include?("#")
+      nickname = battletag.split("#").first
+      existing = find_by(battletag: nickname)
+      return existing if existing
+    end
+
+    nil
+  end
+
+  # Find the best player by nickname (one with most games)
+  def self.find_best_player_by_nickname(nickname)
+    # Find players with this nickname, prefer those with games
+    players = where(nickname: nickname).to_a
+    return nil if players.empty?
+
+    # Sort by game count descending
+    players_with_counts = players.map { |p| [ p, p.matches.where(ignored: false).count ] }
+    players_with_counts.sort_by! { |_, count| -count }
+
+    # Return player with most games, or first if none have games
+    players_with_counts.first&.first
+  end
+
+  # Check if there's a better player match (with more games) for a nickname
+  def self.find_better_player_by_nickname(nickname, current_player)
+    current_games = current_player.matches.where(ignored: false).count
+
+    # Find other players with same nickname but different battletag (with #)
+    other_players = where(nickname: nickname).where.not(id: current_player.id).where("battletag LIKE ?", "%#%")
+
+    other_players.each do |other|
+      other_games = other.matches.where(ignored: false).count
+      return other if other_games > current_games
     end
 
     nil

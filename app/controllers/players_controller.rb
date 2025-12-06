@@ -70,7 +70,7 @@ class PlayersController < ApplicationController
 
   # GET /players/1 or /players/1.json
   def show
-    cache_key = ["player_stats", @player.id, StatsCacheKey.key]
+    cache_key = [ "player_stats", @player.id, StatsCacheKey.key ]
 
     # Preload all data needed for stats computation (exclude ignored matches)
     # Order by reverse chronological (newest first) using same ordering as matches index
@@ -81,7 +81,7 @@ class PlayersController < ApplicationController
       .merge(Match.reverse_chronological)
 
     # Compute all stats in a single pass (cached)
-    @stats = Rails.cache.fetch(cache_key + ["basic"]) do
+    @stats = Rails.cache.fetch(cache_key + [ "basic" ]) do
       stats = PlayerStatsCalculator.new(@player, @appearances).compute
       # Convert Hash with default proc to regular Hash for caching
       stats[:faction_stats] = Hash[stats[:faction_stats]] if stats[:faction_stats]
@@ -89,12 +89,12 @@ class PlayersController < ApplicationController
     end
 
     # Compute hero and base death stats from replay events (cached)
-    @event_stats = Rails.cache.fetch(cache_key + ["events"]) do
+    @event_stats = Rails.cache.fetch(cache_key + [ "events" ]) do
       PlayerEventStatsCalculator.new(@player).compute
     end
 
     # Compute ranks (cached separately since they change with other players)
-    @ranks = Rails.cache.fetch(cache_key + ["ranks"]) do
+    @ranks = Rails.cache.fetch(cache_key + [ "ranks" ]) do
       {
         cr_rank: @player.cr_rank,
         ml_rank: @player.ml_rank,

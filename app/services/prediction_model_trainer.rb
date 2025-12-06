@@ -42,7 +42,7 @@ class PredictionModelTrainer
     data = []
 
     Match.where(ignored: false).includes(
-      appearances: [:player, :faction],
+      appearances: [ :player, :faction ],
       wc3stats_replay: {}
     ).find_each do |match|
       next unless match.wc3stats_replay.present?
@@ -250,7 +250,7 @@ class PredictionModelTrainer
   end
 
   def compute_gradients(data, weights)
-    gradients = weights.keys.to_h { |k| [k, 0.0] }
+    gradients = weights.keys.to_h { |k| [ k, 0.0 ] }
     n = data.size.to_f
 
     data.each do |d|

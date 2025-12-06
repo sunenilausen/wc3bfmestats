@@ -28,7 +28,7 @@ class MlScoreRecalculator
     hero_kill_totals = Appearance.joins(:faction)
       .where(match_id: match_ids)
       .where.not(hero_kills: nil)
-      .where(ignore_hero_kills: [false, nil])
+      .where(ignore_hero_kills: [ false, nil ])
       .group(:match_id, "factions.good")
       .pluck(:match_id, Arel.sql("factions.good"), Arel.sql("SUM(hero_kills)"))
 
@@ -42,7 +42,7 @@ class MlScoreRecalculator
     unit_kill_totals = Appearance.joins(:faction)
       .where(match_id: match_ids)
       .where.not(unit_kills: nil)
-      .where(ignore_unit_kills: [false, nil])
+      .where(ignore_unit_kills: [ false, nil ])
       .group(:match_id, "factions.good")
       .pluck(:match_id, Arel.sql("factions.good"), Arel.sql("SUM(unit_kills)"))
 
@@ -83,14 +83,14 @@ class MlScoreRecalculator
     hero_kill_appearances = Appearance.joins(:match, :faction)
       .where(matches: { ignored: false })
       .where.not(hero_kills: nil)
-      .where(ignore_hero_kills: [false, nil])
+      .where(ignore_hero_kills: [ false, nil ])
       .pluck(:player_id, :match_id, "factions.good", :hero_kills)
 
     # Get unit kill appearances (excluding ignored)
     unit_kill_appearances = Appearance.joins(:match, :faction)
       .where(matches: { ignored: false })
       .where.not(unit_kills: nil)
-      .where(ignore_unit_kills: [false, nil])
+      .where(ignore_unit_kills: [ false, nil ])
       .pluck(:player_id, :match_id, "factions.good", :unit_kills)
 
     # Get castle raze appearances separately (may have different nulls)

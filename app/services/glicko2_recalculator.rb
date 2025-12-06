@@ -41,7 +41,7 @@ class Glicko2Recalculator
   end
 
   def recalculate_all_matches
-    matches = Match.includes(appearances: [:player, :faction])
+    matches = Match.includes(appearances: [ :player, :faction ])
                    .where(ignored: false)
                    .chronological
 
@@ -154,7 +154,7 @@ class Glicko2Recalculator
     new_phi = 1.0 / Math.sqrt(1.0 / phi_star**2 + 1.0 / v)
     new_mu = mu + new_phi**2 * g_opp * (score - e)
 
-    [new_mu, new_phi, new_sigma]
+    [ new_mu, new_phi, new_sigma ]
   end
 
   def compute_new_volatility(sigma, phi, v, delta)
@@ -163,7 +163,7 @@ class Glicko2Recalculator
     # Instead, we use a simpler approach that still captures the essence
 
     # Clamp volatility to reasonable bounds
-    [sigma, 0.03, 0.1].sort[1]
+    [ sigma, 0.03, 0.1 ].sort[1]
   end
 
   def average_rating(appearances)

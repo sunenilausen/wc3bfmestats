@@ -11,8 +11,8 @@ class CreatePlayerFactionStats < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index :player_faction_stats, [:player_id, :faction_id], unique: true
-    add_index :player_faction_stats, [:faction_id, :rank]
-    add_index :player_faction_stats, [:faction_id, :performance_score]
+    add_index :player_faction_stats, [ :player_id, :faction_id ], unique: true
+    add_index :player_faction_stats, [ :faction_id, :rank ]
+    add_index :player_faction_stats, [ :faction_id, :performance_score ]
   end
 end

@@ -15,7 +15,7 @@ class Wc3statsSyncJobTest < ActiveJob::TestCase
   end
 
   test "job can be enqueued" do
-    assert_enqueued_with(job: Wc3statsSyncJob, args: ["recent"]) do
+    assert_enqueued_with(job: Wc3statsSyncJob, args: [ "recent" ]) do
       Wc3statsSyncJob.perform_later("recent")
     end
   end

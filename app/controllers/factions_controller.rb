@@ -9,7 +9,7 @@ class FactionsController < ApplicationController
   # GET /factions/1 or /factions/1.json
   def show
     @map_version = params[:map_version]
-    @available_map_versions = Rails.cache.fetch(["available_map_versions", StatsCacheKey.key]) do
+    @available_map_versions = Rails.cache.fetch([ "available_map_versions", StatsCacheKey.key ]) do
       Match.where(ignored: false)
         .where.not(map_version: nil)
         .distinct
@@ -18,21 +18,21 @@ class FactionsController < ApplicationController
           # Extract major.minor and suffix (e.g., "4.5e" -> [4, 5, "e"])
           match = v.match(/^(\d+)\.(\d+)([a-zA-Z]*)/)
           if match
-            [match[1].to_i, match[2].to_i, match[3].to_s]
+            [ match[1].to_i, match[2].to_i, match[3].to_s ]
           else
-            [0, 0, v]
+            [ 0, 0, v ]
           end
         end
         .reverse
     end
 
-    cache_key = ["faction_stats", @faction.id, @map_version, StatsCacheKey.key]
+    cache_key = [ "faction_stats", @faction.id, @map_version, StatsCacheKey.key ]
 
-    @stats = Rails.cache.fetch(cache_key + ["basic"]) do
+    @stats = Rails.cache.fetch(cache_key + [ "basic" ]) do
       FactionStatsCalculator.new(@faction, map_version: @map_version).compute
     end
 
-    event_stats = Rails.cache.fetch(cache_key + ["events"]) do
+    event_stats = Rails.cache.fetch(cache_key + [ "events" ]) do
       FactionEventStatsCalculator.new(@faction, map_version: @map_version).compute
     end
 
@@ -48,7 +48,7 @@ class FactionsController < ApplicationController
     @hero_kd_ratio = event_stats[:hero_kd_ratio]
 
     # Top 10 players by faction score for this faction
-    @top_performers = Rails.cache.fetch(cache_key + ["top_performers"]) do
+    @top_performers = Rails.cache.fetch(cache_key + [ "top_performers" ]) do
       PlayerFactionStat.where(faction: @faction)
         .where("games_played >= ?", PlayerFactionStatsCalculator::MIN_GAMES_FOR_RANKING)
         .where.not(faction_score: nil)

@@ -148,7 +148,16 @@
             evil_games = stats[:wins_as_evil] + stats[:losses_as_evil]
             good_winrate = good_games > 0 ? (stats[:wins_as_good].to_f / good_games * 100).round(1) : 0
             evil_winrate = evil_games > 0 ? (stats[:wins_as_evil].to_f / evil_games * 100).round(1) : 0
+            good_pct = stats[:total_matches] > 0 ? (good_games.to_f / stats[:total_matches] * 100).round(1) : 0
+            evil_pct = stats[:total_matches] > 0 ? (evil_games.to_f / stats[:total_matches] * 100).round(1) : 0
           %>
+          <tr>
+            <td class="py-0.5">Good vs Evil</td>
+            <td class="text-right py-0.5">
+              <span class="font-medium"><%= good_games %></span> / <span class="font-medium"><%= evil_games %></span>
+              <span class="text-gray-500">(<%= good_pct %>% / <%= evil_pct %>%)</span>
+            </td>
+          </tr>
           <tr>
             <td class="py-0.5">As Good</td>
             <td class="text-right py-0.5">

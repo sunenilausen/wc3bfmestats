@@ -4,7 +4,7 @@ class LobbiesController < ApplicationController
 
   # GET /lobbies or /lobbies.json
   def index
-    @lobbies = Lobby.includes(lobby_players: [:faction, :player]).order(updated_at: :desc)
+    @lobbies = Lobby.includes(lobby_players: [ :faction, :player ]).order(updated_at: :desc)
   end
 
   # GET /lobbies/1 or /lobbies/1.json
@@ -12,7 +12,7 @@ class LobbiesController < ApplicationController
     # Cache key based on lobby composition and global stats version
     player_ids = @lobby.lobby_players.map(&:player_id).compact.sort
     observer_ids = @lobby.observer_ids.sort
-    cache_key = ["lobby_stats", @lobby.id, player_ids, observer_ids, StatsCacheKey.key]
+    cache_key = [ "lobby_stats", @lobby.id, player_ids, observer_ids, StatsCacheKey.key ]
 
     cached_stats = Rails.cache.fetch(cache_key) do
       preload_lobby_player_stats
@@ -73,7 +73,7 @@ class LobbiesController < ApplicationController
     @new_player_defaults = NewPlayerDefaults.all
 
     # Get last match data for "Last Match" button (most recently uploaded non-ignored match)
-    @last_match = Match.includes(appearances: [:faction, :player])
+    @last_match = Match.includes(appearances: [ :faction, :player ])
                        .where(ignored: false)
                        .order(uploaded_at: :desc)
                        .first
@@ -159,7 +159,7 @@ class LobbiesController < ApplicationController
   private
     # Use callbacks to share common setup or constraints between actions.
     def set_lobby
-      @lobby = Lobby.includes(lobby_players: [:faction, :player], observers: []).find(params.expect(:id))
+      @lobby = Lobby.includes(lobby_players: [ :faction, :player ], observers: []).find(params.expect(:id))
     end
 
     # Check if current session owns this lobby
@@ -216,9 +216,9 @@ class LobbiesController < ApplicationController
       faction_totals = Appearance.group(:player_id, :faction_id).count
 
       faction_totals.each do |(player_id, faction_id), total|
-        @faction_stats[[player_id, faction_id]] = {
-          wins: faction_wins[[player_id, faction_id]] || 0,
-          losses: total - (faction_wins[[player_id, faction_id]] || 0)
+        @faction_stats[[ player_id, faction_id ]] = {
+          wins: faction_wins[[ player_id, faction_id ]] || 0,
+          losses: total - (faction_wins[[ player_id, faction_id ]] || 0)
         }
       end
 
@@ -267,9 +267,9 @@ class LobbiesController < ApplicationController
         last_date = last_match_dates[id]
         formatted_date = if last_date.is_a?(String)
                            Time.parse(last_date).strftime("%b %d") rescue last_date[5, 5]
-                         elsif last_date.respond_to?(:strftime)
+        elsif last_date.respond_to?(:strftime)
                            last_date.strftime("%b %d")
-                         end
+        end
         {
           id: id,
           nickname: nickname,
@@ -285,7 +285,7 @@ class LobbiesController < ApplicationController
       # Preload PlayerFactionStats for faction-specific ratings/scores
       @player_faction_stats = PlayerFactionStat
         .where(player_id: Player.pluck(:id))
-        .index_by { |pfs| [pfs.player_id, pfs.faction_id] }
+        .index_by { |pfs| [ pfs.player_id, pfs.faction_id ] }
 
       # Get totals per faction for percentile calculation
       @faction_totals = PlayerFactionStat.where.not(faction_score: nil).group(:faction_id).count

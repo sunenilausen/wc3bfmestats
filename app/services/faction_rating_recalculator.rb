@@ -51,7 +51,7 @@ class FactionRatingRecalculator
     win_rate = wins.to_f / games
 
     # Calculate confidence (0 to 1) based on games played
-    confidence = [games.to_f / MIN_GAMES_FOR_CONFIDENCE, 1.0].min
+    confidence = [ games.to_f / MIN_GAMES_FOR_CONFIDENCE, 1.0 ].min
 
     # Win rate modifier: how much above/below 50% win rate
     # 50% = no modifier, 70% = +0.15, 30% = -0.15 (at full confidence)

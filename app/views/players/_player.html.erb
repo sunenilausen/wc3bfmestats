@@ -144,6 +144,26 @@
             </td>
           </tr>
           <%
+            good_games = stats[:wins_as_good] + stats[:losses_as_good]
+            evil_games = stats[:wins_as_evil] + stats[:losses_as_evil]
+            good_winrate = good_games > 0 ? (stats[:wins_as_good].to_f / good_games * 100).round(1) : 0
+            evil_winrate = evil_games > 0 ? (stats[:wins_as_evil].to_f / evil_games * 100).round(1) : 0
+          %>
+          <tr>
+            <td class="py-0.5">As Good</td>
+            <td class="text-right py-0.5">
+              <span class="text-green-600 font-medium"><%= stats[:wins_as_good] %>W</span>/<span class="text-red-600 font-medium"><%= stats[:losses_as_good] %>L</span>
+              <span class="text-gray-500">(<%= good_winrate %>%)</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="py-0.5">As Evil</td>
+            <td class="text-right py-0.5">
+              <span class="text-green-600 font-medium"><%= stats[:wins_as_evil] %>W</span>/<span class="text-red-600 font-medium"><%= stats[:losses_as_evil] %>L</span>
+              <span class="text-gray-500">(<%= evil_winrate %>%)</span>
+            </td>
+          </tr>
+          <%
             underdog_games = stats[:wins_as_underdog] + stats[:losses_as_underdog]
             favorite_games = stats[:wins_as_favorite] + stats[:losses_as_favorite]
             total_role_games = underdog_games + favorite_games

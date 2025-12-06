@@ -13,6 +13,10 @@ class PlayerStatsCalculator
       total_matches: 0,
       wins: 0,
       losses: 0,
+      wins_as_good: 0,
+      losses_as_good: 0,
+      wins_as_evil: 0,
+      losses_as_evil: 0,
       wins_as_underdog: 0,
       losses_as_underdog: 0,
       wins_as_favorite: 0,
@@ -81,9 +85,19 @@ class PlayerStatsCalculator
     if player_won
       stats[:wins] += 1
       stats[:faction_stats][faction_id][:wins] += 1
+      if player_good
+        stats[:wins_as_good] += 1
+      else
+        stats[:wins_as_evil] += 1
+      end
     else
       stats[:losses] += 1
       stats[:faction_stats][faction_id][:losses] += 1
+      if player_good
+        stats[:losses_as_good] += 1
+      else
+        stats[:losses_as_evil] += 1
+      end
     end
 
     # Underdog/favorite calculation

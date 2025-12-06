@@ -74,7 +74,7 @@ Players are ranked within their team by performance score. The performance score
 | Hero uptime | 0.20 | - |
 | Team heal % | 0.15 | 40% |
 
-Note: Hero kill contribution is capped at 20% per hero killed. For example, killing 1 hero caps your contribution at 20% regardless of how many total hero kills your team has.
+Note: Hero kill contribution is capped at 20% per hero killed **only for performance score calculation** (used for contribution bonuses). For example, killing 1 hero caps your performance score contribution at 20% regardless of how many total hero kills your team has. However, player stats display shows the raw (uncapped) percentages.
 
 - **Winning team** (net +3 points distributed):
   - 1st place: +2

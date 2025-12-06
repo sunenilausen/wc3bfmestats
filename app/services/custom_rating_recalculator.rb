@@ -398,15 +398,14 @@ class CustomRatingRecalculator
   end
 
   # Store contribution percentages on appearance for faster queries
+  # Note: These are raw percentages without caps, for display purposes
+  # The performance_score method applies the 20% per kill cap separately
   def store_contribution_percentages(appearance, team_appearances)
-    # Hero kill contribution (capped at 20% per hero killed)
+    # Hero kill contribution (no cap - raw percentage for display)
     if appearance.hero_kills && !appearance.ignore_hero_kills?
       team_hero_kills = team_appearances.sum { |a| (a.hero_kills && !a.ignore_hero_kills?) ? a.hero_kills : 0 }
       if team_hero_kills > 0
-        raw_pct = (appearance.hero_kills.to_f / team_hero_kills * 100)
-        # Cap at 20% contribution per hero killed
-        max_pct_by_kills = appearance.hero_kills * 20.0
-        appearance.hero_kill_pct = [raw_pct, max_pct_by_kills].min.round(1)
+        appearance.hero_kill_pct = (appearance.hero_kills.to_f / team_hero_kills * 100).round(1)
       end
     end
 

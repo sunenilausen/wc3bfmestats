@@ -113,11 +113,8 @@ class MlScoreRecalculator
       team_total = hero_kill_totals_by_match.dig(match_id, is_good)
       next unless team_total && team_total > 0
 
-      raw_contrib = hk.to_f / team_total * 100
-      # Cap at 20% contribution per hero killed
-      max_contrib_by_kills = hk * 20.0
-      capped_contrib = [raw_contrib, max_contrib_by_kills].min
-      player_contributions[player_id][:hk_contribs] << capped_contrib
+      # No cap - raw percentage for ML score calculation
+      player_contributions[player_id][:hk_contribs] << (hk.to_f / team_total * 100)
     end
 
     unit_kill_appearances.each do |player_id, match_id, is_good, uk|

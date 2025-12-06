@@ -84,15 +84,13 @@ class FactionStatsCalculator
         total_hero_kills += appearance.hero_kills
         hero_contributions << appearance.hero_kill_pct
       elsif !appearance.hero_kills.nil? && !appearance.ignore_hero_kills?
-        # Fallback: calculate if not stored (capped at 20% per hero killed)
+        # Fallback: calculate if not stored (no cap - raw percentage for display)
         total_hero_kills += appearance.hero_kills
         team_with_hero = team_appearances.select { |a| !a.hero_kills.nil? && !a.ignore_hero_kills? }
         if team_with_hero.any?
           team_total = team_with_hero.sum(&:hero_kills)
           if team_total > 0
-            raw_contrib = (appearance.hero_kills.to_f / team_total * 100)
-            max_contrib_by_kills = appearance.hero_kills * 20.0
-            hero_contributions << [raw_contrib, max_contrib_by_kills].min
+            hero_contributions << (appearance.hero_kills.to_f / team_total * 100)
           end
         end
       end

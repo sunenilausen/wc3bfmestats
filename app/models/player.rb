@@ -16,6 +16,28 @@ class Player < ApplicationRecord
       find_by(id: param)
   end
 
+  # Find player by battletag, checking both primary battletag and alternative_battletags
+  # Used when importing replays to find merged players
+  def self.find_by_any_battletag(battletag)
+    return nil if battletag.blank?
+
+    # First try exact match on primary battletag
+    player = find_by(battletag: battletag)
+    return player if player
+
+    # Then check alternative_battletags (for merged players)
+    where.not(alternative_battletags: nil).find_each do |p|
+      return p if p.alternative_battletags&.include?(battletag)
+    end
+
+    nil
+  end
+
+  # Check if a player exists with this battletag (primary or alternative)
+  def self.exists_by_any_battletag?(battletag)
+    find_by_any_battletag(battletag).present?
+  end
+
   # Returns the player's rank by custom rating (1 = highest)
   # Only counts players who have played at least one non-ignored match
   def cr_rank

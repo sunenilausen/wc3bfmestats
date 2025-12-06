@@ -393,8 +393,8 @@ namespace :wc3stats do
           battletag
         end
 
-        # Create player if not exists
-        unless Player.exists?(battletag: fixed_battletag) || Player.exists?(battletag: battletag)
+        # Create player if not exists (check alternative_battletags for merged players)
+        unless Player.exists_by_any_battletag?(fixed_battletag) || Player.exists_by_any_battletag?(battletag)
           nickname = fixed_battletag.split("#").first
           Player.create!(
             battletag: fixed_battletag,

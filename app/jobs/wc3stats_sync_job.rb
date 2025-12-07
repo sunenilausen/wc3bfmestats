@@ -94,6 +94,9 @@ class Wc3statsSyncJob < ApplicationJob
     # Fix unicode encoding
     fix_unicode_names
 
+    # Refetch last auto-ignored match (in case it was fixed on wc3stats)
+    refetch_last_ignored
+
     # Recalculate ratings and retrain model if needed
     recalculate_ratings
   end
@@ -246,6 +249,54 @@ class Wc3statsSyncJob < ApplicationJob
 
     if fixer.fixed_count > 0
       Rails.logger.info "Wc3statsSyncJob: Fixed #{fixer.fixed_count} player names with encoding issues"
+    end
+  end
+
+  def refetch_last_ignored
+    # Find the most recent auto-ignored match that might be fixable
+    ignored_match = Match.where(ignored: true)
+      .joins(:wc3stats_replay)
+      .includes(:wc3stats_replay)
+      .order(uploaded_at: :desc)
+      .limit(10)
+      .find do |match|
+        replay = match.wc3stats_replay
+        next false unless replay
+        next false if replay.test_map?
+
+        players_in_slots = replay.players.count { |p| p["slot"].present? && p["slot"] >= 0 && p["slot"] <= 9 }
+        next false if players_in_slots < 10
+
+        # Only refetch if no winner or too short
+        has_no_winner = replay.incomplete_game? && players_in_slots == 10
+        too_short = replay.game_length.present? && replay.game_length < 120
+        has_no_winner || too_short
+      end
+
+    return unless ignored_match
+
+    replay = ignored_match.wc3stats_replay
+    replay_id = replay.wc3stats_replay_id
+
+    Rails.logger.info "Wc3statsSyncJob: Refetching last auto-ignored match (replay #{replay_id})"
+
+    # Delete and refetch
+    ignored_match.destroy
+    replay.destroy
+
+    replay_fetcher = Wc3stats::ReplayFetcher.new(replay_id)
+    new_replay = replay_fetcher.call
+
+    if new_replay
+      builder = Wc3stats::MatchBuilder.new(new_replay)
+      if builder.call
+        status = new_replay.match&.ignored? ? "still ignored" : "now valid"
+        Rails.logger.info "Wc3statsSyncJob: Refetched replay #{replay_id} - #{status}"
+      else
+        Rails.logger.warn "Wc3statsSyncJob: Failed to build match for replay #{replay_id}"
+      end
+    else
+      Rails.logger.warn "Wc3statsSyncJob: Failed to fetch replay #{replay_id}: #{replay_fetcher.errors.first}"
     end
   end
 

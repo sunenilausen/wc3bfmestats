@@ -764,6 +764,99 @@ namespace :wc3stats do
     puts "=" * 60
   end
 
+  desc "Re-fetch last N auto-ignored matches (no winner or too short) - for cron jobs"
+  task refetch_recent_ignored: :environment do
+    limit = ENV.fetch("LIMIT", "20").to_i
+    delay = ENV.fetch("DELAY", "0.5").to_f
+
+    puts "=" * 60
+    puts "Re-fetching Last #{limit} Auto-Ignored Matches"
+    puts "=" * 60
+    puts
+
+    # Find recent ignored matches with replays, ordered by most recent first
+    ignored_matches = Match.where(ignored: true)
+      .joins(:wc3stats_replay)
+      .includes(:wc3stats_replay)
+      .order(uploaded_at: :desc)
+      .limit(limit * 3) # Fetch more to account for filtering
+
+    # Categorize and filter to refetchable ones
+    refetchable = []
+    ignored_matches.each do |match|
+      replay = match.wc3stats_replay
+      next unless replay
+
+      # Skip test maps and incomplete games - they won't change
+      next if replay.test_map?
+      players_in_slots = replay.players.count { |p| p["slot"].present? && p["slot"] >= 0 && p["slot"] <= 9 }
+      next if players_in_slots < 10
+
+      # Include: no winner label or too short
+      has_no_winner = replay.incomplete_game? && players_in_slots == 10
+      too_short = replay.game_length.present? && replay.game_length < 120
+
+      if has_no_winner || too_short
+        refetchable << { match: match, replay: replay, reason: has_no_winner ? "no winner" : "too short" }
+      end
+
+      break if refetchable.size >= limit
+    end
+
+    if refetchable.empty?
+      puts "No refetchable auto-ignored matches found."
+      next
+    end
+
+    puts "Found #{refetchable.size} matches to refetch:"
+    refetchable.each do |item|
+      puts "  - Replay #{item[:replay].wc3stats_replay_id}: #{item[:reason]}"
+    end
+    puts
+
+    # Delete and refetch each one
+    refetched = 0
+    failed = 0
+
+    refetchable.each_with_index do |item, index|
+      replay_id = item[:replay].wc3stats_replay_id
+      print "[#{index + 1}/#{refetchable.size}] Refetching replay #{replay_id}... "
+
+      # Delete match and replay
+      item[:match].destroy
+      item[:replay].destroy
+
+      # Refetch from wc3stats
+      replay_fetcher = Wc3stats::ReplayFetcher.new(replay_id)
+      new_replay = replay_fetcher.call
+
+      if new_replay
+        # Build match from replay
+        builder = Wc3stats::MatchBuilder.new(new_replay)
+        if builder.call
+          refetched += 1
+          puts "OK (#{new_replay.match&.ignored? ? 'still ignored' : 'now valid'})"
+        else
+          failed += 1
+          puts "FAILED to build match"
+        end
+      else
+        failed += 1
+        puts "FAILED to fetch: #{replay_fetcher.errors.first}"
+      end
+
+      sleep delay if index < refetchable.size - 1
+    end
+
+    puts
+    puts "=" * 60
+    puts "Summary"
+    puts "=" * 60
+    puts "  Refetched: #{refetched}"
+    puts "  Failed: #{failed}"
+    puts "=" * 60
+  end
+
   desc "Delete all auto-ignored matches (test maps, incomplete games, too short) and re-fetch them"
   task refetch_ignored: :environment do
     # Minimum game length matching MatchBuilder::MIN_GAME_LENGTH

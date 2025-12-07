@@ -25,3 +25,10 @@ production:
     class: Wc3statsSyncJob
     args: ["full"]
     schedule: at 5am every day
+
+  # Refetch last 20 auto-ignored matches every night at 3am
+  # (in case they've been fixed on wc3stats, e.g. re-uploaded with winner data)
+  refetch_ignored:
+    class: RefetchIgnoredJob
+    args: [20]
+    schedule: at 3am every day

@@ -71,13 +71,13 @@ class MatchesController < ApplicationController
 
     respond_to do |format|
       if @match.save
-        # Recalculate ratings when match is created
-        CustomRatingRecalculator.new.call
+        # Recalculate ratings in background (cancels any pending recalculations)
+        RatingRecalculationJob.enqueue_and_cancel_pending
 
         # Retrain prediction model if enough new matches
         PredictionWeight.retrain_if_needed!
 
-        format.html { redirect_to @match, notice: "Match was successfully created." }
+        format.html { redirect_to @match, notice: "Match was successfully created. Ratings are being recalculated." }
         format.json { render :show, status: :created, location: @match }
       else
         format.html { render :new, status: :unprocessable_entity }
@@ -100,10 +100,10 @@ class MatchesController < ApplicationController
 
     respond_to do |format|
       if @match.save
-        # Recalculate ratings when match is updated
-        CustomRatingRecalculator.new.call
+        # Recalculate ratings in background (cancels any pending recalculations)
+        RatingRecalculationJob.enqueue_and_cancel_pending
 
-        format.html { redirect_to @match, notice: "Match was successfully updated.", status: :see_other }
+        format.html { redirect_to @match, notice: "Match was successfully updated. Ratings are being recalculated.", status: :see_other }
         format.json { render :show, status: :ok, location: @match }
       else
         format.html { render :edit, status: :unprocessable_entity }

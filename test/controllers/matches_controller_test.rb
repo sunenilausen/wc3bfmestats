@@ -1,6 +1,8 @@
 require "test_helper"
 
 class MatchesControllerTest < ActionDispatch::IntegrationTest
+  include ActiveJob::TestHelper
+
   setup do
     @match = matches(:one)
     @admin = users(:admin)
@@ -26,25 +28,27 @@ class MatchesControllerTest < ActionDispatch::IntegrationTest
     sign_in @admin
 
     assert_difference("Match.count") do
-      post matches_url, params: {
-        match: {
-          uploaded_at: @match.uploaded_at,
-          seconds: @match.seconds,
-          good_victory: true,
-          appearances_attributes: {
-            "0" => { player_id: players(:one).id, faction_id: factions(:gondor).id, unit_kills: 120, hero_kills: 6 },
-            "1" => { player_id: players(:two).id, faction_id: factions(:rohan).id, unit_kills: 95, hero_kills: 4 },
-            "2" => { player_id: players(:three).id, faction_id: factions(:dol_amroth).id, unit_kills: 110, hero_kills: 5 },
-            "3" => { player_id: players(:four).id, faction_id: factions(:fellowship).id, unit_kills: 88, hero_kills: 3 },
-            "4" => { player_id: players(:five).id, faction_id: factions(:fangorn).id, unit_kills: 102, hero_kills: 4 },
-            "5" => { player_id: players(:six).id, faction_id: factions(:isengard).id, unit_kills: 85, hero_kills: 3 },
-            "6" => { player_id: players(:seven).id, faction_id: factions(:easterlings).id, unit_kills: 78, hero_kills: 2 },
-            "7" => { player_id: players(:eight).id, faction_id: factions(:harad).id, unit_kills: 92, hero_kills: 4 },
-            "8" => { player_id: players(:nine).id, faction_id: factions(:minas_morgul).id, unit_kills: 70, hero_kills: 2 },
-            "9" => { player_id: players(:ten).id, faction_id: factions(:mordor).id, unit_kills: 105, hero_kills: 5 }
+      perform_enqueued_jobs do
+        post matches_url, params: {
+          match: {
+            uploaded_at: @match.uploaded_at,
+            seconds: @match.seconds,
+            good_victory: true,
+            appearances_attributes: {
+              "0" => { player_id: players(:one).id, faction_id: factions(:gondor).id, unit_kills: 120, hero_kills: 6 },
+              "1" => { player_id: players(:two).id, faction_id: factions(:rohan).id, unit_kills: 95, hero_kills: 4 },
+              "2" => { player_id: players(:three).id, faction_id: factions(:dol_amroth).id, unit_kills: 110, hero_kills: 5 },
+              "3" => { player_id: players(:four).id, faction_id: factions(:fellowship).id, unit_kills: 88, hero_kills: 3 },
+              "4" => { player_id: players(:five).id, faction_id: factions(:fangorn).id, unit_kills: 102, hero_kills: 4 },
+              "5" => { player_id: players(:six).id, faction_id: factions(:isengard).id, unit_kills: 85, hero_kills: 3 },
+              "6" => { player_id: players(:seven).id, faction_id: factions(:easterlings).id, unit_kills: 78, hero_kills: 2 },
+              "7" => { player_id: players(:eight).id, faction_id: factions(:harad).id, unit_kills: 92, hero_kills: 4 },
+              "8" => { player_id: players(:nine).id, faction_id: factions(:minas_morgul).id, unit_kills: 70, hero_kills: 2 },
+              "9" => { player_id: players(:ten).id, faction_id: factions(:mordor).id, unit_kills: 105, hero_kills: 5 }
+            }
           }
         }
-      }
+      end
     end
 
     assert_redirected_to match_url(Match.last)
@@ -93,25 +97,27 @@ class MatchesControllerTest < ActionDispatch::IntegrationTest
   test "should update match as admin" do
     sign_in @admin
 
-    patch match_url(@match), params: {
-      match: {
-        uploaded_at: @match.uploaded_at,
-        seconds: @match.seconds,
-        good_victory: false,
-        appearances_attributes: {
-          "0" => { id: appearances(:gondor_one).id, player_id: players(:one).id, faction_id: factions(:gondor).id, unit_kills: 130, hero_kills: 7 },
-          "1" => { id: appearances(:rohan_one).id, player_id: players(:two).id, faction_id: factions(:rohan).id, unit_kills: 100, hero_kills: 5 },
-          "2" => { id: appearances(:dol_amroth_one).id, player_id: players(:three).id, faction_id: factions(:dol_amroth).id, unit_kills: 115, hero_kills: 6 },
-          "3" => { id: appearances(:fellowship_one).id, player_id: players(:four).id, faction_id: factions(:fellowship).id, unit_kills: 90, hero_kills: 4 },
-          "4" => { id: appearances(:fangorn_one).id, player_id: players(:five).id, faction_id: factions(:fangorn).id, unit_kills: 105, hero_kills: 5 },
-          "5" => { id: appearances(:isengard_one).id, player_id: players(:six).id, faction_id: factions(:isengard).id, unit_kills: 140, hero_kills: 8 },
-          "6" => { id: appearances(:easterlings_one).id, player_id: players(:seven).id, faction_id: factions(:easterlings).id, unit_kills: 125, hero_kills: 6 },
-          "7" => { id: appearances(:harad_one).id, player_id: players(:eight).id, faction_id: factions(:harad).id, unit_kills: 135, hero_kills: 7 },
-          "8" => { id: appearances(:minas_morgul_one).id, player_id: players(:nine).id, faction_id: factions(:minas_morgul).id, unit_kills: 110, hero_kills: 5 },
-          "9" => { id: appearances(:mordor_one).id, player_id: players(:ten).id, faction_id: factions(:mordor).id, unit_kills: 145, hero_kills: 9 }
+    perform_enqueued_jobs do
+      patch match_url(@match), params: {
+        match: {
+          uploaded_at: @match.uploaded_at,
+          seconds: @match.seconds,
+          good_victory: false,
+          appearances_attributes: {
+            "0" => { id: appearances(:gondor_one).id, player_id: players(:one).id, faction_id: factions(:gondor).id, unit_kills: 130, hero_kills: 7 },
+            "1" => { id: appearances(:rohan_one).id, player_id: players(:two).id, faction_id: factions(:rohan).id, unit_kills: 100, hero_kills: 5 },
+            "2" => { id: appearances(:dol_amroth_one).id, player_id: players(:three).id, faction_id: factions(:dol_amroth).id, unit_kills: 115, hero_kills: 6 },
+            "3" => { id: appearances(:fellowship_one).id, player_id: players(:four).id, faction_id: factions(:fellowship).id, unit_kills: 90, hero_kills: 4 },
+            "4" => { id: appearances(:fangorn_one).id, player_id: players(:five).id, faction_id: factions(:fangorn).id, unit_kills: 105, hero_kills: 5 },
+            "5" => { id: appearances(:isengard_one).id, player_id: players(:six).id, faction_id: factions(:isengard).id, unit_kills: 140, hero_kills: 8 },
+            "6" => { id: appearances(:easterlings_one).id, player_id: players(:seven).id, faction_id: factions(:easterlings).id, unit_kills: 125, hero_kills: 6 },
+            "7" => { id: appearances(:harad_one).id, player_id: players(:eight).id, faction_id: factions(:harad).id, unit_kills: 135, hero_kills: 7 },
+            "8" => { id: appearances(:minas_morgul_one).id, player_id: players(:nine).id, faction_id: factions(:minas_morgul).id, unit_kills: 110, hero_kills: 5 },
+            "9" => { id: appearances(:mordor_one).id, player_id: players(:ten).id, faction_id: factions(:mordor).id, unit_kills: 145, hero_kills: 9 }
+          }
         }
       }
-    }
+    end
 
     assert_redirected_to match_url(@match)
 

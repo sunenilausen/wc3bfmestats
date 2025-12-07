@@ -13,7 +13,12 @@ class Match < ApplicationRecord
   end
 
   scope :by_uploaded_at, ->(direction = :asc) {
-    order(Arel.sql("matches.uploaded_at #{direction.to_s.upcase} NULLS LAST"))
+    case direction.to_s.downcase
+    when "desc"
+      order(Arel.sql("matches.uploaded_at DESC NULLS LAST"))
+    else
+      order(Arel.sql("matches.uploaded_at ASC NULLS LAST"))
+    end
   }
 
   # Chronological ordering for ELO/Glicko-2 calculations

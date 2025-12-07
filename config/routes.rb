@@ -13,7 +13,7 @@ Rails.application.routes.draw do
   end
   resources :factions, except: [ :new, :create, :destroy ]
   resources :players, constraints: { id: /[^\/]+/ } do
-    resource :relationships, only: [:show], controller: "player_relationships"
+    resource :relationships, only: [ :show ], controller: "player_relationships"
   end
 
   namespace :admin do

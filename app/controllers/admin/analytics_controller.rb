@@ -88,23 +88,30 @@ module Admin
         .where(name: "Page View")
         .where("time >= ?", start_date)
 
-      player_counts = Hash.new(0)
+      player_visits = Hash.new(0)
+      player_unique_visits = Hash.new { |h, k| h[k] = Set.new }
 
       events.find_each do |event|
         props = event.properties
         next unless props["controller"] == "players" && props["action"] == "show"
 
-        player_id = props["id"]
-        player_counts[player_id] += 1 if player_id.present?
+        player_identifier = props["id"]
+        next if player_identifier.blank?
+
+        player_visits[player_identifier] += 1
+        player_unique_visits[player_identifier] << event.visit_id
       end
 
-      player_ids = player_counts.sort_by { |_, count| -count }.first(limit).to_h.keys
-      players = Player.where(id: player_ids).index_by(&:id)
+      # Get top identifiers and look up players by battletag or id
+      top_identifiers = player_visits.sort_by { |_, count| -count }.first(limit).to_h
 
-      player_counts.sort_by { |_, count| -count }.first(limit).map do |player_id, count|
-        player = players[player_id.to_i]
-        [ player, count ] if player
-      end.compact.to_h
+      top_identifiers.filter_map do |identifier, visits|
+        player = Player.find_by_battletag_or_id(identifier)
+        next unless player
+
+        unique_visits = player_unique_visits[identifier].size
+        [ player, { visits: visits, unique_visits: unique_visits } ]
+      end.to_h
     end
   end
 end

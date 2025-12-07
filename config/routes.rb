@@ -22,6 +22,7 @@ Rails.application.routes.draw do
       resource :merge, only: %i[new create], controller: "player_merges"
     end
     get "analytics", to: "analytics#index", as: :analytics
+    get "suspicious_matches", to: "suspicious_matches#index", as: :suspicious_matches
   end
 
   devise_for :users

@@ -49,10 +49,15 @@
   </div>
 
   <!-- Charts Row -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
     <div class="bg-white rounded-lg shadow p-6">
       <h2 class="text-lg font-semibold text-gray-700 mb-4">Visits Over Time</h2>
       <%= line_chart @visits_by_day, colors: ["#3B82F6"], library: { plugins: { legend: { display: false } } } %>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-lg font-semibold text-gray-700 mb-4">Unique Visitors Over Time</h2>
+      <%= line_chart @unique_visitors_by_day, colors: ["#8B5CF6"], library: { plugins: { legend: { display: false } } } %>
     </div>
 
     <div class="bg-white rounded-lg shadow p-6">
@@ -69,16 +74,18 @@
         <thead>
           <tr class="border-b border-gray-200">
             <th class="text-left py-2 text-sm font-medium text-gray-500">Page</th>
-            <th class="text-right py-2 text-sm font-medium text-gray-500">Views</th>
+            <th class="text-right py-2 text-sm font-medium text-gray-500">Visits</th>
+            <th class="text-right py-2 text-sm font-medium text-gray-500">Unique</th>
             <th class="text-right py-2 text-sm font-medium text-gray-500">%</th>
           </tr>
         </thead>
         <tbody>
-          <% @top_pages.each do |page, count| %>
+          <% @top_pages.each do |page, stats| %>
             <tr class="border-b border-gray-100">
               <td class="py-2 text-sm text-gray-800 font-mono"><%= page %></td>
-              <td class="py-2 text-sm text-gray-600 text-right"><%= number_with_delimiter(count) %></td>
-              <td class="py-2 text-sm text-gray-500 text-right"><%= number_with_precision(count.to_f / @total_page_views * 100, precision: 1) %>%</td>
+              <td class="py-2 text-sm text-gray-600 text-right"><%= number_with_delimiter(stats[:visits]) %></td>
+              <td class="py-2 text-sm text-gray-500 text-right"><%= number_with_delimiter(stats[:unique_visits]) %></td>
+              <td class="py-2 text-sm text-gray-500 text-right"><%= number_with_precision(stats[:visits].to_f / @total_page_views * 100, precision: 1) %>%</td>
             </tr>
           <% end %>
         </tbody>

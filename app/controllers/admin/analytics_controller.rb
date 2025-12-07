@@ -16,6 +16,12 @@ module Admin
         .group_by_day(:started_at)
         .count
 
+      @unique_visitors_by_day = Ahoy::Visit
+        .where("started_at >= ?", @start_date)
+        .group_by_day(:started_at)
+        .distinct
+        .count(:visitor_token)
+
       @page_views_by_day = Ahoy::Event
         .where(name: "Page View")
         .where("time >= ?", @start_date)
@@ -61,7 +67,8 @@ module Admin
         .where(name: "Page View")
         .where("time >= ?", start_date)
 
-      page_counts = Hash.new(0)
+      page_visits = Hash.new(0)
+      page_unique_visits = Hash.new { |h, k| h[k] = Set.new }
 
       events.find_each do |event|
         props = event.properties
@@ -70,10 +77,13 @@ module Admin
         id = props["id"]
 
         page_name = build_page_name(controller, action, id)
-        page_counts[page_name] += 1
+        page_visits[page_name] += 1
+        page_unique_visits[page_name] << event.visit_id
       end
 
-      page_counts.sort_by { |_, count| -count }.first(limit).to_h
+      page_visits.sort_by { |_, count| -count }.first(limit).map do |page_name, visits|
+        [ page_name, { visits: visits, unique_visits: page_unique_visits[page_name].size } ]
+      end.to_h
     end
 
     def build_page_name(controller, action, id)

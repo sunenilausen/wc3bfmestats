@@ -1,0 +1,100 @@
+<% content_for :title, "#{@player.nickname} - Allies & Rivals" %>
+
+<div class="w-full">
+  <h1 class="font-bold text-4xl mb-2"><%= @player.nickname %></h1>
+  <h2 class="text-xl text-gray-600 mb-6">Allies & Rivals</h2>
+
+  <%= link_to "Back to #{@player.nickname}", player_path(@player), class: "rounded-md px-3.5 py-2.5 bg-gray-100 hover:bg-gray-50 inline-block font-medium mb-6" %>
+
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+    <!-- Allies Table -->
+    <div>
+      <h3 class="text-2xl font-bold mb-4 text-green-700">Allies</h3>
+      <p class="text-sm text-gray-500 mb-3">Players who have been on the same team</p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm border border-gray-200 rounded">
+          <thead class="bg-gray-50">
+            <tr>
+              <%= sortable_header("Player", "player", "allies") %>
+              <%= sortable_header("Wins With", "wins", "allies") %>
+              <%= sortable_header("Losses With", "losses", "allies") %>
+              <%= sortable_header("Total", "total", "allies") %>
+              <%= sortable_header("Win Rate", "win_rate", "allies") %>
+              <%= sortable_header("CR", "cr", "allies") %>
+              <%= sortable_header("ML", "ml", "allies") %>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            <% @allies.each do |rel| %>
+              <tr class="hover:bg-gray-50">
+                <td class="px-3 py-2">
+                  <%= link_to rel[:player].nickname, player_path(rel[:player]), class: "text-blue-600 hover:underline" %>
+                </td>
+                <td class="px-3 py-2 text-center text-green-600 font-medium"><%= rel[:wins] %></td>
+                <td class="px-3 py-2 text-center text-red-600 font-medium"><%= rel[:losses] %></td>
+                <td class="px-3 py-2 text-center font-medium"><%= rel[:total] %></td>
+                <td class="px-3 py-2 text-center">
+                  <span class="<%= rel[:win_rate] >= 50 ? 'text-green-600' : 'text-red-600' %>">
+                    <%= rel[:win_rate] %>%
+                  </span>
+                </td>
+                <td class="px-3 py-2 text-center text-gray-600"><%= rel[:cr]&.round(0) || "-" %></td>
+                <td class="px-3 py-2 text-center text-gray-600"><%= rel[:ml]&.round(0) || "-" %></td>
+              </tr>
+            <% end %>
+            <% if @allies.empty? %>
+              <tr>
+                <td colspan="7" class="px-3 py-4 text-center text-gray-500">No allies found</td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Rivals Table -->
+    <div>
+      <h3 class="text-2xl font-bold mb-4 text-red-700">Rivals</h3>
+      <p class="text-sm text-gray-500 mb-3">Players who have been on the opposing team</p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm border border-gray-200 rounded">
+          <thead class="bg-gray-50">
+            <tr>
+              <%= sortable_header("Player", "player", "rivals") %>
+              <%= sortable_header("Wins Against", "wins", "rivals") %>
+              <%= sortable_header("Losses Against", "losses", "rivals") %>
+              <%= sortable_header("Total", "total", "rivals") %>
+              <%= sortable_header("Win Rate", "win_rate", "rivals") %>
+              <%= sortable_header("CR", "cr", "rivals") %>
+              <%= sortable_header("ML", "ml", "rivals") %>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            <% @rivals.each do |rel| %>
+              <tr class="hover:bg-gray-50">
+                <td class="px-3 py-2">
+                  <%= link_to rel[:player].nickname, player_path(rel[:player]), class: "text-blue-600 hover:underline" %>
+                </td>
+                <td class="px-3 py-2 text-center text-green-600 font-medium"><%= rel[:wins] %></td>
+                <td class="px-3 py-2 text-center text-red-600 font-medium"><%= rel[:losses] %></td>
+                <td class="px-3 py-2 text-center font-medium"><%= rel[:total] %></td>
+                <td class="px-3 py-2 text-center">
+                  <span class="<%= rel[:win_rate] >= 50 ? 'text-green-600' : 'text-red-600' %>">
+                    <%= rel[:win_rate] %>%
+                  </span>
+                </td>
+                <td class="px-3 py-2 text-center text-gray-600"><%= rel[:cr]&.round(0) || "-" %></td>
+                <td class="px-3 py-2 text-center text-gray-600"><%= rel[:ml]&.round(0) || "-" %></td>
+              </tr>
+            <% end %>
+            <% if @rivals.empty? %>
+              <tr>
+                <td colspan="7" class="px-3 py-4 text-center text-gray-500">No rivals found</td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

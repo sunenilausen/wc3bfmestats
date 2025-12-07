@@ -1,4 +1,7 @@
 <div id="<%= dom_id player %>" class="w-full sm:w-auto my-5 space-y-5">
+  <div class="mb-4">
+    <%= link_to "Allies & Rivals", player_relationships_path(player), class: "rounded-md px-3.5 py-2.5 bg-blue-100 hover:bg-blue-50 text-blue-700 inline-block font-medium" %>
+  </div>
   <%# Compute Custom Rating extremes (after 20 placement wins) %>
   <%
     # appearances are in reverse chronological order, so reverse to get oldest first

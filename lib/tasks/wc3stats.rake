@@ -764,6 +764,94 @@ namespace :wc3stats do
     puts "=" * 60
   end
 
+  desc "Delete all auto-ignored matches (test maps, incomplete games, too short) and re-fetch them"
+  task refetch_ignored: :environment do
+    # Minimum game length matching MatchBuilder::MIN_GAME_LENGTH
+    min_game_length = 120
+
+    puts "=" * 60
+    puts "Re-fetching Auto-Ignored Matches"
+    puts "=" * 60
+    puts
+
+    # Find all ignored matches with replays
+    ignored_matches = Match.where(ignored: true).includes(:wc3stats_replay)
+    total_ignored = ignored_matches.count
+
+    puts "Total ignored matches: #{total_ignored}"
+    puts
+
+    # Categorize ignored matches using same logic as MatchBuilder#should_ignore_match?
+    test_map_ids = []
+    missing_players_ids = []
+    no_winner_ids = []
+    too_short_ids = []
+    other_ids = []
+
+    ignored_matches.find_each do |match|
+      replay = match.wc3stats_replay
+      next unless replay
+
+      # Check conditions in same order as MatchBuilder
+      if replay.test_map?
+        test_map_ids << replay.wc3stats_replay_id
+      elsif replay.incomplete_game?
+        # Separate: missing players (slots) vs no winner label
+        players_in_slots = replay.players.count { |p| p["slot"].present? && p["slot"] >= 0 && p["slot"] <= 9 }
+        if players_in_slots < 10
+          missing_players_ids << replay.wc3stats_replay_id
+        else
+          # Has 10 players in slots but missing isWinner
+          no_winner_ids << replay.wc3stats_replay_id
+        end
+      elsif replay.game_length.present? && replay.game_length < min_game_length
+        too_short_ids << replay.wc3stats_replay_id
+      else
+        other_ids << replay.wc3stats_replay_id
+      end
+    end
+
+    puts "Breakdown:"
+    puts "  Test maps: #{test_map_ids.count} (skipped)"
+    puts "  Missing players (<10 in slots): #{missing_players_ids.count} (skipped)"
+    puts "  No winner label: #{no_winner_ids.count}"
+    puts "  Too short (<2 min): #{too_short_ids.count}"
+    puts "  Other (manually ignored): #{other_ids.count} (skipped)"
+    puts
+
+    # Only delete auto-ignored matches that might change on refetch
+    auto_ignored_ids = no_winner_ids + too_short_ids
+
+    if auto_ignored_ids.empty?
+      puts "No auto-ignored matches to refetch."
+      next
+    end
+
+    puts "Deleting #{auto_ignored_ids.count} auto-ignored matches and replays..."
+
+    # Delete matches first (they reference replays)
+    deleted_matches = 0
+    Match.joins(:wc3stats_replay)
+         .where(wc3stats_replays: { wc3stats_replay_id: auto_ignored_ids })
+         .find_each do |match|
+      match.destroy
+      deleted_matches += 1
+    end
+    puts "  Deleted #{deleted_matches} matches"
+
+    # Delete the replays
+    deleted_replays = Wc3statsReplay.where(wc3stats_replay_id: auto_ignored_ids).delete_all
+    puts "  Deleted #{deleted_replays} replays"
+    puts
+
+    # Now run sync to re-fetch them
+    puts "Running sync to re-fetch deleted replays..."
+    puts "=" * 60
+    puts
+
+    Rake::Task["wc3stats:sync"].invoke
+  end
+
   desc "Backfill castles_razed from replay data"
   task backfill_castles_razed: :environment do
     puts "=" * 60

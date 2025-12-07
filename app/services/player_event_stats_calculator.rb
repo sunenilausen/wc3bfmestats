@@ -7,8 +7,10 @@ class PlayerEventStatsCalculator
   BONUS_HEROES = FactionEventStatsCalculator::BONUS_HEROES
   EXTRA_HEROES = FactionEventStatsCalculator::EXTRA_HEROES
 
-  def initialize(player)
+  def initialize(player, map_version: nil, map_versions: nil)
     @player = player
+    @map_version = map_version
+    @map_versions = map_versions
   end
 
   def compute
@@ -50,6 +52,8 @@ class PlayerEventStatsCalculator
     Wc3statsReplay.includes(match: :appearances).find_each do |replay|
       next unless replay.match.present?
       next if replay.match.ignored?
+      next if @map_version.present? && replay.match.map_version != @map_version
+      next if @map_versions.present? && !@map_versions.include?(replay.match.map_version)
 
       match_length = replay.game_length || replay.match.seconds
       next unless match_length && match_length > 0

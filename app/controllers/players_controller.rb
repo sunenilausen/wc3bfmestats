@@ -70,15 +70,64 @@ class PlayersController < ApplicationController
 
   # GET /players/1 or /players/1.json
   def show
-    cache_key = [ "player_stats", @player.id, StatsCacheKey.key ]
+    @version_filter = params[:version_filter]
+    @available_map_versions = Rails.cache.fetch([ "available_map_versions", StatsCacheKey.key ]) do
+      Match.where(ignored: false)
+        .where.not(map_version: nil)
+        .distinct
+        .pluck(:map_version)
+        .sort_by do |v|
+          match = v.match(/^(\d+)\.(\d+)([a-zA-Z]*)/)
+          if match
+            [ match[1].to_i, match[2].to_i, match[3].to_s ]
+          else
+            [ 0, 0, v ]
+          end
+        end
+        .reverse
+    end
+
+    # Parse version filter (format: "from:4.5e" or "only:4.5e")
+    @map_version = nil
+    @map_version_until = nil
+    if @version_filter.present?
+      if @version_filter.start_with?("only:")
+        @map_version = @version_filter.sub("only:", "")
+      elsif @version_filter.start_with?("from:")
+        @map_version_until = @version_filter.sub("from:", "")
+      end
+    end
+
+    # Determine which map versions to include based on filter
+    @filtered_map_versions = if @map_version.present?
+      [ @map_version ]
+    elsif @map_version_until.present?
+      until_index = @available_map_versions.index(@map_version_until)
+      if until_index
+        @available_map_versions[0..until_index]
+      else
+        @available_map_versions
+      end
+    else
+      @available_map_versions
+    end
+
+    cache_key = [ "player_stats", @player.id, @version_filter, StatsCacheKey.key ]
 
     # Preload all data needed for stats computation (exclude ignored matches)
     # Order by reverse chronological (newest first) using same ordering as matches index
-    @appearances = @player.appearances
+    base_scope = @player.appearances
       .joins(:match)
       .where(matches: { ignored: false })
       .includes(:faction, :match, match: { appearances: :faction, wc3stats_replay: {} })
       .merge(Match.reverse_chronological)
+
+    # Filter by map versions if specified
+    if @map_version.present? || @map_version_until.present?
+      base_scope = base_scope.where(matches: { map_version: @filtered_map_versions })
+    end
+
+    @appearances = base_scope
 
     # Compute all stats in a single pass (cached)
     @stats = Rails.cache.fetch(cache_key + [ "basic" ]) do
@@ -90,11 +139,12 @@ class PlayersController < ApplicationController
 
     # Compute hero and base death stats from replay events (cached)
     @event_stats = Rails.cache.fetch(cache_key + [ "events" ]) do
-      PlayerEventStatsCalculator.new(@player).compute
+      PlayerEventStatsCalculator.new(@player, map_versions: (@map_version.present? || @map_version_until.present?) ? @filtered_map_versions : nil).compute
     end
 
     # Compute ranks (cached separately since they change with other players)
-    @ranks = Rails.cache.fetch(cache_key + [ "ranks" ]) do
+    # Note: ranks are global, not filtered by map version
+    @ranks = Rails.cache.fetch([ "player_stats", @player.id, StatsCacheKey.key, "ranks" ]) do
       {
         cr_rank: @player.cr_rank,
         ml_rank: @player.ml_rank,

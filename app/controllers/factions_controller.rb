@@ -8,7 +8,7 @@ class FactionsController < ApplicationController
 
   # GET /factions/1 or /factions/1.json
   def show
-    @map_version = params[:map_version]
+    @version_filter = params[:version_filter]
     @available_map_versions = Rails.cache.fetch([ "available_map_versions", StatsCacheKey.key ]) do
       Match.where(ignored: false)
         .where.not(map_version: nil)
@@ -26,14 +26,42 @@ class FactionsController < ApplicationController
         .reverse
     end
 
-    cache_key = [ "faction_stats", @faction.id, @map_version, StatsCacheKey.key ]
+    # Parse version filter (format: "from:4.5e" or "only:4.5e")
+    @map_version = nil
+    @map_version_until = nil
+    if @version_filter.present?
+      if @version_filter.start_with?("only:")
+        @map_version = @version_filter.sub("only:", "")
+      elsif @version_filter.start_with?("from:")
+        @map_version_until = @version_filter.sub("from:", "")
+      end
+    end
+
+    # Determine which map versions to include based on filter
+    @filtered_map_versions = if @map_version.present?
+      [ @map_version ]
+    elsif @map_version_until.present?
+      until_index = @available_map_versions.index(@map_version_until)
+      if until_index
+        @available_map_versions[0..until_index]
+      else
+        @available_map_versions
+      end
+    else
+      @available_map_versions
+    end
+
+    cache_key = [ "faction_stats", @faction.id, @version_filter, StatsCacheKey.key ]
+
+    # Determine map_versions parameter for calculators
+    calculator_map_versions = (@map_version.present? || @map_version_until.present?) ? @filtered_map_versions : nil
 
     @stats = Rails.cache.fetch(cache_key + [ "basic" ]) do
-      FactionStatsCalculator.new(@faction, map_version: @map_version).compute
+      FactionStatsCalculator.new(@faction, map_versions: calculator_map_versions).compute
     end
 
     event_stats = Rails.cache.fetch(cache_key + [ "events" ]) do
-      FactionEventStatsCalculator.new(@faction, map_version: @map_version).compute
+      FactionEventStatsCalculator.new(@faction, map_versions: calculator_map_versions).compute
     end
 
     @hero_stats = event_stats[:hero_stats]

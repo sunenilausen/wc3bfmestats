@@ -1,7 +1,36 @@
 <div id="<%= dom_id player %>" class="w-full sm:w-auto my-5 space-y-5">
-  <div class="mb-4">
+  <div class="mb-4 flex flex-wrap items-center gap-4">
     <%= link_to "Allies & Rivals", player_relationships_path(player), class: "rounded-md px-3.5 py-2.5 bg-blue-100 hover:bg-blue-50 text-blue-700 inline-block font-medium" %>
+
+    <%= form_with url: player_path(player), method: :get, local: true, class: "flex flex-wrap items-center gap-4" do %>
+      <div class="flex items-center gap-2">
+        <label for="version_filter" class="text-sm text-gray-600">Stats:</label>
+        <select name="version_filter" id="version_filter" onchange="this.form.submit()" class="rounded-md border border-gray-300 px-3 py-1.5 text-sm">
+          <option value="">All versions</option>
+          <% @available_map_versions.each do |version| %>
+            <option value="from:<%= version %>" <%= "selected" if @version_filter == "from:#{version}" %>>from <%= version %></option>
+          <% end %>
+          <optgroup label="Single version">
+            <% @available_map_versions.each do |version| %>
+              <option value="only:<%= version %>" <%= "selected" if @version_filter == "only:#{version}" %>>only <%= version %></option>
+            <% end %>
+          </optgroup>
+        </select>
+      </div>
+    <% end %>
   </div>
+
+  <% if @map_version.present? %>
+    <div class="mb-4 px-3 py-2 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-700">
+      Showing stats for <strong><%= @map_version %></strong> only (<%= stats[:total_matches] %> games)
+      &mdash; <%= link_to "Show all versions", player_path(player), class: "underline hover:no-underline" %>
+    </div>
+  <% elsif @map_version_until.present? %>
+    <div class="mb-4 px-3 py-2 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-700">
+      Showing stats from <strong><%= @map_version_until %></strong> onwards (<%= stats[:total_matches] %> games across <%= @filtered_map_versions.size %> versions)
+      &mdash; <%= link_to "Show all versions", player_path(player), class: "underline hover:no-underline" %>
+    </div>
+  <% end %>
   <%# Compute Custom Rating extremes (after 20 placement wins) %>
   <%
     # appearances are in reverse chronological order, so reverse to get oldest first

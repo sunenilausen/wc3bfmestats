@@ -301,12 +301,40 @@ class Wc3statsSyncJob < ApplicationJob
   end
 
   def recalculate_ratings
-    Rails.logger.info "Wc3statsSyncJob: Recalculating Custom Rating"
-    custom = CustomRatingRecalculator.new
-    custom.call
+    # Count unprocessed matches (those without custom_rating on appearances)
+    unprocessed_matches = Match.where(ignored: false)
+                               .joins(:appearances)
+                               .where(appearances: { custom_rating: nil })
+                               .distinct
+
+    unprocessed_count = unprocessed_matches.count
+
+    if unprocessed_count == 1
+      # Single new match - try incremental processing
+      match = unprocessed_matches.first
+      if CustomRatingRecalculator.process_match_if_latest(match)
+        Rails.logger.info "Wc3statsSyncJob: Processed single match incrementally (match ##{match.id})"
+      else
+        # Fall back to full recalc
+        Rails.logger.info "Wc3statsSyncJob: Incremental processing failed, doing full recalculation"
+        full_recalculate
+      end
+    elsif unprocessed_count > 0
+      # Multiple new matches - full recalculation needed
+      Rails.logger.info "Wc3statsSyncJob: #{unprocessed_count} unprocessed matches, doing full recalculation"
+      full_recalculate
+    else
+      Rails.logger.info "Wc3statsSyncJob: No unprocessed matches, skipping rating recalculation"
+    end
 
     Rails.logger.info "Wc3statsSyncJob: Recalculating ML scores"
     ml = MlScoreRecalculator.new
     ml.call
+  end
+
+  def full_recalculate
+    Rails.logger.info "Wc3statsSyncJob: Recalculating Custom Rating (full)"
+    custom = CustomRatingRecalculator.new
+    custom.call
   end
 end

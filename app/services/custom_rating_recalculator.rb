@@ -26,6 +26,23 @@ class CustomRatingRecalculator
     RatingRecalculationStatus.finish!
   end
 
+  # Process a single match incrementally (only if it's the latest chronologically)
+  # Returns true if processed incrementally, false if full recalc is needed
+  def self.process_match_if_latest(match)
+    return false if match.ignored?
+
+    # Check if this match is the latest in chronological order
+    latest_match = Match.where(ignored: false).chronological.last
+    return false unless latest_match&.id == match.id
+
+    # Check if all appearances have nil ratings (new match, not yet processed)
+    already_processed = match.appearances.any? { |a| a.custom_rating.present? }
+    return false if already_processed
+
+    new.send(:calculate_and_update_ratings, match)
+    true
+  end
+
   private
 
   def reset_all_ratings

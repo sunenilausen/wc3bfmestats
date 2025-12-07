@@ -17,9 +17,11 @@ Rails.application.routes.draw do
   end
 
   namespace :admin do
+    root to: "dashboard#index"
     resources :players, only: [], constraints: { id: /[^\/]+/ } do
-      resource :merge, only: [ :new, :create ], controller: "player_merges"
+      resource :merge, only: %i[new create], controller: "player_merges"
     end
+    get "analytics", to: "analytics#index", as: :analytics
   end
 
   devise_for :users

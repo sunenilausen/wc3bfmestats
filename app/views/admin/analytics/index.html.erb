@@ -1,0 +1,158 @@
+<% content_for :title, "Analytics" %>
+
+<div class="w-full">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Analytics Dashboard</h1>
+
+    <div class="flex items-center gap-2">
+      <span class="text-sm text-gray-600">Period:</span>
+      <%= form_with url: admin_analytics_path, method: :get, local: true, class: "flex items-center" do %>
+        <%= select_tag :period,
+          options_for_select([
+            ["Today", "today"],
+            ["Yesterday", "yesterday"],
+            ["Last 7 Days", "7days"],
+            ["Last 30 Days", "30days"],
+            ["Last 90 Days", "90days"],
+            ["Last Year", "year"],
+            ["All Time", "all"]
+          ], @period),
+          onchange: "this.form.submit()",
+          class: "text-sm border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 py-1 px-2" %>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white rounded-lg shadow p-6">
+      <div class="text-sm font-medium text-gray-500">Total Visits</div>
+      <div class="text-3xl font-bold text-blue-600"><%= number_with_delimiter(@total_visits) %></div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+      <div class="text-sm font-medium text-gray-500">Page Views</div>
+      <div class="text-3xl font-bold text-green-600"><%= number_with_delimiter(@total_page_views) %></div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+      <div class="text-sm font-medium text-gray-500">Pages per Visit</div>
+      <div class="text-3xl font-bold text-purple-600">
+        <%= @total_visits > 0 ? number_with_precision(@total_page_views.to_f / @total_visits, precision: 1) : "0" %>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+      <div class="text-sm font-medium text-gray-500">Unique Browsers</div>
+      <div class="text-3xl font-bold text-orange-600"><%= @top_browsers.keys.count %></div>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-lg font-semibold text-gray-700 mb-4">Visits Over Time</h2>
+      <%= line_chart @visits_by_day, colors: ["#3B82F6"], library: { plugins: { legend: { display: false } } } %>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-lg font-semibold text-gray-700 mb-4">Page Views Over Time</h2>
+      <%= line_chart @page_views_by_day, colors: ["#10B981"], library: { plugins: { legend: { display: false } } } %>
+    </div>
+  </div>
+
+  <!-- Top Pages -->
+  <div class="bg-white rounded-lg shadow p-6 mb-8">
+    <h2 class="text-lg font-semibold text-gray-700 mb-4">Top Pages</h2>
+    <% if @top_pages.any? %>
+      <table class="min-w-full">
+        <thead>
+          <tr class="border-b border-gray-200">
+            <th class="text-left py-2 text-sm font-medium text-gray-500">Page</th>
+            <th class="text-right py-2 text-sm font-medium text-gray-500">Views</th>
+            <th class="text-right py-2 text-sm font-medium text-gray-500">%</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @top_pages.each do |page, count| %>
+            <tr class="border-b border-gray-100">
+              <td class="py-2 text-sm text-gray-800 font-mono"><%= page %></td>
+              <td class="py-2 text-sm text-gray-600 text-right"><%= number_with_delimiter(count) %></td>
+              <td class="py-2 text-sm text-gray-500 text-right"><%= number_with_precision(count.to_f / @total_page_views * 100, precision: 1) %>%</td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <p class="text-gray-500 text-sm">No page views recorded yet.</p>
+    <% end %>
+  </div>
+
+  <!-- Top Players -->
+  <div class="bg-white rounded-lg shadow p-6 mb-8">
+    <h2 class="text-lg font-semibold text-gray-700 mb-4">Most Viewed Players</h2>
+    <% if @top_players.any? %>
+      <table class="min-w-full">
+        <thead>
+          <tr class="border-b border-gray-200">
+            <th class="text-left py-2 text-sm font-medium text-gray-500">Player</th>
+            <th class="text-right py-2 text-sm font-medium text-gray-500">Views</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @top_players.each do |player, count| %>
+            <tr class="border-b border-gray-100">
+              <td class="py-2 text-sm text-gray-800">
+                <%= link_to player.nickname, player_path(player), class: "text-blue-600 hover:underline" %>
+              </td>
+              <td class="py-2 text-sm text-gray-600 text-right"><%= number_with_delimiter(count) %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <p class="text-gray-500 text-sm">No player views recorded yet.</p>
+    <% end %>
+  </div>
+
+  <!-- Bottom Row: Browsers, Devices, Referrers -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-lg font-semibold text-gray-700 mb-4">Top Browsers</h2>
+      <% if @top_browsers.any? %>
+        <%= pie_chart @top_browsers, donut: true, colors: ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#6366F1", "#14B8A6", "#F97316", "#84CC16"] %>
+      <% else %>
+        <p class="text-gray-500 text-sm">No data yet.</p>
+      <% end %>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-lg font-semibold text-gray-700 mb-4">Device Types</h2>
+      <% if @top_devices.any? %>
+        <%= pie_chart @top_devices, donut: true, colors: ["#10B981", "#3B82F6", "#F59E0B", "#EF4444", "#8B5CF6"] %>
+      <% else %>
+        <p class="text-gray-500 text-sm">No data yet.</p>
+      <% end %>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-lg font-semibold text-gray-700 mb-4">Top Referrers</h2>
+      <% if @top_referrers.any? %>
+        <ul class="space-y-2">
+          <% @top_referrers.each do |domain, count| %>
+            <li class="flex justify-between items-center text-sm">
+              <span class="text-gray-800 truncate"><%= domain.presence || "(direct)" %></span>
+              <span class="text-gray-500 ml-2"><%= number_with_delimiter(count) %></span>
+            </li>
+          <% end %>
+        </ul>
+      <% else %>
+        <p class="text-gray-500 text-sm">No referrer data yet.</p>
+      <% end %>
+    </div>
+  </div>
+
+  <p class="text-xs text-gray-400 mt-8 text-center">
+    Analytics are GDPR-friendly: no cookies, masked IPs, no personal data stored.
+  </p>
+</div>

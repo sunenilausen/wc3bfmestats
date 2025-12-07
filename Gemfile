@@ -80,3 +80,6 @@ gem "csv"
 
 # Selenium for web scraping (wc3stats sync)
 gem "selenium-webdriver"
+gem "ahoy_matey"
+gem "chartkick"
+gem "groupdate"

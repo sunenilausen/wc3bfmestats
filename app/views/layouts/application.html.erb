@@ -54,6 +54,11 @@
         <li>
           <%= link_to "Forum", "https://wc3bfme.net", target: "_blank", class: "text-gray-700 hover:text-blue-600 font-semibold px-4 py-2 rounded transition-colors duration-200" %>
         </li>
+        <% if current_user&.admin? %>
+          <li>
+            <%= link_to "Admin", admin_root_path, class: "text-gray-700 hover:text-blue-600 font-semibold px-4 py-2 rounded transition-colors duration-200" %>
+          </li>
+        <% end %>
       </ul>
       </div>
     </nav>

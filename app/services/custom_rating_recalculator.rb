@@ -29,17 +29,32 @@ class CustomRatingRecalculator
   # Process a single match incrementally (only if it's the latest chronologically)
   # Returns true if processed incrementally, false if full recalc is needed
   def self.process_match_if_latest(match)
-    return false if match.ignored?
+    if match.ignored?
+      Rails.logger.info "CustomRatingRecalculator: Match ##{match.id} is ignored, skipping"
+      return false
+    end
 
     # Check if this match is the latest in chronological order
-    latest_match = Match.where(ignored: false).chronological.last
-    return false unless latest_match&.id == match.id
+    # Use reverse_chronological.first instead of chronological.last since the scope uses raw SQL
+    latest_match = Match.where(ignored: false).reverse_chronological.first
+    unless latest_match&.id == match.id
+      Rails.logger.info "CustomRatingRecalculator: Match ##{match.id} is not the latest (latest is ##{latest_match&.id})"
+      return false
+    end
 
     # Check if all appearances have nil ratings (new match, not yet processed)
     already_processed = match.appearances.any? { |a| a.custom_rating.present? }
-    return false if already_processed
+    if already_processed
+      Rails.logger.info "CustomRatingRecalculator: Match ##{match.id} already has ratings, skipping"
+      return false
+    end
 
+    # Reload match with associations needed for rating calculation
+    match = Match.includes(appearances: %i[player faction], wc3stats_replay: []).find(match.id)
+
+    Rails.logger.info "CustomRatingRecalculator: Processing match ##{match.id} incrementally"
     new.send(:calculate_and_update_ratings, match)
+    Rails.logger.info "CustomRatingRecalculator: Finished processing match ##{match.id}"
     true
   end
 

@@ -12,7 +12,7 @@
   </div>
 
   <% cache ["home_stats", StatsCacheKey.key] do %>
-  <div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+  <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
     <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
       <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Matches</h2>
       <p class="mt-2 text-3xl font-bold text-blue-600"><%= @matches_count %></p>
@@ -27,15 +27,6 @@
       <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Observers</h2>
       <p class="mt-2 text-3xl font-bold text-blue-600"><%= @observers_count %></p>
     </div>
-
-    <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-      <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Underdog Win Rate</h2>
-      <p class="mt-2 text-3xl font-bold text-blue-600"><%= @underdog_stats[:percentage] %>%</p>
-      <p class="mt-1 text-sm text-gray-500">
-        <%= @underdog_stats[:underdog_wins] %> of <%= @underdog_stats[:total_matches] %> matches won by lower CR team
-      </p>
-    </div>
-
   </div>
   <% end %>
 
@@ -50,7 +41,7 @@
           onchange: "this.form.submit()" %>
       <% end %>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl">
       <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
         <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Good vs Evil</h2>
         <div class="mt-2 flex items-baseline gap-2">
@@ -62,6 +53,14 @@
           <span class="text-green-600"><%= @good_vs_evil_stats[:good_wins] %> Good</span> /
           <span class="text-red-600"><%= @good_vs_evil_stats[:evil_wins] %> Evil</span>
           wins (<%= @good_vs_evil_stats[:total] %> matches)
+        </p>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
+        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Underdog Win Rate</h2>
+        <p class="mt-2 text-3xl font-bold text-purple-600"><%= @underdog_stats[:percentage] %>%</p>
+        <p class="mt-1 text-sm text-gray-500">
+          <%= @underdog_stats[:underdog_wins] %> of <%= @underdog_stats[:total_matches] %> matches
         </p>
       </div>
 

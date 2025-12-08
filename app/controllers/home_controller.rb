@@ -24,7 +24,7 @@ class HomeController < ApplicationController
       @available_map_versions.first  # default to newest on first visit
     end
 
-    @underdog_stats = calculate_underdog_stats
+    @underdog_stats = calculate_underdog_stats(@map_version)
     @good_vs_evil_stats = calculate_good_vs_evil_stats(@map_version)
     @avg_match_time = calculate_avg_match_time(@map_version)
     @matches_count = Match.where(ignored: false).count
@@ -46,8 +46,9 @@ class HomeController < ApplicationController
 
   private
 
-  def calculate_underdog_stats
+  def calculate_underdog_stats(map_version = nil)
     matches_with_data = Match.includes(appearances: :faction).where(ignored: false).where.not(good_victory: nil)
+    matches_with_data = matches_with_data.where(map_version: map_version) if map_version.present?
 
     underdog_wins = 0
     total_matches = 0

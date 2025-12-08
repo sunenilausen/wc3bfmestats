@@ -308,15 +308,17 @@ class Wc3statsSyncJob < ApplicationJob
                                .distinct
 
     unprocessed_count = unprocessed_matches.count
+    Rails.logger.info "Wc3statsSyncJob: Found #{unprocessed_count} unprocessed match(es)"
 
     if unprocessed_count == 1
       # Single new match - try incremental processing
       match = unprocessed_matches.first
+      Rails.logger.info "Wc3statsSyncJob: Attempting incremental processing for match ##{match.id}"
       if CustomRatingRecalculator.process_match_if_latest(match)
         Rails.logger.info "Wc3statsSyncJob: Processed single match incrementally (match ##{match.id})"
       else
         # Fall back to full recalc
-        Rails.logger.info "Wc3statsSyncJob: Incremental processing failed, doing full recalculation"
+        Rails.logger.info "Wc3statsSyncJob: Incremental processing failed for match ##{match.id}, doing full recalculation"
         full_recalculate
       end
     elsif unprocessed_count > 0

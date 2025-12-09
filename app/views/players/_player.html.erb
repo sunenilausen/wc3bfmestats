@@ -401,6 +401,13 @@
             <td class="py-0.5">Castles Razed</td>
             <td class="text-right py-0.5"><%= number_with_precision(stats[:avg_castles_razed], precision: 2) %></td>
           </tr>
+          <tr>
+            <td class="py-0.5" title="Actions Per Minute">APM</td>
+            <td class="text-right py-0.5">
+              <% apm_values = appearances.map(&:apm).compact %>
+              <%= apm_values.any? ? number_with_precision(apm_values.sum / apm_values.size.to_f, precision: 1) : '-' %>
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -667,6 +674,7 @@
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Castles Razed">CK</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Custom rating change">CR+/-</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Custom rating after match">CR</th>
+            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Actions Per Minute">APM</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase">Duration</th>
           </tr>
         </thead>
@@ -740,6 +748,7 @@
                   -
                 <% end %>
               </td>
+              <td class="px-2 py-1 text-center whitespace-nowrap"><%= appearance.apm || '-' %></td>
               <td class="px-2 py-1 text-center whitespace-nowrap text-gray-500">
                 <% if match.seconds %>
                   <%= "#{match.seconds / 60}m" %>

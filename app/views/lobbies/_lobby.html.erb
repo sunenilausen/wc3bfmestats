@@ -7,7 +7,7 @@
 <% evil_avg_ml = evil_with_players.any? ? (evil_with_players.sum { |lp| lp.player.ml_score.to_f } / evil_with_players.size).round(1) : 0 %>
 <% good_avg_cr = good_with_players.any? ? (good_with_players.sum { |lp| lp.player.custom_rating.to_i } / good_with_players.size) : 0 %>
 <% evil_avg_cr = evil_with_players.any? ? (evil_with_players.sum { |lp| lp.player.custom_rating.to_i } / evil_with_players.size) : 0 %>
-<% col_count = editable ? 7 : 13 %>
+<% col_count = editable ? 8 : 15 %>
 
 <div id="<%= dom_id lobby %>" class="w-full sm:w-auto <%= editable ? 'mt-2 space-y-5' : 'my-5 space-y-5' %>">
   <%= simple_form_for(lobby, html: { id: "lobby-form" }, data: editable ? { turbo_action: "replace" } : {}) do |f| %>
@@ -26,10 +26,13 @@
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Custom rating">CR</th>
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">W/L</th>
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Win/Loss with this faction">Fac W/L</th>
-            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Faction Score / Rating / Rank">F.Stats</th>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Overall average rank (1=best, 5=worst)">Rank</th>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Faction average rank">F.Rank</th>
           <% else %>
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Custom rating">CR</th>
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">W/L</th>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Overall average rank (1=best, 5=worst)">Rank</th>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Faction average rank">F.Rank</th>
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Performance score (0-100)">PERF</th>
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Last game played">Last Played</th>
             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="1 year with this faction">1y Fac</th>
@@ -45,13 +48,14 @@
         <tr class="bg-gray-100">
           <td colspan="<%= col_count %>" class="px-4 py-2 text-left text-sm text-gray-500 font-medium">Forces of Middle Earth</td>
         </tr>
-        <%= render partial: "lobbies/lobby_player_row", collection: good_players, as: :lp, locals: { lobby: lobby, editable: editable, team_number: 1, lobby_player_stats: @lobby_player_stats || {}, faction_specific_stats: @faction_specific_stats || {}, recent_stats: @recent_stats || {}, event_stats: @event_stats || {}, player_scores: @player_scores || {}, player_faction_stats: @player_faction_stats || {}, faction_totals: @faction_totals || {} } %>
+        <%= render partial: "lobbies/lobby_player_row", collection: good_players, as: :lp, locals: { lobby: lobby, editable: editable, team_number: 1, lobby_player_stats: @lobby_player_stats || {}, faction_specific_stats: @faction_specific_stats || {}, recent_stats: @recent_stats || {}, event_stats: @event_stats || {}, player_scores: @player_scores || {}, player_faction_stats: @player_faction_stats || {}, faction_totals: @faction_totals || {}, overall_avg_ranks: @overall_avg_ranks || {}, faction_rank_data: @faction_rank_data || {} } %>
         <tr class="bg-gray-50">
           <td class="px-4 py-2 font-bold text-sm">Average</td>
           <td class="px-4 py-2"></td>
           <% if editable %>
             <td class="px-4 py-2 font-bold text-sm"><span data-average-elo-target="mlValue"><%= good_avg_ml %></span></td>
             <td class="px-4 py-2 font-bold text-sm"><span data-average-elo-target="crValue"><%= good_avg_cr %></span></td>
+            <td class="px-4 py-2"></td>
             <td class="px-4 py-2"></td>
             <td class="px-4 py-2"></td>
             <td class="px-4 py-2"></td>
@@ -65,13 +69,14 @@
         <tr class="bg-gray-100">
           <td colspan="<%= col_count %>" class="px-4 py-2 text-left text-sm text-gray-500 font-medium">Forces of Sauron</td>
         </tr>
-        <%= render partial: "lobbies/lobby_player_row", collection: evil_players, as: :lp, locals: { lobby: lobby, editable: editable, team_number: 2, lobby_player_stats: @lobby_player_stats || {}, faction_specific_stats: @faction_specific_stats || {}, recent_stats: @recent_stats || {}, event_stats: @event_stats || {}, player_scores: @player_scores || {}, player_faction_stats: @player_faction_stats || {}, faction_totals: @faction_totals || {} } %>
+        <%= render partial: "lobbies/lobby_player_row", collection: evil_players, as: :lp, locals: { lobby: lobby, editable: editable, team_number: 2, lobby_player_stats: @lobby_player_stats || {}, faction_specific_stats: @faction_specific_stats || {}, recent_stats: @recent_stats || {}, event_stats: @event_stats || {}, player_scores: @player_scores || {}, player_faction_stats: @player_faction_stats || {}, faction_totals: @faction_totals || {}, overall_avg_ranks: @overall_avg_ranks || {}, faction_rank_data: @faction_rank_data || {} } %>
         <tr class="bg-gray-50">
           <td class="px-4 py-2 font-bold text-sm">Average</td>
           <td class="px-4 py-2"></td>
           <% if editable %>
             <td class="px-4 py-2 font-bold text-sm"><span data-average-elo-target="mlValue"><%= evil_avg_ml %></span></td>
             <td class="px-4 py-2 font-bold text-sm"><span data-average-elo-target="crValue"><%= evil_avg_cr %></span></td>
+            <td class="px-4 py-2"></td>
             <td class="px-4 py-2"></td>
             <td class="px-4 py-2"></td>
             <td class="px-4 py-2"></td>
@@ -111,13 +116,26 @@
                   -
                 <% end %>
               </td>
+              <%# Overall Avg Rank %>
+              <td class="px-4 py-2 whitespace-nowrap text-sm">
+                <% if @overall_avg_ranks && @overall_avg_ranks[observer.id] %>
+                  <% obs_avg_rank = @overall_avg_ranks[observer.id] %>
+                  <span class="<%= obs_avg_rank <= 2.5 ? 'text-green-600' : (obs_avg_rank >= 3.5 ? 'text-red-600' : '') %>">
+                    <%= obs_avg_rank.round(2) %>
+                  </span>
+                <% else %>
+                  <span class="text-gray-400">-</span>
+                <% end %>
+              </td>
+              <%# Faction Avg Rank - N/A for observers %>
+              <td class="px-4 py-2 whitespace-nowrap text-sm"><span class="text-gray-400">-</span></td>
               <%# Score %>
               <% obs_score_data = @player_scores&.dig(observer.id) %>
               <td class="px-4 py-2 whitespace-nowrap text-sm">
                 <% if obs_score_data %>
                   <% obs_score = obs_score_data[:score] %>
                   <% obs_color_class = obs_score >= 55 ? 'text-green-600' : (obs_score <= 45 ? 'text-red-600' : 'text-gray-600') %>
-                  <span class="<%= obs_color_class %> font-medium" title="CR: <%= obs_score_data[:cr] %>, ML: <%= obs_score_data[:ml] %>"><%= obs_score %></span>
+                  <span class="<%= obs_color_class %> font-medium" title="CR: <%= obs_score_data[:cr] %>, Avg Rank: <%= obs_score_data[:avg_rank] %>"><%= obs_score %></span>
                 <% else %>
                   -
                 <% end %>
@@ -171,12 +189,12 @@
         </div>
         <div class="flex justify-between text-sm mt-1">
           <span id="combined-good-pct" class="text-green-700 font-medium">50%</span>
-          <span class="text-xs text-gray-400">CR+Perf weighted by experience</span>
+          <span class="text-xs text-gray-400">CR+Rank weighted by experience</span>
           <span id="combined-evil-pct" class="text-red-700 font-medium">50%</span>
         </div>
         <div class="flex justify-between text-xs text-gray-500 mt-1">
-          <span>CR: <span id="pred-good-cr" class="text-green-600">-</span> | Perf: <span id="pred-good-ml" class="text-green-600">-</span></span>
-          <span>CR: <span id="pred-evil-cr" class="text-red-600">-</span> | Perf: <span id="pred-evil-ml" class="text-red-600">-</span></span>
+          <span>CR: <span id="pred-good-cr" class="text-green-600">-</span> | Rank: <span id="pred-good-rank" class="text-green-600">-</span></span>
+          <span>CR: <span id="pred-evil-cr" class="text-red-600">-</span> | Rank: <span id="pred-evil-rank" class="text-red-600">-</span></span>
         </div>
       </div>
     <% else %>
@@ -193,12 +211,12 @@
           </div>
           <div class="flex justify-between text-sm mt-1">
             <span class="text-green-700 font-medium"><%= prediction[:good_win_pct] %>%</span>
-            <span class="text-xs text-gray-400">CR+Perf weighted by experience</span>
+            <span class="text-xs text-gray-400">CR+Rank weighted by experience</span>
             <span class="text-red-700 font-medium"><%= prediction[:evil_win_pct] %>%</span>
           </div>
           <div class="flex justify-between text-xs text-gray-500 mt-1">
-            <span>CR: <span class="text-green-600"><%= prediction[:good_details][:avg_cr] %></span> | Perf: <span class="text-green-600"><%= prediction[:good_details][:avg_ml] %></span></span>
-            <span>CR: <span class="text-red-600"><%= prediction[:evil_details][:avg_cr] %></span> | Perf: <span class="text-red-600"><%= prediction[:evil_details][:avg_ml] %></span></span>
+            <span>CR: <span class="text-green-600"><%= prediction[:good_details][:avg_cr] %></span> | Rank: <span class="text-green-600"><%= prediction[:good_details][:avg_rank_score] %></span></span>
+            <span>CR: <span class="text-red-600"><%= prediction[:evil_details][:avg_cr] %></span> | Rank: <span class="text-red-600"><%= prediction[:evil_details][:avg_rank_score] %></span></span>
           </div>
         </div>
       <% end %>

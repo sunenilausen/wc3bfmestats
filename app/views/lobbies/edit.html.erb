@@ -79,6 +79,10 @@
   <%= raw @faction_stats.transform_keys { |k| "#{k[0]}_#{k[1]}" }.to_json %>
 </script>
 
+<script id="faction-rank-stats-data" type="application/json">
+  <%= raw @faction_rank_stats.transform_keys { |k| "#{k[0]}_#{k[1]}" }.to_json %>
+</script>
+
 <script id="last-match-data" type="application/json">
   <%= raw @last_match_players.to_json %>
 </script>
@@ -114,6 +118,7 @@
   const recentPlayers = JSON.parse(document.getElementById('recent-players-data').textContent);
   const newPlayerDefaults = JSON.parse(document.getElementById('new-player-defaults').textContent);
   const factionStats = JSON.parse(document.getElementById('faction-stats-data').textContent);
+  const factionRankStats = JSON.parse(document.getElementById('faction-rank-stats-data').textContent);
   const lastMatchPlayers = JSON.parse(document.getElementById('last-match-data').textContent);
 
   // Helper to get faction W/L for a player
@@ -408,16 +413,20 @@
       }
     }
 
-    // Set Performance Score, CR, and W/L to new player defaults
+    // Set Performance Score, CR, W/L, and Rank to new player defaults
     const mlScoreCell = document.getElementById('ml-score-' + slotIndex);
     const crCell = document.getElementById('cr-' + slotIndex);
     const wlCell = document.getElementById('wl-' + slotIndex);
     const facWlCell = document.getElementById('fac-wl-' + slotIndex);
+    const rankCell = document.getElementById('rank-' + slotIndex);
+    const facRankCell = document.getElementById('fac-rank-' + slotIndex);
 
     if (mlScoreCell) mlScoreCell.innerHTML = `<span class="text-red-600 font-medium">${newPlayerDefaults.ml_score}</span>`;
     if (crCell) crCell.textContent = newPlayerDefaults.custom_rating || 1300;
     if (wlCell) wlCell.innerHTML = '<span class="text-gray-400">0/0</span>';
     if (facWlCell) facWlCell.innerHTML = '<span class="text-gray-400">0/0</span>';
+    if (rankCell) rankCell.innerHTML = '<span class="text-gray-400">4.5</span>';
+    if (facRankCell) facRankCell.innerHTML = '<span class="text-gray-400">-</span>';
 
     // Mark this slot as a new player for prediction calculations
     const row = cell.closest('tr');
@@ -573,25 +582,44 @@
   }
 
   // Adaptive weighting constants (matching LobbyWinPredictor service)
-  const GAMES_THRESHOLD = 10;
-  const NEW_PLAYER_CR_WEIGHT = 40;
-  const NEW_PLAYER_ML_WEIGHT = 60;
-  const EXPERIENCED_CR_WEIGHT = 70;
-  const EXPERIENCED_ML_WEIGHT = 30;
+  const GAMES_THRESHOLD_LOW = 10;
+  const GAMES_THRESHOLD_HIGH = 100;
+  const NEW_PLAYER_CR_WEIGHT = 50;
+  const NEW_PLAYER_RANK_WEIGHT = 50;
+  const MID_CR_WEIGHT = 60;
+  const MID_RANK_WEIGHT = 40;
+  const EXPERIENCED_CR_WEIGHT = 80;
+  const EXPERIENCED_RANK_WEIGHT = 20;
   const CR_MIN = 1200;
   const CR_MAX = 1800;
   const FACTION_GAMES_FOR_FULL_CONFIDENCE = 10;
   const MAX_FACTION_PENALTY_POINTS = 5.0;
+  const FACTION_GAMES_FOR_FACTION_RANK = 20;
+  const DEFAULT_FACTION_RANK = 4.5;
 
   function normalizeCR(cr) {
     return Math.max(0, Math.min(100, ((cr - CR_MIN) / (CR_MAX - CR_MIN)) * 100));
   }
 
+  // Convert rank (1-5) to score (0-100): rank 1 = 100, rank 5 = 0
+  function rankToScore(rank) {
+    return Math.max(0, Math.min(100, ((5.0 - rank) / 4.0) * 100));
+  }
+
   function getWeightsForGames(games) {
-    if (games < GAMES_THRESHOLD) {
-      return { crWeight: NEW_PLAYER_CR_WEIGHT, mlWeight: NEW_PLAYER_ML_WEIGHT };
+    if (games >= GAMES_THRESHOLD_HIGH) {
+      return { crWeight: EXPERIENCED_CR_WEIGHT, rankWeight: EXPERIENCED_RANK_WEIGHT };
+    } else if (games >= GAMES_THRESHOLD_LOW) {
+      const progress = (games - GAMES_THRESHOLD_LOW) / (GAMES_THRESHOLD_HIGH - GAMES_THRESHOLD_LOW);
+      const crWeight = MID_CR_WEIGHT + (EXPERIENCED_CR_WEIGHT - MID_CR_WEIGHT) * progress;
+      const rankWeight = MID_RANK_WEIGHT + (EXPERIENCED_RANK_WEIGHT - MID_RANK_WEIGHT) * progress;
+      return { crWeight, rankWeight };
+    } else {
+      const progress = games / GAMES_THRESHOLD_LOW;
+      const crWeight = NEW_PLAYER_CR_WEIGHT + (MID_CR_WEIGHT - NEW_PLAYER_CR_WEIGHT) * progress;
+      const rankWeight = NEW_PLAYER_RANK_WEIGHT + (MID_RANK_WEIGHT - NEW_PLAYER_RANK_WEIGHT) * progress;
+      return { crWeight, rankWeight };
     }
-    return { crWeight: EXPERIENCED_CR_WEIGHT, mlWeight: EXPERIENCED_ML_WEIGHT };
   }
 
   function applyFactionConfidence(score, factionGames) {
@@ -602,10 +630,42 @@
     return score - penalty;
   }
 
-  function computePlayerScore(cr, ml, games, factionGames = null) {
-    const { crWeight, mlWeight } = getWeightsForGames(games);
+  // Get faction rank stats for a player-faction combo
+  function getFactionRankStats(playerId, factionId) {
+    const key = `${playerId}_${factionId}`;
+    return factionRankStats[key] || null;
+  }
+
+  // Calculate blended rank: 50% overall + 50% faction component
+  function computeBlendedRank(overallAvgRank, playerId, factionId) {
+    const factionData = getFactionRankStats(playerId, factionId);
+
+    let factionRankComponent;
+    if (factionData && factionData.count >= FACTION_GAMES_FOR_FACTION_RANK) {
+      // 20+ games: use actual faction avg
+      factionRankComponent = factionData.avg;
+    } else if (factionData && factionData.count > 0) {
+      // 1-19 games: gradual transition from 4.5 to faction avg
+      const progress = factionData.count / FACTION_GAMES_FOR_FACTION_RANK;
+      factionRankComponent = DEFAULT_FACTION_RANK + (factionData.avg - DEFAULT_FACTION_RANK) * progress;
+    } else {
+      // 0 games: use default 4.5
+      factionRankComponent = DEFAULT_FACTION_RANK;
+    }
+
+    // Blend: 50% overall + 50% faction component
+    return (overallAvgRank * 0.5) + (factionRankComponent * 0.5);
+  }
+
+  function computePlayerScore(cr, avgRank, games, factionGames, playerId, factionId) {
+    const { crWeight, rankWeight } = getWeightsForGames(games);
     const crNorm = normalizeCR(cr);
-    let baseScore = (crNorm * crWeight + ml * mlWeight) / 100.0;
+
+    // Compute blended rank
+    const blendedRank = computeBlendedRank(avgRank, playerId, factionId);
+    const rankScore = rankToScore(blendedRank);
+
+    let baseScore = (crNorm * crWeight + rankScore * rankWeight) / 100.0;
 
     // Apply faction experience adjustment if provided
     if (factionGames !== null) {
@@ -621,15 +681,15 @@
     let evilScores = [];
     let goodCRs = [];
     let evilCRs = [];
-    let goodMLs = [];
-    let evilMLs = [];
+    let goodRankScores = [];
+    let evilRankScores = [];
 
     rows.forEach(row => {
       const team = row.dataset.team;
       if (!team) return;
 
       const isNewPlayer = row.dataset.isNewPlayer === 'true';
-      let mlScore = null;
+      let avgRank = null;
       let cr = null;
       let games = 0;
       let factionGames = null;
@@ -637,7 +697,7 @@
       let factionId = null;
 
       if (isNewPlayer) {
-        mlScore = newPlayerDefaults.ml_score;
+        avgRank = 4.0;  // Default for new players
         cr = newPlayerDefaults.custom_rating || 1300;
         games = 0;
         factionGames = 0;
@@ -645,8 +705,8 @@
         const select = row.querySelector('select');
         if (select) {
           const selectedOption = select.options[select.selectedIndex];
-          if (selectedOption && selectedOption.dataset.mlScore) {
-            mlScore = parseFloat(selectedOption.dataset.mlScore);
+          if (selectedOption && selectedOption.value) {
+            avgRank = parseFloat(selectedOption.dataset.avgRank) || 4.0;
             cr = parseFloat(selectedOption.dataset.customRating) || 1300;
             games = parseInt(selectedOption.dataset.games) || 0;
             playerId = selectedOption.value;
@@ -661,16 +721,21 @@
         }
       }
 
-      if (mlScore !== null && !isNaN(mlScore)) {
-        const combinedScore = computePlayerScore(cr, mlScore, games, factionGames);
+      if (avgRank !== null && !isNaN(avgRank)) {
+        const combinedScore = computePlayerScore(cr, avgRank, games, factionGames, playerId, factionId);
+
+        // Calculate blended rank for display
+        const blendedRank = playerId ? computeBlendedRank(avgRank, playerId, factionId) : (avgRank * 0.5 + DEFAULT_FACTION_RANK * 0.5);
+        const rankScore = rankToScore(blendedRank);
+
         if (team === '1') {
           goodScores.push(combinedScore);
           goodCRs.push(cr);
-          goodMLs.push(mlScore);
+          goodRankScores.push(rankScore);
         } else if (team === '2') {
           evilScores.push(combinedScore);
           evilCRs.push(cr);
-          evilMLs.push(mlScore);
+          evilRankScores.push(rankScore);
         }
       }
     });
@@ -688,8 +753,8 @@
     // Calculate averages for display
     const goodCRAvg = goodCRs.length > 0 ? goodCRs.reduce((a, b) => a + b, 0) / goodCRs.length : 1300;
     const evilCRAvg = evilCRs.length > 0 ? evilCRs.reduce((a, b) => a + b, 0) / evilCRs.length : 1300;
-    const goodMLAvg = goodMLs.length > 0 ? goodMLs.reduce((a, b) => a + b, 0) / goodMLs.length : 50;
-    const evilMLAvg = evilMLs.length > 0 ? evilMLs.reduce((a, b) => a + b, 0) / evilMLs.length : 50;
+    const goodRankAvg = goodRankScores.length > 0 ? goodRankScores.reduce((a, b) => a + b, 0) / goodRankScores.length : 25;
+    const evilRankAvg = evilRankScores.length > 0 ? evilRankScores.reduce((a, b) => a + b, 0) / evilRankScores.length : 25;
 
     // Update combined prediction bar
     const combinedBar = document.getElementById('combined-win-bar');
@@ -703,13 +768,13 @@
     // Update detail display
     const predGoodCR = document.getElementById('pred-good-cr');
     const predEvilCR = document.getElementById('pred-evil-cr');
-    const predGoodML = document.getElementById('pred-good-ml');
-    const predEvilML = document.getElementById('pred-evil-ml');
+    const predGoodRank = document.getElementById('pred-good-rank');
+    const predEvilRank = document.getElementById('pred-evil-rank');
 
     if (predGoodCR) predGoodCR.textContent = Math.round(goodCRAvg);
     if (predEvilCR) predEvilCR.textContent = Math.round(evilCRAvg);
-    if (predGoodML) predGoodML.textContent = goodMLAvg.toFixed(1);
-    if (predEvilML) predEvilML.textContent = evilMLAvg.toFixed(1);
+    if (predGoodRank) predGoodRank.textContent = goodRankAvg.toFixed(1);
+    if (predEvilRank) predEvilRank.textContent = evilRankAvg.toFixed(1);
   }
 
   // Drag handlers
@@ -878,6 +943,34 @@
           facWlCell.innerHTML = `<span class="text-green-600">${facWL.wins}</span>/<span class="text-red-600">${facWL.losses}</span>`;
         } else {
           facWlCell.textContent = '-';
+        }
+      }
+
+      // Overall Avg Rank
+      const rankCell = document.getElementById('rank-' + slotIndex);
+      if (rankCell) {
+        if (option && option.dataset.avgRank) {
+          const avgRank = parseFloat(option.dataset.avgRank);
+          const colorClass = avgRank <= 2.5 ? 'text-green-600' : (avgRank >= 3.5 ? 'text-red-600' : '');
+          rankCell.innerHTML = `<span class="${colorClass}">${avgRank.toFixed(2)}</span>`;
+        } else {
+          rankCell.innerHTML = '<span class="text-gray-400">-</span>';
+        }
+      }
+
+      // Faction Avg Rank
+      const facRankCell = document.getElementById('fac-rank-' + slotIndex);
+      if (facRankCell) {
+        if (playerId && factionId) {
+          const facData = getFactionRankStats(playerId, factionId);
+          if (facData) {
+            const colorClass = facData.avg <= 2.5 ? 'text-green-600' : (facData.avg >= 3.5 ? 'text-red-600' : '');
+            facRankCell.innerHTML = `<span class="${colorClass}" title="${facData.count} games with faction">${facData.avg.toFixed(2)}</span> <span class="text-gray-400 text-xs">(${facData.count})</span>`;
+          } else {
+            facRankCell.innerHTML = '<span class="text-gray-400">-</span>';
+          }
+        } else {
+          facRankCell.innerHTML = '<span class="text-gray-400">-</span>';
         }
       }
     }

@@ -47,6 +47,9 @@ class MatchesController < ApplicationController
       @previous_match = current_index > 0 ? Match.includes(:wc3stats_replay).find(ordered_ids[current_index - 1]) : nil
       @next_match = current_index < ordered_ids.length - 1 ? Match.includes(:wc3stats_replay).find(ordered_ids[current_index + 1]) : nil
     end
+
+    # Preload rank data for prediction display
+    preload_rank_data
   end
 
   # GET /matches/new
@@ -147,5 +150,30 @@ class MatchesController < ApplicationController
     # Only allow a list of trusted parameters through.
     def match_params
       params.expect(match: [ :uploaded_at, :seconds, :good_victory, :ignored, appearances_attributes: [ :id, :hero_kills, :player_id, :unit_kills ] ])
+    end
+
+    def preload_rank_data
+      player_ids = @match.appearances.map(&:player_id).compact
+      return if player_ids.empty?
+
+      # Get overall average ranks for each player
+      @overall_avg_ranks = Appearance.joins(:match)
+        .where(player_id: player_ids, matches: { ignored: false })
+        .where.not(contribution_rank: nil)
+        .group(:player_id)
+        .average(:contribution_rank)
+        .transform_values(&:to_f)
+
+      # Get faction-specific avg ranks and counts
+      faction_data = Appearance.joins(:match)
+        .where(player_id: player_ids, matches: { ignored: false })
+        .where.not(contribution_rank: nil)
+        .group(:player_id, :faction_id)
+        .pluck(:player_id, :faction_id, Arel.sql("AVG(contribution_rank)"), Arel.sql("COUNT(*)"))
+
+      @faction_rank_data = {}
+      faction_data.each do |player_id, faction_id, avg_rank, count|
+        @faction_rank_data[[ player_id, faction_id ]] = { avg: avg_rank.to_f, count: count }
+      end
     end
 end

@@ -13,6 +13,30 @@
     <%= previous_record_for_appearance(appearance) %>
   </td>
   <td class="px-2 py-1">
+    <% if appearance.player && @overall_avg_ranks && @overall_avg_ranks[appearance.player_id] %>
+      <span class="<%= @overall_avg_ranks[appearance.player_id] <= 2.5 ? 'text-green-600' : (@overall_avg_ranks[appearance.player_id] >= 3.5 ? 'text-red-600' : '') %>">
+        <%= @overall_avg_ranks[appearance.player_id].round(2) %>
+      </span>
+    <% else %>
+      <span class="text-gray-400">-</span>
+    <% end %>
+  </td>
+  <td class="px-2 py-1">
+    <% if appearance.player && @faction_rank_data %>
+      <% fac_data = @faction_rank_data[[appearance.player_id, appearance.faction_id]] %>
+      <% if fac_data %>
+        <span class="<%= fac_data[:avg] <= 2.5 ? 'text-green-600' : (fac_data[:avg] >= 3.5 ? 'text-red-600' : '') %>" title="<%= fac_data[:count] %> games with faction">
+          <%= fac_data[:avg].round(2) %>
+        </span>
+        <span class="text-gray-400 text-xs">(<%= fac_data[:count] %>)</span>
+      <% else %>
+        <span class="text-gray-400">-</span>
+      <% end %>
+    <% else %>
+      <span class="text-gray-400">-</span>
+    <% end %>
+  </td>
+  <td class="px-2 py-1">
     <%= appearance.unit_kills %>
   </td>
   <td class="px-2 py-1">

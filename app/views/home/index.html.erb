@@ -47,7 +47,7 @@
 
       <% if @recent_prediction_stats[:total_matches] > 0 %>
       <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Underdog Rate (Perf)</h2>
+        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Underdog Rate (CR+Rank)</h2>
         <p class="mt-2 text-3xl font-bold text-purple-600"><%= @recent_prediction_stats[:underdog_win_rate] %>%</p>
         <p class="mt-1 text-sm text-gray-500">
           <%= @recent_prediction_stats[:underdog_wins] %> of <%= @recent_prediction_stats[:underdog_matches] %> matches
@@ -94,7 +94,7 @@
 
       <% if @ml_prediction_stats[:total_matches] > 0 %>
       <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Underdog Win Rate (Perf)</h2>
+        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Underdog Win Rate (CR+Rank)</h2>
         <p class="mt-2 text-3xl font-bold text-purple-600"><%= @ml_prediction_stats[:underdog_win_rate] %>%</p>
         <p class="mt-1 text-sm text-gray-500">
           <%= @ml_prediction_stats[:underdog_wins] %> of <%= @ml_prediction_stats[:underdog_matches] %> matches
@@ -230,4 +230,54 @@
     </div>
     <% end %>
   </div>
+
+  <%# Prediction Accuracy Table %>
+  <% if @prediction_accuracy_by_confidence.any? { |b| b[:total] > 0 } %>
+  <div class="mt-8">
+    <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
+      <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">Prediction Accuracy by Confidence</h2>
+      <p class="text-xs text-gray-500 mb-4">How accurate are predictions based on how confident they are? (50% = even match, 95-100% = heavily favored)</p>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead>
+            <tr class="border-b border-gray-200">
+              <th class="text-left py-2 px-3 font-medium text-gray-600">Prediction</th>
+              <th class="text-right py-2 px-3 font-medium text-blue-600">CR+Rank Accuracy</th>
+              <th class="text-right py-2 px-3 font-medium text-gray-400 text-xs">matches</th>
+              <th class="text-right py-2 px-3 font-medium text-purple-600">CR-only Accuracy</th>
+              <th class="text-right py-2 px-3 font-medium text-gray-400 text-xs">matches</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @prediction_accuracy_by_confidence.each do |bucket| %>
+              <tr class="border-b border-gray-100 hover:bg-gray-50">
+                <td class="py-2 px-3 font-medium text-gray-700"><%= bucket[:label] %>%</td>
+                <td class="py-2 px-3 text-right">
+                  <% if bucket[:accuracy] %>
+                    <span class="font-medium <%= bucket[:accuracy] >= 60 ? 'text-green-600' : bucket[:accuracy] >= 50 ? 'text-gray-700' : 'text-red-600' %>">
+                      <%= bucket[:accuracy] %>%
+                    </span>
+                  <% else %>
+                    <span class="text-gray-400">-</span>
+                  <% end %>
+                </td>
+                <td class="py-2 px-3 text-right text-gray-400 text-xs"><%= bucket[:total] %></td>
+                <td class="py-2 px-3 text-right">
+                  <% if bucket[:cr_accuracy] %>
+                    <span class="font-medium <%= bucket[:cr_accuracy] >= 60 ? 'text-green-600' : bucket[:cr_accuracy] >= 50 ? 'text-gray-700' : 'text-red-600' %>">
+                      <%= bucket[:cr_accuracy] %>%
+                    </span>
+                  <% else %>
+                    <span class="text-gray-400">-</span>
+                  <% end %>
+                </td>
+                <td class="py-2 px-3 text-right text-gray-400 text-xs"><%= bucket[:cr_total] %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <% end %>
 </div>

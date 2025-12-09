@@ -1,12 +1,9 @@
 # Calculates and stores performance scores for each player-faction combination
 # Performance score is the average of performance scores from all matches with that faction
-# Faction score is similar to ML score but uses faction-specific rating and stats
+# Faction score combines faction-specific rating and average contribution rank
 class PlayerFactionStatsCalculator
   # Minimum games required to be ranked
   MIN_GAMES_FOR_RANKING = 10
-
-  # Same weights as MlScoreRecalculator
-  WEIGHTS = MlScoreRecalculator::WEIGHTS
 
   attr_reader :stats_updated, :errors
 
@@ -112,73 +109,26 @@ class PlayerFactionStatsCalculator
     player_id = stat.player_id
     faction_id = stat.faction_id
 
-    # Get all appearances for this player with this faction
+    # Get all appearances for this player with this faction that have contribution rank
     appearances = Appearance.joins(:match, :faction)
       .where(player_id: player_id, faction_id: faction_id)
       .where(matches: { ignored: false })
-      .includes(:match)
+      .where.not(contribution_rank: nil)
 
     return nil if appearances.empty?
 
-    # Calculate faction-specific contribution averages
-    hk_contribs = []
-    uk_contribs = []
-    cr_contribs = []
-    th_contribs = []
-    hero_uptimes = []
+    # Calculate average contribution rank for this faction
+    avg_rank = appearances.average(:contribution_rank).to_f
 
-    appearances.each do |app|
-      # Hero kill contribution
-      if app.hero_kill_pct && app.hero_kill_pct > 0
-        hk_contribs << app.hero_kill_pct
-      end
+    # Convert rank (1-5) to 0-100 score: rank 1 = 100, rank 3 = 50, rank 5 = 0
+    rank_score = ((5.0 - avg_rank) / 4.0 * 100).clamp(0, 100)
 
-      # Unit kill contribution
-      if app.unit_kill_pct && app.unit_kill_pct > 0
-        uk_contribs << app.unit_kill_pct
-      end
+    # Use faction rating normalized to 0-100 (1200 = 0, 1800 = 100)
+    faction_rating = stat.faction_rating || 1300
+    cr_norm = ((faction_rating - 1200) / 600.0 * 100).clamp(0, 100)
 
-      # Castle raze contribution
-      if app.castle_raze_pct && app.castle_raze_pct > 0
-        cr_contribs << app.castle_raze_pct
-      end
-
-      # Team heal contribution
-      if app.team_heal_pct && app.team_heal_pct > 0
-        th_contribs << app.team_heal_pct
-      end
-
-      # Hero uptime (calculate from heroes_lost/heroes_total if available)
-      if app.heroes_lost && app.heroes_total && app.heroes_total > 0
-        # Estimate uptime: if 0 heroes lost = 100%, if all lost early = lower
-        # Simple approximation: (heroes_survived / total) * 100
-        heroes_survived = app.heroes_total - app.heroes_lost
-        hero_uptimes << (heroes_survived.to_f / app.heroes_total * 100)
-      end
-    end
-
-    # Calculate averages (default to 20% for contributions, 80% for uptime)
-    avg_hk = hk_contribs.any? ? (hk_contribs.sum / hk_contribs.size) : 20.0
-    avg_uk = uk_contribs.any? ? (uk_contribs.sum / uk_contribs.size) : 20.0
-    avg_cr = cr_contribs.any? ? (cr_contribs.sum / cr_contribs.size) : 20.0
-    avg_th = th_contribs.any? ? (th_contribs.sum / th_contribs.size) : 20.0
-    avg_uptime = hero_uptimes.any? ? (hero_uptimes.sum / hero_uptimes.size) : 80.0
-
-    # Use faction rating instead of overall CR (default to 1200)
-    faction_rating = stat.faction_rating || 1200
-
-    # Calculate raw score using same formula as ML score
-    raw_score = 0.0
-    raw_score += WEIGHTS[:elo] * (faction_rating - 1200)  # Base 1200 for faction rating
-    raw_score += WEIGHTS[:hero_kill_contribution] * (avg_hk - 20.0)
-    raw_score += WEIGHTS[:unit_kill_contribution] * (avg_uk - 20.0)
-    raw_score += WEIGHTS[:castle_raze_contribution] * (avg_cr - 20.0)
-    raw_score += WEIGHTS[:team_heal_contribution] * (avg_th - 20.0)
-    raw_score += WEIGHTS[:hero_uptime] * (avg_uptime - 80.0)
-
-    # Apply sigmoid to get 0-100 scale
-    sigmoid_value = 1.0 / (1.0 + Math.exp(-raw_score.clamp(-500, 500) * 0.5))
-    raw_faction_score = sigmoid_value * 100
+    # Combine CR (80%) and Rank (20%) - same as LobbyWinPredictor for experienced players
+    raw_faction_score = (cr_norm * 0.8 + rank_score * 0.2)
 
     # Apply confidence adjustment based on games played with this faction
     games = stat.games_played

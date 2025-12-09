@@ -28,9 +28,11 @@
         <% @players_for_select.each do |player| %>
           <% stats = @player_stats[player.id] || { wins: 0, losses: 0 } %>
           <% games = stats[:wins] + stats[:losses] %>
+          <% player_data = @players_search_data&.find { |p| p[:id] == player.id } %>
           <option value="<%= player.id %>"
                   data-custom-rating="<%= player.custom_rating&.round || 1300 %>"
                   data-ml-score="<%= player.ml_score || 50 %>"
+                  data-avg-rank="<%= player_data&.dig(:avgRank) || 4.0 %>"
                   data-wins="<%= stats[:wins] %>"
                   data-losses="<%= stats[:losses] %>"
                   data-games="<%= games %>"
@@ -140,21 +142,32 @@
         -
       <% end %>
     </td>
-    <%# Faction Stats (Score/Rating/Rank) for edit mode %>
-    <td class="px-4 py-2 whitespace-nowrap text-sm" id="fac-stats-<%= index %>">
-      <% if lp.player && defined?(player_faction_stats) %>
-        <% pfs = player_faction_stats[[lp.player_id, lp.faction_id]] %>
-        <% if pfs&.faction_score %>
-          <span class="font-medium"><%= pfs.faction_score.round(1) %></span>
-          <% if pfs.rank %>
-            <% total = (faction_totals || {})[lp.faction_id] || 0 %>
-            <% percentile = total > 0 ? (pfs.rank.to_f / total * 100).round : 0 %>
-            <span class="<%= pfs.rank <= 3 ? 'text-yellow-600 font-semibold' : (pfs.rank <= 10 ? 'text-green-600' : 'text-gray-400') %> text-xs">(#<%= pfs.rank %>, t<%= percentile %>%)</span>
-          <% end %>
-          <span class="text-gray-400 text-xs ml-1">R:<%= pfs.faction_rating&.round || '-' %></span>
-        <% elsif pfs&.faction_rating %>
+    <%# Overall Avg Rank for edit mode %>
+    <td class="px-4 py-2 whitespace-nowrap text-sm" id="rank-<%= index %>">
+      <% if lp.player && @faction_rank_stats %>
+        <% avg_rank_val = @players_search_data&.find { |p| p[:id] == lp.player_id }&.dig(:avgRank) %>
+        <% if avg_rank_val %>
+          <span class="<%= avg_rank_val <= 2.5 ? 'text-green-600' : (avg_rank_val >= 3.5 ? 'text-red-600' : '') %>">
+            <%= avg_rank_val.round(2) %>
+          </span>
+        <% else %>
           <span class="text-gray-400">-</span>
-          <span class="text-gray-400 text-xs ml-1">R:<%= pfs.faction_rating.round %></span>
+        <% end %>
+      <% elsif lp.is_new_player? %>
+        <span class="text-gray-400">4.5</span>
+      <% else %>
+        -
+      <% end %>
+    </td>
+    <%# Faction Avg Rank for edit mode %>
+    <td class="px-4 py-2 whitespace-nowrap text-sm" id="fac-rank-<%= index %>">
+      <% if lp.player && @faction_rank_stats %>
+        <% fac_data = @faction_rank_stats[[lp.player_id, lp.faction_id]] %>
+        <% if fac_data %>
+          <span class="<%= fac_data[:avg] <= 2.5 ? 'text-green-600' : (fac_data[:avg] >= 3.5 ? 'text-red-600' : '') %>" title="<%= fac_data[:count] %> games with faction">
+            <%= fac_data[:avg].round(2) %>
+          </span>
+          <span class="text-gray-400 text-xs">(<%= fac_data[:count] %>)</span>
         <% else %>
           <span class="text-gray-400">-</span>
         <% end %>
@@ -166,6 +179,33 @@
     </td>
   <% end %>
   <% unless editable %>
+    <%# Overall Avg Rank %>
+    <td class="px-4 py-2 whitespace-nowrap text-sm">
+      <% if lp.player && defined?(overall_avg_ranks) && overall_avg_ranks[lp.player_id] %>
+        <% avg_rank = overall_avg_ranks[lp.player_id] %>
+        <span class="<%= avg_rank <= 2.5 ? 'text-green-600' : (avg_rank >= 3.5 ? 'text-red-600' : '') %>">
+          <%= avg_rank.round(2) %>
+        </span>
+      <% else %>
+        <span class="text-gray-400">-</span>
+      <% end %>
+    </td>
+    <%# Faction Avg Rank %>
+    <td class="px-4 py-2 whitespace-nowrap text-sm">
+      <% if lp.player && defined?(faction_rank_data) %>
+        <% fac_data = faction_rank_data[[lp.player_id, lp.faction_id]] %>
+        <% if fac_data %>
+          <span class="<%= fac_data[:avg] <= 2.5 ? 'text-green-600' : (fac_data[:avg] >= 3.5 ? 'text-red-600' : '') %>" title="<%= fac_data[:count] %> games with faction">
+            <%= fac_data[:avg].round(2) %>
+          </span>
+          <span class="text-gray-400 text-xs">(<%= fac_data[:count] %>)</span>
+        <% else %>
+          <span class="text-gray-400">-</span>
+        <% end %>
+      <% else %>
+        <span class="text-gray-400">-</span>
+      <% end %>
+    </td>
     <%# Performance Score - use stored ml_score from player %>
     <td class="px-4 py-2 whitespace-nowrap text-sm">
       <% if lp.player&.ml_score %>

@@ -29,6 +29,7 @@ class HomeController < ApplicationController
     @recent_prediction_stats = calculate_recent_prediction_stats
     @recent_cr_stats = calculate_recent_cr_stats
     @good_vs_evil_stats = calculate_good_vs_evil_stats(@map_version)
+    @prediction_accuracy_by_confidence = calculate_prediction_accuracy_by_confidence(@map_version)
     @avg_match_time = calculate_avg_match_time(@map_version)
     @matches_count = Match.where(ignored: false).count
     # Players who have played at least one valid (non-ignored) match
@@ -236,5 +237,67 @@ class HomeController < ApplicationController
       total_matches: total_matches,
       underdog_win_rate: total_matches > 0 ? (underdog_wins.to_f / total_matches * 100).round(1) : 0
     }
+  end
+
+  def calculate_prediction_accuracy_by_confidence(map_version = nil)
+    matches = Match.includes(appearances: :faction)
+                   .where(ignored: false)
+                   .where.not(good_victory: nil)
+                   .where.not(predicted_good_win_pct: nil)
+    matches = matches.where(map_version: map_version) if map_version.present?
+
+    # Buckets in 5% increments from 50% to 100%
+    buckets = {}
+    (50..95).step(5).each do |start|
+      label = "#{start}-#{start + 5}"
+      buckets[label] = { correct: 0, total: 0, cr_correct: 0, cr_total: 0 }
+    end
+
+    matches.find_each do |match|
+      # CR+Rank prediction
+      good_pct = match.predicted_good_win_pct.to_f
+      confidence_pct = [ good_pct, 100 - good_pct ].max
+      good_favored = good_pct >= 50
+      prediction_correct = (good_favored && match.good_victory) || (!good_favored && !match.good_victory)
+
+      bucket_key = bucket_for_confidence(confidence_pct)
+      buckets[bucket_key][:total] += 1
+      buckets[bucket_key][:correct] += 1 if prediction_correct
+
+      # CR-only prediction (calculated from appearances)
+      good_crs = match.appearances.select { |a| a.faction&.good? }.filter_map(&:custom_rating)
+      evil_crs = match.appearances.reject { |a| a.faction&.good? }.filter_map(&:custom_rating)
+
+      if good_crs.any? && evil_crs.any?
+        good_cr_avg = good_crs.sum / good_crs.size.to_f
+        evil_cr_avg = evil_crs.sum / evil_crs.size.to_f
+        cr_diff = ((good_cr_avg - 1200) / 600.0 * 100).clamp(0, 100) - ((evil_cr_avg - 1200) / 600.0 * 100).clamp(0, 100)
+        cr_good_pct = (1.0 / (1 + Math.exp(-cr_diff / 5.0)) * 100)
+
+        cr_confidence_pct = [ cr_good_pct, 100 - cr_good_pct ].max
+        cr_good_favored = cr_good_pct >= 50
+        cr_prediction_correct = (cr_good_favored && match.good_victory) || (!cr_good_favored && !match.good_victory)
+
+        cr_bucket_key = bucket_for_confidence(cr_confidence_pct)
+        buckets[cr_bucket_key][:cr_total] += 1
+        buckets[cr_bucket_key][:cr_correct] += 1 if cr_prediction_correct
+      end
+    end
+
+    # Convert to array with percentages
+    buckets.map do |label, data|
+      {
+        label: label,
+        accuracy: data[:total] > 0 ? (data[:correct].to_f / data[:total] * 100).round(1) : nil,
+        total: data[:total],
+        cr_accuracy: data[:cr_total] > 0 ? (data[:cr_correct].to_f / data[:cr_total] * 100).round(1) : nil,
+        cr_total: data[:cr_total]
+      }
+    end
+  end
+
+  def bucket_for_confidence(pct)
+    bucket_start = ((pct.to_i / 5) * 5).clamp(50, 95)
+    "#{bucket_start}-#{bucket_start + 5}"
   end
 end

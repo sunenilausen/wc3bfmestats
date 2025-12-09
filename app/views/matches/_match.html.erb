@@ -19,22 +19,44 @@
       evil_pct = 100 - good_pct
       good_favored = good_pct >= 50
       prediction_correct = (good_favored && match.good_victory) || (!good_favored && !match.good_victory)
+
+      # CR-only prediction calculated from appearance custom_rating (CR at time of match)
+      good_crs = match.appearances.select { |a| a.faction&.good? }.filter_map(&:custom_rating)
+      evil_crs = match.appearances.select { |a| a.faction && !a.faction.good? }.filter_map(&:custom_rating)
+      if good_crs.any? && evil_crs.any?
+        good_cr_avg = good_crs.sum / good_crs.size.to_f
+        evil_cr_avg = evil_crs.sum / evil_crs.size.to_f
+        cr_diff = ((good_cr_avg - 1200) / 600.0 * 100).clamp(0, 100) - ((evil_cr_avg - 1200) / 600.0 * 100).clamp(0, 100)
+        cr_good_pct = (1.0 / (1 + Math.exp(-cr_diff / 5.0)) * 100).round(1)
+        cr_evil_pct = 100 - cr_good_pct
+        cr_good_favored = cr_good_pct >= 50
+        cr_prediction_correct = (cr_good_favored && match.good_victory) || (!cr_good_favored && !match.good_victory)
+      end
     %>
     <div class="mt-3 p-3 bg-gray-50 rounded-md inline-block">
-      <span class="text-sm font-medium text-gray-600">Pre-match prediction:</span>
-      <span class="ml-2 font-semibold <%= good_favored ? 'text-green-600' : 'text-red-600' %>">
-        <%= good_favored ? 'Good' : 'Evil' %> <%= [good_pct, evil_pct].max.round(1) %>%
-      </span>
-      <% if match.good_victory != nil %>
-        <span class="ml-1 text-sm <%= prediction_correct ? 'text-green-600' : 'text-red-600' %>">
-          (<%= prediction_correct ? 'correct' : 'upset' %>)
+      <div class="mb-1">
+        <span class="text-sm font-medium text-gray-600">CR+Rank prediction:</span>
+        <span class="ml-2 font-semibold <%= good_favored ? 'text-green-600' : 'text-red-600' %>">
+          <%= good_favored ? 'Good' : 'Evil' %> <%= [good_pct, evil_pct].max.round(1) %>%
         </span>
-      <% end %>
-      <% if match.predicted_good_score.present? && match.predicted_evil_score.present? %>
-        <span class="ml-3 text-sm text-gray-500">
-          ML Score: <span class="text-green-600 font-medium"><%= match.predicted_good_score.round(1) %></span>
-          vs <span class="text-red-600 font-medium"><%= match.predicted_evil_score.round(1) %></span>
-        </span>
+        <% if match.good_victory != nil %>
+          <span class="ml-1 text-sm <%= prediction_correct ? 'text-green-600' : 'text-red-600' %>">
+            (<%= prediction_correct ? 'correct' : 'upset' %>)
+          </span>
+        <% end %>
+      </div>
+      <% if defined?(cr_good_pct) && cr_good_pct %>
+        <div>
+          <span class="text-sm font-medium text-gray-600">CR-only prediction:</span>
+          <span class="ml-2 font-semibold <%= cr_good_favored ? 'text-green-600' : 'text-red-600' %>">
+            <%= cr_good_favored ? 'Good' : 'Evil' %> <%= [cr_good_pct, cr_evil_pct].max.round(1) %>%
+          </span>
+          <% if match.good_victory != nil %>
+            <span class="ml-1 text-sm <%= cr_prediction_correct ? 'text-green-600' : 'text-red-600' %>">
+              (<%= cr_prediction_correct ? 'correct' : 'upset' %>)
+            </span>
+          <% end %>
+        </div>
       <% end %>
     </div>
   <% end %>

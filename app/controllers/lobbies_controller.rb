@@ -25,7 +25,9 @@ class LobbiesController < ApplicationController
         event_stats: @event_stats,
         player_scores: @player_scores,
         score_prediction: @score_prediction,
-        feature_contributions: @feature_contributions
+        feature_contributions: @feature_contributions,
+        overall_avg_ranks: @overall_avg_ranks,
+        faction_rank_data: @faction_rank_data
       }
     end
 
@@ -36,6 +38,8 @@ class LobbiesController < ApplicationController
     @player_scores = cached_stats[:player_scores]
     @score_prediction = cached_stats[:score_prediction]
     @feature_contributions = cached_stats[:feature_contributions]
+    @overall_avg_ranks = cached_stats[:overall_avg_ranks]
+    @faction_rank_data = cached_stats[:faction_rank_data]
   end
 
   # GET /lobbies/new - creates lobby instantly with previous match players
@@ -224,7 +228,27 @@ class LobbiesController < ApplicationController
 
       @players_for_select = Player.order(:nickname).select(:id, :nickname, :alternative_name, :ml_score, :custom_rating)
 
-      # Build player search data with games played count and ML score
+      # Precompute average contribution ranks for all players
+      avg_ranks = Appearance.joins(:match)
+        .where(matches: { ignored: false })
+        .where.not(contribution_rank: nil)
+        .group(:player_id)
+        .average(:contribution_rank)
+        .transform_values(&:to_f)
+
+      # Precompute faction-specific avg ranks and counts
+      faction_rank_data = Appearance.joins(:match)
+        .where(matches: { ignored: false })
+        .where.not(contribution_rank: nil)
+        .group(:player_id, :faction_id)
+        .pluck(:player_id, :faction_id, Arel.sql("AVG(contribution_rank)"), Arel.sql("COUNT(*)"))
+
+      @faction_rank_stats = {}
+      faction_rank_data.each do |player_id, faction_id, avg_rank, count|
+        @faction_rank_stats[[ player_id, faction_id ]] = { avg: avg_rank.to_f, count: count }
+      end
+
+      # Build player search data with games played count and avg rank
       @players_search_data = @players_for_select.map do |player|
         stats = @player_stats[player.id] || { wins: 0, losses: 0 }
         games = stats[:wins] + stats[:losses]
@@ -234,6 +258,7 @@ class LobbiesController < ApplicationController
           alternativeName: player.alternative_name,
           customRating: player.custom_rating&.round || 1300,
           mlScore: player.ml_score,
+          avgRank: avg_ranks[player.id]&.round(2) || 4.0,
           wins: stats[:wins],
           losses: stats[:losses],
           games: games
@@ -275,6 +300,7 @@ class LobbiesController < ApplicationController
           nickname: nickname,
           alternativeName: alternative_name,
           mlScore: ml_score,
+          avgRank: avg_ranks[id]&.round(2) || 4.0,
           customRating: custom_rating&.round || 1300,
           wins: stats[:wins],
           losses: stats[:losses],
@@ -300,10 +326,31 @@ class LobbiesController < ApplicationController
       @lobby_player_stats = {}
       @faction_specific_stats = {}
       @recent_stats = {}
+      @overall_avg_ranks = {}
+      @faction_rank_data = {}
       return if player_ids.empty?
 
       # Preload players in one query
       players_by_id = Player.where(id: player_ids).index_by(&:id)
+
+      # Preload overall average ranks
+      @overall_avg_ranks = Appearance.joins(:match)
+        .where(player_id: player_ids, matches: { ignored: false })
+        .where.not(contribution_rank: nil)
+        .group(:player_id)
+        .average(:contribution_rank)
+        .transform_values(&:to_f)
+
+      # Preload faction-specific avg ranks and counts
+      faction_rank_data = Appearance.joins(:match)
+        .where(player_id: player_ids, matches: { ignored: false })
+        .where.not(contribution_rank: nil)
+        .group(:player_id, :faction_id)
+        .pluck(:player_id, :faction_id, Arel.sql("AVG(contribution_rank)"), Arel.sql("COUNT(*)"))
+
+      faction_rank_data.each do |player_id, faction_id, avg_rank, count|
+        @faction_rank_data[[ player_id, faction_id ]] = { avg: avg_rank.to_f, count: count }
+      end
 
       # Preload all appearances with necessary associations in optimized queries
       # Filter out ignored matches

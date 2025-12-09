@@ -1,13 +1,13 @@
 # Recalculates ML scores for all players
 class MlScoreRecalculator
   # Hardcoded weights (manually tuned, not auto-trained)
+  # Note: elo removed to make ML score independent of CR (CR is weighted separately in predictions)
   WEIGHTS = {
-    elo: 0.006,
-    hero_kill_contribution: 0.045,
-    unit_kill_contribution: 0.025,
-    castle_raze_contribution: 0.01,
-    team_heal_contribution: 0.005,
-    hero_uptime: 0.005
+    hero_kill_contribution: 0.06,
+    unit_kill_contribution: 0.04,
+    castle_raze_contribution: 0.02,
+    team_heal_contribution: 0.01,
+    hero_uptime: 0.01
   }.freeze
 
   def call
@@ -176,14 +176,7 @@ class MlScoreRecalculator
       hero_kd = es[:hero_kd_ratio] || 1.0
       hero_uptime = es[:hero_uptime] || 80.0
 
-      elo = player.custom_rating || 1300
-
-      # Use log scale for games played (diminishing returns)
-      # log(1) = 0, log(10) ≈ 2.3, log(50) ≈ 3.9, log(100) ≈ 4.6
-      games_played_log = total_matches > 0 ? Math.log(total_matches + 1) : 0
-
-      # Use hardcoded weights directly
-      elo_weight = weights[:elo]
+      # Use hardcoded weights directly (no elo - CR is weighted separately in predictions)
       hero_kill_weight = weights[:hero_kill_contribution]
       unit_kill_weight = weights[:unit_kill_contribution]
       castle_raze_weight = weights[:castle_raze_contribution]
@@ -191,7 +184,6 @@ class MlScoreRecalculator
       hero_uptime_weight = weights[:hero_uptime]
 
       raw_score = 0.0
-      raw_score += elo_weight * (elo - 1300)
       raw_score += hero_kill_weight * (avg_hk - 20.0)
       raw_score += unit_kill_weight * (avg_uk - 20.0)
       raw_score += castle_raze_weight * (avg_cr - 20.0)

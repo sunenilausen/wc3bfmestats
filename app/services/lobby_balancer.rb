@@ -1,7 +1,7 @@
 # Automatically balances a lobby by swapping players between teams
 # to minimize the win prediction difference from 50/50
 #
-# Uses the same adaptive CR/ML weighting as LobbyWinPredictor
+# Uses the same adaptive CR/Rank weighting as LobbyWinPredictor
 # Also considers faction experience - prefers swapping players to factions they play
 #
 # Strategy:
@@ -11,11 +11,14 @@
 #
 class LobbyBalancer
   # Use same constants as LobbyWinPredictor
-  GAMES_THRESHOLD = LobbyWinPredictor::GAMES_THRESHOLD
+  GAMES_THRESHOLD_LOW = LobbyWinPredictor::GAMES_THRESHOLD_LOW
+  GAMES_THRESHOLD_HIGH = LobbyWinPredictor::GAMES_THRESHOLD_HIGH
   NEW_PLAYER_CR_WEIGHT = LobbyWinPredictor::NEW_PLAYER_CR_WEIGHT
-  NEW_PLAYER_ML_WEIGHT = LobbyWinPredictor::NEW_PLAYER_ML_WEIGHT
+  NEW_PLAYER_RANK_WEIGHT = LobbyWinPredictor::NEW_PLAYER_RANK_WEIGHT
+  MID_CR_WEIGHT = LobbyWinPredictor::MID_CR_WEIGHT
+  MID_RANK_WEIGHT = LobbyWinPredictor::MID_RANK_WEIGHT
   EXPERIENCED_CR_WEIGHT = LobbyWinPredictor::EXPERIENCED_CR_WEIGHT
-  EXPERIENCED_ML_WEIGHT = LobbyWinPredictor::EXPERIENCED_ML_WEIGHT
+  EXPERIENCED_RANK_WEIGHT = LobbyWinPredictor::EXPERIENCED_RANK_WEIGHT
   CR_MIN = LobbyWinPredictor::CR_MIN
   CR_MAX = LobbyWinPredictor::CR_MAX
   FACTION_GAMES_FOR_FULL_CONFIDENCE = LobbyWinPredictor::FACTION_GAMES_FOR_FULL_CONFIDENCE
@@ -24,12 +27,20 @@ class LobbyBalancer
   # Minimum improvement threshold to consider a swap worth making (in score units)
   MIN_IMPROVEMENT_THRESHOLD = 0.5
 
+  # Faction rank fully kicks in after this many games with faction
+  FACTION_GAMES_FOR_FACTION_RANK = LobbyWinPredictor::FACTION_GAMES_FOR_FACTION_RANK
+  DEFAULT_FACTION_RANK = LobbyWinPredictor::DEFAULT_FACTION_RANK
+
   attr_reader :lobby
 
   def initialize(lobby)
     @lobby = lobby
     @faction_experience_cache = {}
+    @avg_rank_cache = {}
+    @faction_rank_cache = {}
     preload_faction_experience
+    preload_avg_ranks
+    preload_faction_ranks
   end
 
   # Returns the best swap to make, or nil if already balanced
@@ -183,13 +194,63 @@ class LobbyBalancer
     @faction_experience_cache[[ player_id, faction_id ]] || 0
   end
 
+  def preload_avg_ranks
+    player_ids = lobby.lobby_players.filter_map(&:player_id)
+    return if player_ids.empty?
+
+    avg_ranks = Appearance.joins(:match)
+      .where(player_id: player_ids, matches: { ignored: false })
+      .where.not(contribution_rank: nil)
+      .group(:player_id)
+      .average(:contribution_rank)
+
+    avg_ranks.each do |player_id, avg_rank|
+      @avg_rank_cache[player_id] = avg_rank.to_f
+    end
+  end
+
+  def preload_faction_ranks
+    player_ids = lobby.lobby_players.filter_map(&:player_id)
+    return if player_ids.empty?
+
+    # Get average contribution rank and game count per player-faction combination
+    faction_data = Appearance.joins(:match)
+      .where(player_id: player_ids, matches: { ignored: false })
+      .where.not(contribution_rank: nil)
+      .group(:player_id, :faction_id)
+      .pluck(:player_id, :faction_id, Arel.sql("AVG(contribution_rank)"), Arel.sql("COUNT(*)"))
+
+    faction_data.each do |player_id, faction_id, avg_rank, count|
+      @faction_rank_cache[[ player_id, faction_id ]] = { avg: avg_rank.to_f, count: count }
+    end
+  end
+
   def extract_slot_data(lp)
     if lp.is_new_player? && lp.player_id.nil?
-      { player_id: nil, is_new_player: true, cr: NewPlayerDefaults.custom_rating, ml: NewPlayerDefaults.ml_score, games: 0 }
+      { player_id: nil, is_new_player: true, cr: NewPlayerDefaults.custom_rating, avg_rank: 4.0, faction_id: lp.faction_id, games: 0 }
     elsif lp.player
-      { player_id: lp.player_id, is_new_player: false, cr: lp.player.custom_rating || 1300, ml: lp.player.ml_score || 50, games: lp.player.custom_rating_games_played || 0 }
+      # Calculate blended rank: 50% overall avg rank + 50% faction rank component
+      overall_avg_rank = @avg_rank_cache[lp.player_id] || 4.0
+
+      faction_data = @faction_rank_cache[[ lp.player_id, lp.faction_id ]]
+      faction_rank_component = if faction_data && faction_data[:count] >= FACTION_GAMES_FOR_FACTION_RANK
+        # 20+ games: use actual faction avg
+        faction_data[:avg]
+      elsif faction_data && faction_data[:count] > 0
+        # 1-19 games: gradual transition from 4.5 to faction avg
+        progress = faction_data[:count].to_f / FACTION_GAMES_FOR_FACTION_RANK
+        DEFAULT_FACTION_RANK + (faction_data[:avg] - DEFAULT_FACTION_RANK) * progress
+      else
+        # 0 games: use default 4.5
+        DEFAULT_FACTION_RANK
+      end
+
+      # Blend: 50% overall + 50% faction component
+      avg_rank = (overall_avg_rank * 0.5) + (faction_rank_component * 0.5)
+
+      { player_id: lp.player_id, is_new_player: false, cr: lp.player.custom_rating || 1300, avg_rank: avg_rank, faction_id: lp.faction_id, games: lp.player.custom_rating_games_played || 0 }
     else
-      { player_id: nil, is_new_player: false, cr: nil, ml: nil, games: 0 }
+      { player_id: nil, is_new_player: false, cr: nil, avg_rank: nil, faction_id: lp.faction_id, games: 0 }
     end
   end
 
@@ -213,12 +274,13 @@ class LobbyBalancer
     return nil if slot[:cr].nil?
 
     cr = slot[:cr]
-    ml = slot[:ml]
+    avg_rank = slot[:avg_rank] || 4.0
     games = slot[:games]
 
-    cr_weight, ml_weight = weights_for_games(games)
+    rank_score = rank_to_score(avg_rank)
+    cr_weight, rank_weight = weights_for_games(games)
     cr_norm = normalize_cr(cr)
-    base_score = (cr_norm * cr_weight + ml * ml_weight) / 100.0
+    base_score = (cr_norm * cr_weight + rank_score * rank_weight) / 100.0
 
     # Apply faction experience adjustment if we have a player
     if slot[:player_id] && faction
@@ -229,6 +291,11 @@ class LobbyBalancer
     end
   end
 
+  # Convert contribution rank (1-5) to 0-100 score
+  def rank_to_score(rank)
+    ((5.0 - rank) / 4.0 * 100).clamp(0, 100)
+  end
+
   def apply_faction_confidence(score, faction_games)
     confidence = 1 - Math.exp(-faction_games.to_f / FACTION_GAMES_FOR_FULL_CONFIDENCE)
     penalty = (1 - confidence) * MAX_FACTION_PENALTY_POINTS
@@ -236,10 +303,21 @@ class LobbyBalancer
   end
 
   def weights_for_games(games)
-    if games < GAMES_THRESHOLD
-      [ NEW_PLAYER_CR_WEIGHT, NEW_PLAYER_ML_WEIGHT ]
+    if games >= GAMES_THRESHOLD_HIGH
+      # 100+ games: 80% CR, 20% Rank
+      [ EXPERIENCED_CR_WEIGHT, EXPERIENCED_RANK_WEIGHT ]
+    elsif games >= GAMES_THRESHOLD_LOW
+      # 10-100 games: gradual transition from 60/40 to 80/20
+      progress = (games - GAMES_THRESHOLD_LOW).to_f / (GAMES_THRESHOLD_HIGH - GAMES_THRESHOLD_LOW)
+      cr_weight = MID_CR_WEIGHT + (EXPERIENCED_CR_WEIGHT - MID_CR_WEIGHT) * progress
+      rank_weight = MID_RANK_WEIGHT + (EXPERIENCED_RANK_WEIGHT - MID_RANK_WEIGHT) * progress
+      [ cr_weight, rank_weight ]
     else
-      [ EXPERIENCED_CR_WEIGHT, EXPERIENCED_ML_WEIGHT ]
+      # 0-10 games: gradual transition from 50/50 to 60/40
+      progress = games.to_f / GAMES_THRESHOLD_LOW
+      cr_weight = NEW_PLAYER_CR_WEIGHT + (MID_CR_WEIGHT - NEW_PLAYER_CR_WEIGHT) * progress
+      rank_weight = NEW_PLAYER_RANK_WEIGHT + (MID_RANK_WEIGHT - NEW_PLAYER_RANK_WEIGHT) * progress
+      [ cr_weight, rank_weight ]
     end
   end
 

@@ -56,34 +56,49 @@ class HomeController < ApplicationController
     matches_with_data = matches_with_data.where(map_version: map_version) if map_version.present?
 
     underdog_wins = 0
-    total_matches = 0
+    favorite_wins = 0
+    underdog_matches = 0
+    favorite_matches = 0
 
     matches_with_data.find_each do |match|
       good_appearances = match.appearances.select { |a| a.faction&.good? }
       evil_appearances = match.appearances.select { |a| a.faction && !a.faction.good? }
 
-      good_elos = good_appearances.map(&:custom_rating).compact
-      evil_elos = evil_appearances.map(&:custom_rating).compact
+      good_crs = good_appearances.map(&:custom_rating).compact
+      evil_crs = evil_appearances.map(&:custom_rating).compact
 
-      next if good_elos.empty? || evil_elos.empty?
+      next if good_crs.empty? || evil_crs.empty?
 
-      good_avg = good_elos.sum.to_f / good_elos.size
-      evil_avg = evil_elos.sum.to_f / evil_elos.size
+      good_avg = good_crs.sum.to_f / good_crs.size
+      evil_avg = evil_crs.sum.to_f / evil_crs.size
 
-      next if good_avg == evil_avg
+      # Convert CR difference to win probability (same formula as LobbyWinPredictor)
+      cr_diff = good_avg - evil_avg
+      good_pct = (1.0 / (1 + Math.exp(-cr_diff / 150.0)) * 100)
 
-      total_matches += 1
-
-      good_is_underdog = good_avg < evil_avg
-      underdog_won = (good_is_underdog && match.good_victory) || (!good_is_underdog && !match.good_victory)
-
-      underdog_wins += 1 if underdog_won
+      # Track underdog wins (<45% predicted win chance)
+      if good_pct < 45 || good_pct > 55
+        if good_pct < 45
+          underdog_matches += 1
+          underdog_wins += 1 if match.good_victory
+          favorite_matches += 1
+          favorite_wins += 1 unless match.good_victory
+        else # good_pct > 55
+          favorite_matches += 1
+          favorite_wins += 1 if match.good_victory
+          underdog_matches += 1
+          underdog_wins += 1 unless match.good_victory
+        end
+      end
     end
 
     {
       underdog_wins: underdog_wins,
-      total_matches: total_matches,
-      percentage: total_matches > 0 ? (underdog_wins.to_f / total_matches * 100).round(1) : 0
+      underdog_matches: underdog_matches,
+      percentage: underdog_matches > 0 ? (underdog_wins.to_f / underdog_matches * 100).round(1) : 0,
+      favorite_wins: favorite_wins,
+      favorite_matches: favorite_matches,
+      favorite_percentage: favorite_matches > 0 ? (favorite_wins.to_f / favorite_matches * 100).round(1) : 0
     }
   end
 
@@ -130,8 +145,10 @@ class HomeController < ApplicationController
 
     correct_predictions = 0
     underdog_wins = 0
+    favorite_wins = 0
     total_matches = 0
     underdog_matches = 0
+    favorite_matches = 0
 
     matches.find_each do |match|
       total_matches += 1
@@ -142,12 +159,20 @@ class HomeController < ApplicationController
 
       correct_predictions += 1 if prediction_correct
 
-      # Track underdog wins (team with < 50% predicted win chance)
-      next if good_pct == 50  # Skip even matchups
-
-      underdog_matches += 1
-      underdog_won = (good_pct < 50 && match.good_victory) || (good_pct > 50 && !match.good_victory)
-      underdog_wins += 1 if underdog_won
+      # Track underdog wins (<45% predicted win chance)
+      if good_pct < 45 || good_pct > 55
+        if good_pct < 45
+          underdog_matches += 1
+          underdog_wins += 1 if match.good_victory
+          favorite_matches += 1
+          favorite_wins += 1 unless match.good_victory
+        else # good_pct > 55
+          favorite_matches += 1
+          favorite_wins += 1 if match.good_victory
+          underdog_matches += 1
+          underdog_wins += 1 unless match.good_victory
+        end
+      end
     end
 
     {
@@ -156,7 +181,10 @@ class HomeController < ApplicationController
       accuracy: total_matches > 0 ? (correct_predictions.to_f / total_matches * 100).round(1) : 0,
       underdog_wins: underdog_wins,
       underdog_matches: underdog_matches,
-      underdog_win_rate: underdog_matches > 0 ? (underdog_wins.to_f / underdog_matches * 100).round(1) : 0
+      underdog_win_rate: underdog_matches > 0 ? (underdog_wins.to_f / underdog_matches * 100).round(1) : 0,
+      favorite_wins: favorite_wins,
+      favorite_matches: favorite_matches,
+      favorite_win_rate: favorite_matches > 0 ? (favorite_wins.to_f / favorite_matches * 100).round(1) : 0
     }
   end
 
@@ -170,8 +198,10 @@ class HomeController < ApplicationController
 
     correct_predictions = 0
     underdog_wins = 0
+    favorite_wins = 0
     total_matches = 0
     underdog_matches = 0
+    favorite_matches = 0
 
     matches.each do |match|
       total_matches += 1
@@ -182,12 +212,20 @@ class HomeController < ApplicationController
 
       correct_predictions += 1 if prediction_correct
 
-      # Track underdog wins (team with < 50% predicted win chance)
-      next if good_pct == 50  # Skip even matchups
-
-      underdog_matches += 1
-      underdog_won = (good_pct < 50 && match.good_victory) || (good_pct > 50 && !match.good_victory)
-      underdog_wins += 1 if underdog_won
+      # Track underdog wins (<45% predicted win chance)
+      if good_pct < 45 || good_pct > 55
+        if good_pct < 45
+          underdog_matches += 1
+          underdog_wins += 1 if match.good_victory
+          favorite_matches += 1
+          favorite_wins += 1 unless match.good_victory
+        else # good_pct > 55
+          favorite_matches += 1
+          favorite_wins += 1 if match.good_victory
+          underdog_matches += 1
+          underdog_wins += 1 unless match.good_victory
+        end
+      end
     end
 
     {
@@ -196,7 +234,10 @@ class HomeController < ApplicationController
       accuracy: total_matches > 0 ? (correct_predictions.to_f / total_matches * 100).round(1) : 0,
       underdog_wins: underdog_wins,
       underdog_matches: underdog_matches,
-      underdog_win_rate: underdog_matches > 0 ? (underdog_wins.to_f / underdog_matches * 100).round(1) : 0
+      underdog_win_rate: underdog_matches > 0 ? (underdog_wins.to_f / underdog_matches * 100).round(1) : 0,
+      favorite_wins: favorite_wins,
+      favorite_matches: favorite_matches,
+      favorite_win_rate: favorite_matches > 0 ? (favorite_wins.to_f / favorite_matches * 100).round(1) : 0
     }
   end
 
@@ -209,7 +250,9 @@ class HomeController < ApplicationController
                    .limit(100)
 
     underdog_wins = 0
-    total_matches = 0
+    favorite_wins = 0
+    underdog_matches = 0
+    favorite_matches = 0
 
     matches.each do |match|
       good_appearances = match.appearances.select { |a| a.faction&.good? }
@@ -223,20 +266,33 @@ class HomeController < ApplicationController
       good_avg = good_crs.sum.to_f / good_crs.size
       evil_avg = evil_crs.sum.to_f / evil_crs.size
 
-      next if good_avg == evil_avg
+      # Convert CR difference to win probability (same formula as LobbyWinPredictor)
+      cr_diff = good_avg - evil_avg
+      good_pct = (1.0 / (1 + Math.exp(-cr_diff / 150.0)) * 100)
 
-      total_matches += 1
-
-      good_is_underdog = good_avg < evil_avg
-      underdog_won = (good_is_underdog && match.good_victory) || (!good_is_underdog && !match.good_victory)
-
-      underdog_wins += 1 if underdog_won
+      # Track underdog wins (<45% predicted win chance)
+      if good_pct < 45 || good_pct > 55
+        if good_pct < 45
+          underdog_matches += 1
+          underdog_wins += 1 if match.good_victory
+          favorite_matches += 1
+          favorite_wins += 1 unless match.good_victory
+        else # good_pct > 55
+          favorite_matches += 1
+          favorite_wins += 1 if match.good_victory
+          underdog_matches += 1
+          underdog_wins += 1 unless match.good_victory
+        end
+      end
     end
 
     {
       underdog_wins: underdog_wins,
-      total_matches: total_matches,
-      underdog_win_rate: total_matches > 0 ? (underdog_wins.to_f / total_matches * 100).round(1) : 0
+      underdog_matches: underdog_matches,
+      underdog_win_rate: underdog_matches > 0 ? (underdog_wins.to_f / underdog_matches * 100).round(1) : 0,
+      favorite_wins: favorite_wins,
+      favorite_matches: favorite_matches,
+      favorite_win_rate: favorite_matches > 0 ? (favorite_wins.to_f / favorite_matches * 100).round(1) : 0
     }
   end
 
@@ -304,7 +360,7 @@ class HomeController < ApplicationController
   end
 
   # Calculate how many games are "balanced" (neither team heavily favored)
-  # A balanced game is one where neither side has >60% predicted win chance
+  # A balanced game is one where prediction is 45-55%
   def calculate_balanced_games_stats(map_version = nil)
     matches = Match.includes(appearances: :faction)
                    .where(ignored: false)
@@ -319,7 +375,7 @@ class HomeController < ApplicationController
       if match.predicted_good_win_pct.present?
         total_matches += 1
         good_pct = match.predicted_good_win_pct.to_f
-        balanced_cr_ml += 1 if good_pct >= 40 && good_pct <= 60
+        balanced_cr_ml += 1 if good_pct >= 45 && good_pct <= 55
       end
 
       # CR-only balanced (calculate from appearances)
@@ -333,7 +389,7 @@ class HomeController < ApplicationController
 
         # Convert CR difference to win probability (same formula as LobbyWinPredictor)
         cr_good_pct = (1.0 / (1 + Math.exp(-cr_diff / 150.0)) * 100)
-        balanced_cr_only += 1 if cr_good_pct >= 40 && cr_good_pct <= 60
+        balanced_cr_only += 1 if cr_good_pct >= 45 && cr_good_pct <= 55
       end
     end
 

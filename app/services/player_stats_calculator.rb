@@ -21,6 +21,8 @@ class PlayerStatsCalculator
       losses_as_underdog: 0,
       wins_as_favorite: 0,
       losses_as_favorite: 0,
+      wins_as_balanced: 0,
+      losses_as_balanced: 0,
       underdog_elo_diffs: [],
       favorite_elo_diffs: [],
       enemy_elo_diffs: [],
@@ -116,6 +118,9 @@ class PlayerStatsCalculator
     process_contribution_rank(appearance, team_appearances, match, stats, faction_id)
   end
 
+  # Underdog threshold: less than 45% predicted win chance
+  UNDERDOG_THRESHOLD = 45.0
+
   def process_cr_stats(appearance, team_appearances, opponent_appearances, player_won, stats)
     return unless appearance.custom_rating
 
@@ -140,21 +145,42 @@ class PlayerStatsCalculator
     end
 
     cr_diff = (team_avg_cr - opponent_avg_cr).abs
-    is_underdog = team_avg_cr < opponent_avg_cr
 
-    if is_underdog
-      stats[:underdog_elo_diffs] << cr_diff
-      if player_won
-        stats[:wins_as_underdog] += 1
+    # Determine underdog/favorite based on match prediction (40% or less = underdog)
+    match = appearance.match
+    is_good = appearance.faction&.good?
+    predicted_win_pct = nil
+
+    if match.predicted_good_win_pct.present?
+      predicted_win_pct = is_good ? match.predicted_good_win_pct : (100 - match.predicted_good_win_pct)
+    end
+
+    # Only count as underdog/favorite if we have prediction data
+    if predicted_win_pct.present?
+      is_underdog = predicted_win_pct < UNDERDOG_THRESHOLD
+      is_favorite = predicted_win_pct > (100 - UNDERDOG_THRESHOLD)
+
+      if is_underdog
+        stats[:underdog_elo_diffs] << cr_diff
+        if player_won
+          stats[:wins_as_underdog] += 1
+        else
+          stats[:losses_as_underdog] += 1
+        end
+      elsif is_favorite
+        stats[:favorite_elo_diffs] << cr_diff
+        if player_won
+          stats[:wins_as_favorite] += 1
+        else
+          stats[:losses_as_favorite] += 1
+        end
       else
-        stats[:losses_as_underdog] += 1
-      end
-    else
-      stats[:favorite_elo_diffs] << cr_diff
-      if player_won
-        stats[:wins_as_favorite] += 1
-      else
-        stats[:losses_as_favorite] += 1
+        # Balanced games (45-55% prediction)
+        if player_won
+          stats[:wins_as_balanced] += 1
+        else
+          stats[:losses_as_balanced] += 1
+        end
       end
     end
   end

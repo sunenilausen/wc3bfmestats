@@ -255,8 +255,8 @@
   <% if @prediction_accuracy_by_confidence.any? { |b| b[:total] > 0 } %>
   <div class="mt-8">
     <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-      <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">Prediction Accuracy by Confidence</h2>
-      <p class="text-xs text-gray-500 mb-4">How accurate are predictions based on how confident they are? (50% = even match, 95-100% = heavily favored)</p>
+      <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">Prediction Accuracy</h2>
+      <p class="text-xs text-gray-500 mb-4">50% = even match, 95-100% = heavily favored</p>
       <div class="overflow-x-auto">
         <table class="min-w-full text-sm">
           <thead>

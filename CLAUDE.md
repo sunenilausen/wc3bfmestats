@@ -100,66 +100,78 @@ Note: Hero kill contribution is capped at 20% per hero killed **only for perform
 
 ### Performance Score (PERF / ml_score)
 
-The Performance Score measures a player's average contribution to their team, independent of wins/losses or CR. Stored on Player model as `ml_score` (0-100 scale).
+The Performance Score measures a player's average contribution to their team, independent of wins/losses or CR. Stored on Player model as `ml_score` using a **0-centered scale** where 0 = average.
 
-**Key concept:** A score of 50 means average contribution (20% of team stats in a 5-player team). Above 50 = above average contributor, below 50 = below average.
+**Key concept:** A score of 0 means average contribution (20% of team stats in a 5-player team). Positive = above average contributor, negative = below average.
+
+**Display format:**
+- Positive scores show with `+` prefix: `+5.2`
+- Negative scores show with `-` prefix: `-3.1`
+- Color coding: green (≥ +5), red (≤ -5), gray (between)
 
 **How it's calculated:**
 The score is based on deviation from the expected 20% team contribution:
 
-| Stat | Weight | Baseline |
-|------|--------|----------|
-| Hero kill contribution % | 0.06 | 20% |
-| Unit kill contribution % | 0.04 | 20% |
-| Castle raze contribution % | 0.02 | 20% |
-| Team heal contribution % | 0.01 | 20% |
-| Hero uptime % | 0.01 | 80% |
+| Stat | Weight | Baseline | Cap |
+|------|--------|----------|-----|
+| Hero kill contribution % | 0.06 | 20% | 10% per kill |
+| Unit kill contribution % | 0.04 | 20% | None |
+| Castle raze contribution % | 0.02 | 20% | 20% per castle |
+| Team heal contribution % | 0.01 | 20% | 40% per game |
+| Hero uptime % | 0.01 | 80% | None |
 
 ```
 raw_score = Σ(weight × (actual% - baseline%))
-perf_score = sigmoid(raw_score × 0.5) × 100
+sigmoid_score = sigmoid(raw_score × 0.5) × 100 - 50  # Center on 0
+final_score = sigmoid_score - average_of_all_scores  # Normalize so avg = 0
 ```
 
 **Examples:**
-- Player with 20% of all team stats → score ≈ 50 (average)
-- Player with 30% hero kills, 25% unit kills → score > 50 (above average)
-- Player with 10% unit kills, 0% hero kills → score < 50 (below average)
+- Player with 20% of all team stats → score ≈ 0 (average)
+- Player with 30% hero kills, 25% unit kills → score > 0 (above average, e.g., +8)
+- Player with 10% unit kills, 0% hero kills → score < 0 (below average, e.g., -12)
 
-**No confidence adjustment:** The raw score is used directly. A player with 1 terrible game will show their actual poor performance, not be pulled toward 50.
+**No confidence adjustment:** The raw score is used directly. A player with 1 terrible game will show their actual poor performance, not be pulled toward 0.
 
 Managed by `MlScoreRecalculator` service.
 
+### Faction Performance Score (faction_score)
+
+Similar to overall Performance Score but calculated per-faction. Stored on `PlayerFactionStat` model. Uses the same 0-centered scale and calculation method, but only considers games played with that specific faction.
+
+**Requirements:** Only calculated for players with 10+ games on that faction.
+
+**Display:** Shown in the "F.Perf" column on player faction stats tables.
+
+Managed by `PlayerFactionStatsCalculator` service.
+
 ### CR+ Prediction System (Lobby Win Prediction)
 
-CR+ combines Custom Rating (CR) with Performance Score to predict match outcomes. For new players, their performance score adjusts their effective CR. Managed by `LobbyWinPredictor` service.
+CR+ combines Custom Rating (CR) with Performance Score to predict match outcomes. For new players with poor performance, their effective CR is penalized. Managed by `LobbyWinPredictor` service.
 
 **Formula:**
 ```
 # For players with 30+ games: just use CR
 effective_cr = cr
 
-# For players with <30 games:
-ml_deviation = perf_score - 50
+# For players with <30 games AND PERF < 0 (below average):
+ml_deviation = perf_score - 0  # Now 0-centered
+adjustment = (ml_deviation / 50) × 200 × (1 - games / 30)
+effective_cr = cr + adjustment  # adjustment is negative
 
-if ml_deviation >= 0:
-  # Bonus (good performer): always apply full adjustment
-  adjustment = (ml_deviation / 50) × 200
-else:
-  # Penalty (poor performer): scales down as games increase
-  adjustment = (ml_deviation / 50) × 200 × (1 - games / 30)
-
-effective_cr = cr + adjustment
+# For players with <30 games AND PERF >= 0: NO bonus, use CR directly
+effective_cr = cr
 ```
 
 **Key behavior:**
 - **Experienced players (30+ games):** Uses CR directly, no adjustment
-- **New players with PERF ≥ 50:** Always get the full bonus (rewarding good performance)
-- **New players with PERF < 50:** Penalty scales down as they play more games (giving them a chance to improve)
+- **New players with PERF ≥ 0:** No bonus - trust their CR (good performers don't need help)
+- **New players with PERF < 0:** Penalty scales down as they play more games
 
-**Examples:**
-- New player (0 games), PERF 70: +80 CR bonus (always applied)
-- New player (0 games), PERF 30: -80 CR penalty
-- Player (15 games), PERF 30: -40 CR penalty (half, since 15/30 games)
+**Examples (with 0-centered PERF):**
+- New player (0 games), PERF +20: no adjustment (trust CR)
+- New player (0 games), PERF -20: -80 CR penalty
+- Player (15 games), PERF -20: -40 CR penalty (half, since 15/30 games)
 - Player (30+ games), any PERF: no adjustment
 
 **Win probability calculation:**
@@ -171,18 +183,26 @@ Where `cr_diff = good_avg_effective_cr - evil_avg_effective_cr`
 **Constants:**
 - `GAMES_FOR_FULL_CR_TRUST = 30`
 - `MAX_ML_CR_ADJUSTMENT = 200`
-- `ML_BASELINE = 50` (average performance)
+- `ML_BASELINE = 0` (average performance, 0-centered)
 
 The same formula is used in:
 - `LobbyWinPredictor` - for lobby predictions
 - `LobbyBalancer` - for auto-balancing teams
 - `CustomRatingRecalculator#store_match_prediction` - stores prediction on Match model
 
+**Prediction accuracy note:**
+Analysis shows the PERF-based penalty provides minimal predictive value:
+- Only changes prediction ~5% of the time
+- When it does flip the prediction, it's 50/50 correct/wrong
+- Low PERF new players actually have similar or higher win rates than high PERF new players
+
+The penalty is kept for conservative estimation but CR-only would perform equally well.
+
 **New player defaults:**
 When adding an unknown player to a lobby (via "New Player" option), the defaults are:
 - Custom Rating: 1300
 - Glicko-2: 1200
-- Performance Score: 35 (below average, conservative estimate)
+- Performance Score: -15 (below average, conservative estimate for 0-centered scale)
 
 These values are defined in `NewPlayerDefaults` model.
 

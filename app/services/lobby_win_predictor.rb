@@ -1,9 +1,12 @@
 # Predicts match outcome for a lobby using CR with ML score adjustment for new players
 #
 # For experienced players (30+ games): uses CR directly
-# For new players (< 30 games): applies penalty if ML score < 50
-#   - ML score >= 50 = no adjustment (trust their CR)
-#   - ML score < 50 = penalty scales with how far below 50 and scales down as games increase
+# For new players (< 30 games): applies penalty if ML score < 0 (below average)
+#   - ML score >= 0 = no adjustment (trust their CR)
+#   - ML score < 0 = penalty scales with how far below 0 and scales down as games increase
+#
+# Note: Analysis shows this penalty provides minimal predictive value (~50/50 when it
+# changes the prediction), but is kept for conservative estimation.
 #
 class LobbyWinPredictor
   # Games threshold for full CR trust (no ML adjustment after this)
@@ -12,8 +15,8 @@ class LobbyWinPredictor
   # Maximum CR adjustment based on ML score for brand new players
   MAX_ML_CR_ADJUSTMENT = 200
 
-  # ML score baseline (50 = average, no adjustment)
-  ML_BASELINE = 50
+  # ML score baseline (0 = average, no adjustment) - uses 0-centered scale
+  ML_BASELINE = 0
 
   # CR normalization: convert to 0-100 scale (1200 = 0, 1800 = 100)
   CR_MIN = 1200
@@ -94,13 +97,13 @@ class LobbyWinPredictor
   end
 
   # Calculate effective CR with ML score adjustment for new players
-  # Only applies penalty for new players with ML score < 50
+  # Only applies penalty for new players with ML score < 0 (below average)
   # No bonus for any new player - trust their CR if they perform well
   def calculate_effective_cr(cr, games, ml_score)
     return cr.to_f if games >= GAMES_FOR_FULL_CR_TRUST
 
-    # Only apply penalty if ML score is below baseline (50)
-    # No bonus for new players above 50
+    # Only apply penalty if ML score is below baseline (0)
+    # No bonus for new players at or above 0
     return cr.to_f if ml_score >= ML_BASELINE
 
     # ML score deviation from baseline (negative only at this point)
@@ -109,7 +112,7 @@ class LobbyWinPredictor
     # Penalty scales down as games increase
     adjustment_factor = 1.0 - (games.to_f / GAMES_FOR_FULL_CR_TRUST)
 
-    # Scale deviation to CR adjustment (max -200 for ML score 0)
+    # Scale deviation to CR adjustment (max -200 for ML score -50)
     ml_cr_adjustment = (ml_deviation / 50.0) * MAX_ML_CR_ADJUSTMENT * adjustment_factor
 
     cr + ml_cr_adjustment

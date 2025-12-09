@@ -48,6 +48,20 @@
     post_placement_ratings << player.custom_rating.round if player.custom_rating && win_count > 20
     highest_custom = post_placement_ratings.any? ? post_placement_ratings.max : nil
     lowest_custom = post_placement_ratings.any? ? post_placement_ratings.min : nil
+
+    # Calculate average enemy team CR
+    enemy_team_crs = []
+    appearances.each do |app|
+      next unless app.faction
+      player_is_good = app.faction.good?
+      match_appearances = app.match.appearances
+      enemy_apps = match_appearances.select { |a| a.faction && a.faction.good? != player_is_good && a.custom_rating.present? }
+      if enemy_apps.any?
+        enemy_avg = enemy_apps.sum(&:custom_rating).to_f / enemy_apps.size
+        enemy_team_crs << enemy_avg
+      end
+    end
+    avg_enemy_team_cr = enemy_team_crs.any? ? (enemy_team_crs.sum / enemy_team_crs.size).round : nil
   %>
 
   <%# Helper to convert percentile to bracket %>
@@ -152,6 +166,10 @@
           <tr>
             <td class="py-0.5">CR Range</td>
             <td class="text-right py-0.5"><%= lowest_custom || "-" %> - <%= highest_custom || "-" %></td>
+          </tr>
+          <tr>
+            <td class="py-0.5" title="Average Custom Rating of enemy teams faced">Avg Enemy CR</td>
+            <td class="text-right py-0.5"><%= avg_enemy_team_cr || "-" %></td>
           </tr>
           <% if player.custom_rating_bonus_wins.to_i > 0 %>
             <tr>

@@ -160,7 +160,7 @@
         </div>
         <div class="flex justify-between text-sm mt-1">
           <span id="combined-good-pct" class="text-green-700 font-medium">50%</span>
-          <span class="text-xs text-gray-400">CR+ (improved for new players)</span>
+          <span id="prediction-accuracy-label" class="text-xs text-gray-400">CR+ (improved for new players)</span>
           <span id="combined-evil-pct" class="text-red-700 font-medium">50%</span>
         </div>
         <div class="flex justify-between text-xs text-gray-500 mt-1">
@@ -182,7 +182,13 @@
           </div>
           <div class="flex justify-between text-sm mt-1">
             <span class="text-green-700 font-medium"><%= prediction[:good_win_pct] %>%</span>
-            <span class="text-xs text-gray-400">CR+ (improved for new players)</span>
+            <% if @prediction_accuracy %>
+              <span class="text-xs text-gray-500" title="Based on <%= @prediction_accuracy[:total] %> historical matches with <%= @prediction_accuracy[:bucket] %>% confidence">
+                Historical: <span class="font-medium"><%= @prediction_accuracy[:accuracy] %>%</span> accurate
+              </span>
+            <% else %>
+              <span class="text-xs text-gray-400">CR+ (improved for new players)</span>
+            <% end %>
             <span class="text-red-700 font-medium"><%= prediction[:evil_win_pct] %>%</span>
           </div>
           <div class="flex justify-between text-xs text-gray-500 mt-1">

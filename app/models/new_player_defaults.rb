@@ -1,6 +1,8 @@
 # Default values for new/unknown players in lobbies
 class NewPlayerDefaults
-  ML_SCORE = 35.0
+  # PERF score uses 0-centered scale (0 = average, negative = below average)
+  # -15 is a conservative estimate for unknown players
+  ML_SCORE = -15.0
   CUSTOM_RATING = 1300
 
   class << self

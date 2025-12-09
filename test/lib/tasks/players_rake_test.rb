@@ -109,7 +109,7 @@ class PlayersRakeTest < ActiveSupport::TestCase
     assert_not_nil player1
     assert_equal "Player1", player1.nickname
     assert_equal 1300, player1.custom_rating
-    assert_equal 35.0, player1.ml_score
+    assert_equal(-15.0, player1.ml_score)
 
     # Check Player2 was created correctly
     player2 = Player.find_by(battletag: "Player2#5678")

@@ -91,6 +91,10 @@
   <%= raw @last_match_players.to_json %>
 </script>
 
+<script id="prediction-accuracy-data" type="application/json">
+  <%= raw @prediction_accuracy_buckets.to_json %>
+</script>
+
 <style>
   .drop-zone-active {
     outline: 2px dashed #cbd5e1;
@@ -125,6 +129,7 @@
   const factionRankStats = JSON.parse(document.getElementById('faction-rank-stats-data').textContent);
   const factionPerfStats = JSON.parse(document.getElementById('faction-perf-stats-data').textContent);
   const lastMatchPlayers = JSON.parse(document.getElementById('last-match-data').textContent);
+  const predictionAccuracyBuckets = JSON.parse(document.getElementById('prediction-accuracy-data').textContent);
 
   // Helper to get faction W/L for a player
   function getFactionWL(playerId, factionId) {
@@ -156,6 +161,17 @@
   function formatPerfScore(score) {
     if (score === null || score === undefined) return '-';
     return score >= 0 ? `+${score}` : `${score}`;
+  }
+
+  // Helper to get historical prediction accuracy for a confidence level
+  function getPredictionAccuracy(confidencePct) {
+    const bucketStart = Math.min(95, Math.max(50, Math.floor(confidencePct / 5) * 5));
+    const bucketKey = `${bucketStart}-${bucketStart + 5}`;
+    const bucket = predictionAccuracyBuckets[bucketKey];
+    if (bucket && bucket.total > 0) {
+      return { accuracy: bucket.accuracy, total: bucket.total, bucket: bucketKey };
+    }
+    return null;
   }
 
   // Special "New Player" option with default ratings
@@ -615,18 +631,18 @@
   // Prediction constants (matching LobbyWinPredictor service)
   const GAMES_FOR_FULL_CR_TRUST = 30;
   const MAX_ML_CR_ADJUSTMENT = 200;
-  const ML_BASELINE = 50;
+  const ML_BASELINE = 0;  // 0-centered scale (0 = average)
 
   // Calculate effective CR with ML score adjustment for new players
-  // Only applies penalty for new players with ML score < 50
+  // Only applies penalty for new players with ML score < 0 (below average)
   // No bonus for any new player - trust their CR if they perform well
   function calculateEffectiveCR(cr, games, mlScore) {
     if (games >= GAMES_FOR_FULL_CR_TRUST) {
       return cr;
     }
 
-    // Only apply penalty if ML score is below baseline (50)
-    // No bonus for new players above 50
+    // Only apply penalty if ML score is below baseline (0)
+    // No bonus for new players at or above 0
     if (mlScore >= ML_BASELINE) {
       return cr;
     }
@@ -637,7 +653,7 @@
     // Penalty scales down as games increase
     const adjustmentFactor = 1.0 - (games / GAMES_FOR_FULL_CR_TRUST);
 
-    // Scale deviation to CR adjustment (max -200 for ML score 0)
+    // Scale deviation to CR adjustment (max -200 for ML score -50)
     const mlCRAdjustment = (mlDeviation / 50.0) * MAX_ML_CR_ADJUSTMENT * adjustmentFactor;
 
     return cr + mlCRAdjustment;
@@ -717,6 +733,24 @@
     if (combinedBar) combinedBar.style.width = goodPct + '%';
     if (combinedGoodPct) combinedGoodPct.textContent = goodPct + '%';
     if (combinedEvilPct) combinedEvilPct.textContent = evilPct + '%';
+
+    // Update historical accuracy label
+    const accuracyLabel = document.getElementById('prediction-accuracy-label');
+    if (accuracyLabel) {
+      const confidencePct = Math.max(goodPct, evilPct);
+      const accuracy = getPredictionAccuracy(confidencePct);
+      if (accuracy) {
+        accuracyLabel.innerHTML = `Historical: <span class="font-medium">${accuracy.accuracy}%</span> accurate`;
+        accuracyLabel.title = `Based on ${accuracy.total} historical matches with ${accuracy.bucket}% confidence`;
+        accuracyLabel.classList.remove('text-gray-400');
+        accuracyLabel.classList.add('text-gray-500');
+      } else {
+        accuracyLabel.textContent = 'CR+ (improved for new players)';
+        accuracyLabel.title = '';
+        accuracyLabel.classList.remove('text-gray-500');
+        accuracyLabel.classList.add('text-gray-400');
+      }
+    }
 
     // Update detail display
     const predGoodCR = document.getElementById('pred-good-cr');

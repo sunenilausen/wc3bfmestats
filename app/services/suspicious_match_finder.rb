@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Finds matches that may have incorrect victory data
-# by analyzing kill statistics, chat messages, and base deaths
+# by analyzing kill statistics, chat messages, base deaths, and upsets
 class SuspiciousMatchFinder
   # Thresholds for suspicion
   UNIT_KILL_RATIO_THRESHOLD = 1.5    # Losing team has 50%+ more unit kills
@@ -10,6 +10,10 @@ class SuspiciousMatchFinder
 
   # Time window at end of game to consider as "cascade" deaths (in seconds)
   END_GAME_CASCADE_WINDOW = 60
+
+  # Upset thresholds - when underdog wins with very low predicted chance
+  MAJOR_UPSET_THRESHOLD = 25.0   # Team with <25% chance won - very suspicious
+  MODERATE_UPSET_THRESHOLD = 35.0 # Team with <35% chance won - somewhat suspicious
 
   Result = Struct.new(:match, :reasons, keyword_init: true)
 
@@ -36,6 +40,7 @@ class SuspiciousMatchFinder
     reasons.concat(check_kill_disparity(match))
     reasons.concat(check_forfeit_messages(match))
     reasons.concat(check_base_deaths(match))
+    reasons.concat(check_upset(match))
 
     reasons
   end
@@ -151,6 +156,36 @@ class SuspiciousMatchFinder
       reasons << "Winning team (Good) lost more bases before game end (#{good_bases_lost} vs #{evil_bases_lost})"
     elsif !match.good_victory && evil_bases_lost > good_bases_lost && evil_bases_lost > 0
       reasons << "Winning team (Evil) lost more bases before game end (#{evil_bases_lost} vs #{good_bases_lost})"
+    end
+
+    reasons
+  end
+
+  def check_upset(match)
+    reasons = []
+
+    # Use stored prediction from CR+Rank system
+    predicted_good_pct = match.predicted_good_win_pct
+    return reasons unless predicted_good_pct
+
+    predicted_evil_pct = 100.0 - predicted_good_pct
+
+    # Determine which team was the underdog and if they won
+    if match.good_victory
+      # Good won - check if they were the underdog
+      winning_team_pct = predicted_good_pct
+      winning_team = "Good"
+    else
+      # Evil won - check if they were the underdog
+      winning_team_pct = predicted_evil_pct
+      winning_team = "Evil"
+    end
+
+    # Flag major upsets (underdog with <25% chance won)
+    if winning_team_pct < MAJOR_UPSET_THRESHOLD
+      reasons << "Major upset: #{winning_team} won with only #{winning_team_pct.round(1)}% predicted chance"
+    elsif winning_team_pct < MODERATE_UPSET_THRESHOLD
+      reasons << "Upset: #{winning_team} won with #{winning_team_pct.round(1)}% predicted chance"
     end
 
     reasons

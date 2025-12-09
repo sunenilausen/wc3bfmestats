@@ -37,7 +37,9 @@
               <td class="px-4 py-3 text-sm text-gray-600">
                 <ul class="list-disc list-inside">
                   <% result.reasons.each do |reason| %>
-                    <li><%= reason %></li>
+                    <li class="<%= reason.include?('Major upset') ? 'text-red-600 font-medium' : (reason.include?('Upset:') ? 'text-orange-600' : '') %>">
+                      <%= reason %>
+                    </li>
                   <% end %>
                 </ul>
               </td>

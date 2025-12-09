@@ -117,7 +117,7 @@
                 <% if obs_score_data %>
                   <% obs_score = obs_score_data[:score] %>
                   <% obs_color_class = obs_score >= 55 ? 'text-green-600' : (obs_score <= 45 ? 'text-red-600' : 'text-gray-600') %>
-                  <span class="<%= obs_color_class %> font-medium" title="Raw score: <%= obs_score_data[:raw_score] %>"><%= obs_score %></span>
+                  <span class="<%= obs_color_class %> font-medium" title="CR: <%= obs_score_data[:cr] %>, ML: <%= obs_score_data[:ml] %>"><%= obs_score %></span>
                 <% else %>
                   -
                 <% end %>

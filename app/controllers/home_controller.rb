@@ -25,6 +25,9 @@ class HomeController < ApplicationController
     end
 
     @underdog_stats = calculate_underdog_stats(@map_version)
+    @ml_prediction_stats = calculate_ml_prediction_stats(@map_version)
+    @recent_prediction_stats = calculate_recent_prediction_stats
+    @recent_cr_stats = calculate_recent_cr_stats
     @good_vs_evil_stats = calculate_good_vs_evil_stats(@map_version)
     @avg_match_time = calculate_avg_match_time(@map_version)
     @matches_count = Match.where(ignored: false).count
@@ -114,6 +117,124 @@ class HomeController < ApplicationController
       avg_seconds: avg_seconds,
       avg_formatted: formatted,
       count: count
+    }
+  end
+
+  def calculate_ml_prediction_stats(map_version = nil)
+    matches = Match.where(ignored: false)
+                   .where.not(good_victory: nil)
+                   .where.not(predicted_good_win_pct: nil)
+    matches = matches.where(map_version: map_version) if map_version.present?
+
+    correct_predictions = 0
+    underdog_wins = 0
+    total_matches = 0
+    underdog_matches = 0
+
+    matches.find_each do |match|
+      total_matches += 1
+
+      good_pct = match.predicted_good_win_pct.to_f
+      good_favored = good_pct >= 50
+      prediction_correct = (good_favored && match.good_victory) || (!good_favored && !match.good_victory)
+
+      correct_predictions += 1 if prediction_correct
+
+      # Track underdog wins (team with < 50% predicted win chance)
+      next if good_pct == 50  # Skip even matchups
+
+      underdog_matches += 1
+      underdog_won = (good_pct < 50 && match.good_victory) || (good_pct > 50 && !match.good_victory)
+      underdog_wins += 1 if underdog_won
+    end
+
+    {
+      correct_predictions: correct_predictions,
+      total_matches: total_matches,
+      accuracy: total_matches > 0 ? (correct_predictions.to_f / total_matches * 100).round(1) : 0,
+      underdog_wins: underdog_wins,
+      underdog_matches: underdog_matches,
+      underdog_win_rate: underdog_matches > 0 ? (underdog_wins.to_f / underdog_matches * 100).round(1) : 0
+    }
+  end
+
+  def calculate_recent_prediction_stats
+    # Get last 100 matches in chronological order (most recent)
+    matches = Match.where(ignored: false)
+                   .where.not(good_victory: nil)
+                   .where.not(predicted_good_win_pct: nil)
+                   .reverse_chronological
+                   .limit(100)
+
+    correct_predictions = 0
+    underdog_wins = 0
+    total_matches = 0
+    underdog_matches = 0
+
+    matches.each do |match|
+      total_matches += 1
+
+      good_pct = match.predicted_good_win_pct.to_f
+      good_favored = good_pct >= 50
+      prediction_correct = (good_favored && match.good_victory) || (!good_favored && !match.good_victory)
+
+      correct_predictions += 1 if prediction_correct
+
+      # Track underdog wins (team with < 50% predicted win chance)
+      next if good_pct == 50  # Skip even matchups
+
+      underdog_matches += 1
+      underdog_won = (good_pct < 50 && match.good_victory) || (good_pct > 50 && !match.good_victory)
+      underdog_wins += 1 if underdog_won
+    end
+
+    {
+      correct_predictions: correct_predictions,
+      total_matches: total_matches,
+      accuracy: total_matches > 0 ? (correct_predictions.to_f / total_matches * 100).round(1) : 0,
+      underdog_wins: underdog_wins,
+      underdog_matches: underdog_matches,
+      underdog_win_rate: underdog_matches > 0 ? (underdog_wins.to_f / underdog_matches * 100).round(1) : 0
+    }
+  end
+
+  def calculate_recent_cr_stats
+    # Get last 100 matches based on CR (custom rating) prediction
+    matches = Match.includes(appearances: :faction)
+                   .where(ignored: false)
+                   .where.not(good_victory: nil)
+                   .reverse_chronological
+                   .limit(100)
+
+    underdog_wins = 0
+    total_matches = 0
+
+    matches.each do |match|
+      good_appearances = match.appearances.select { |a| a.faction&.good? }
+      evil_appearances = match.appearances.select { |a| a.faction && !a.faction.good? }
+
+      good_crs = good_appearances.map(&:custom_rating).compact
+      evil_crs = evil_appearances.map(&:custom_rating).compact
+
+      next if good_crs.empty? || evil_crs.empty?
+
+      good_avg = good_crs.sum.to_f / good_crs.size
+      evil_avg = evil_crs.sum.to_f / evil_crs.size
+
+      next if good_avg == evil_avg
+
+      total_matches += 1
+
+      good_is_underdog = good_avg < evil_avg
+      underdog_won = (good_is_underdog && match.good_victory) || (!good_is_underdog && !match.good_victory)
+
+      underdog_wins += 1 if underdog_won
+    end
+
+    {
+      underdog_wins: underdog_wins,
+      total_matches: total_matches,
+      underdog_win_rate: total_matches > 0 ? (underdog_wins.to_f / total_matches * 100).round(1) : 0
     }
   end
 end

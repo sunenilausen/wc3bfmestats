@@ -379,14 +379,16 @@ class LobbiesController < ApplicationController
     end
 
     def compute_score_prediction
-      predictor = LobbyScorePredictor.new(
-        @lobby,
-        event_stats: @event_stats,
-        lobby_player_stats: @lobby_player_stats
-      )
+      predictor = LobbyWinPredictor.new(@lobby)
       @score_prediction = predictor.predict
-      @feature_contributions = predictor.feature_contributions
-      @prediction_weights = PredictionWeight.current
-      @player_scores = predictor.player_scores
+
+      # Build player_scores hash for observers display
+      @player_scores = {}
+      @lobby.observer_ids.each do |observer_id|
+        player = Player.find_by(id: observer_id)
+        next unless player
+        score_data = predictor.player_score(player)
+        @player_scores[observer_id] = score_data if score_data
+      end
     end
 end

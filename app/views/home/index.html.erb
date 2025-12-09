@@ -30,8 +30,36 @@
   </div>
   <% end %>
 
-  <%# Stats that depend on map_version param - outside cache %>
+  <%# Recent prediction stats - not dependent on map version %>
+  <% if @recent_prediction_stats[:total_matches] > 0 || @recent_cr_stats[:total_matches] > 0 %>
   <div class="mt-4">
+    <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">Last 100 Matches</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-xl">
+      <% if @recent_cr_stats[:total_matches] > 0 %>
+      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
+        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Underdog Rate (CR)</h2>
+        <p class="mt-2 text-3xl font-bold text-purple-600"><%= @recent_cr_stats[:underdog_win_rate] %>%</p>
+        <p class="mt-1 text-sm text-gray-500">
+          <%= @recent_cr_stats[:underdog_wins] %> of <%= @recent_cr_stats[:total_matches] %> matches
+        </p>
+      </div>
+      <% end %>
+
+      <% if @recent_prediction_stats[:total_matches] > 0 %>
+      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
+        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Underdog Rate (Perf)</h2>
+        <p class="mt-2 text-3xl font-bold text-purple-600"><%= @recent_prediction_stats[:underdog_win_rate] %>%</p>
+        <p class="mt-1 text-sm text-gray-500">
+          <%= @recent_prediction_stats[:underdog_wins] %> of <%= @recent_prediction_stats[:underdog_matches] %> matches
+        </p>
+      </div>
+      <% end %>
+    </div>
+  </div>
+  <% end %>
+
+  <%# Stats that depend on map_version param - outside cache %>
+  <div class="mt-6">
     <div class="mb-3">
       <%= form_with url: root_path, method: :get, local: true, class: "flex items-center gap-2" do %>
         <span class="text-sm text-gray-500">Map version:</span>
@@ -41,7 +69,7 @@
           onchange: "this.form.submit()" %>
       <% end %>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
         <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Good vs Evil</h2>
         <div class="mt-2 flex items-baseline gap-2">
@@ -57,12 +85,22 @@
       </div>
 
       <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Underdog Win Rate</h2>
+        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Underdog Win Rate (CR)</h2>
         <p class="mt-2 text-3xl font-bold text-purple-600"><%= @underdog_stats[:percentage] %>%</p>
         <p class="mt-1 text-sm text-gray-500">
           <%= @underdog_stats[:underdog_wins] %> of <%= @underdog_stats[:total_matches] %> matches
         </p>
       </div>
+
+      <% if @ml_prediction_stats[:total_matches] > 0 %>
+      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
+        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Underdog Win Rate (Perf)</h2>
+        <p class="mt-2 text-3xl font-bold text-purple-600"><%= @ml_prediction_stats[:underdog_win_rate] %>%</p>
+        <p class="mt-1 text-sm text-gray-500">
+          <%= @ml_prediction_stats[:underdog_wins] %> of <%= @ml_prediction_stats[:underdog_matches] %> matches
+        </p>
+      </div>
+      <% end %>
 
       <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
         <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Avg Match Time</h2>

@@ -15,6 +15,19 @@ class CustomRatingRecalculator
   def initialize
     @matches_processed = 0
     @errors = []
+    # Track running contribution stats per player for ML score calculation
+    # Each player has arrays of contributions that grow as matches are processed
+    @player_stats = Hash.new do |h, k|
+      h[k] = {
+        hk_contribs: [],      # hero kill contribution percentages
+        uk_contribs: [],      # unit kill contribution percentages
+        cr_contribs: [],      # castle raze contribution percentages
+        th_contribs: [],      # team heal contribution percentages
+        hero_uptime: [],      # hero uptime percentages
+        games_played: 0,
+        faction_games: Hash.new(0)  # games played per faction
+      }
+    end
   end
 
   def call
@@ -161,6 +174,9 @@ class CustomRatingRecalculator
     good_avg = good_appearances.sum { |a| a.player&.custom_rating || DEFAULT_RATING } / good_appearances.size.to_f
     evil_avg = evil_appearances.sum { |a| a.player&.custom_rating || DEFAULT_RATING } / evil_appearances.size.to_f
 
+    # Store prediction based on team ratings (before updating ratings)
+    store_match_prediction(match, good_avg, evil_avg)
+
     # Calculate performance scores and rank players within each team
     good_ranked = rank_by_performance(good_appearances, match)
     evil_ranked = rank_by_performance(evil_appearances, match)
@@ -253,6 +269,9 @@ class CustomRatingRecalculator
 
       player.save!
       appearance.save!
+
+      # Update running stats for ML score calculation (after saving match data)
+      update_player_running_stats(appearance, team_appearances, match)
     end
   end
 
@@ -559,5 +578,181 @@ class CustomRatingRecalculator
 
     appearance.bases_lost = bases_died
     appearance.bases_total = base_names.size
+  end
+
+  # Constants matching LobbyWinPredictor
+  PREDICTION_GAMES_THRESHOLD = 10
+  NEW_PLAYER_CR_WEIGHT = 40
+  NEW_PLAYER_ML_WEIGHT = 60
+  EXPERIENCED_CR_WEIGHT = 70
+  EXPERIENCED_ML_WEIGHT = 30
+  CR_MIN = 1200
+  CR_MAX = 1800
+  FACTION_GAMES_FOR_FULL_CONFIDENCE = 10
+  MAX_FACTION_PENALTY_POINTS = 5.0
+
+  # Store match prediction using same logic as LobbyWinPredictor
+  # Uses adaptive CR/ML weighting and faction experience adjustments
+  def store_match_prediction(match, good_avg, evil_avg)
+    good_scores = []
+    evil_scores = []
+
+    match.appearances.each do |app|
+      next unless app.faction
+      player = app.player
+
+      score = if player
+        calculate_player_prediction_score(player, app.faction_id)
+      else
+        # New player: use defaults
+        cr = NewPlayerDefaults.custom_rating
+        ml = NewPlayerDefaults.ml_score
+        cr_norm = normalize_cr_for_prediction(cr)
+        (cr_norm * NEW_PLAYER_CR_WEIGHT + ml * NEW_PLAYER_ML_WEIGHT) / 100.0
+      end
+
+      if app.faction.good?
+        good_scores << score
+      else
+        evil_scores << score
+      end
+    end
+
+    return if good_scores.empty? || evil_scores.empty?
+
+    good_score_avg = good_scores.sum / good_scores.size.to_f
+    evil_score_avg = evil_scores.sum / evil_scores.size.to_f
+
+    # Convert score difference to win probability (same as LobbyWinPredictor)
+    score_diff = good_score_avg - evil_score_avg
+    good_win_probability = 1.0 / (1 + Math.exp(-score_diff / 5.0))
+
+    match.update_columns(
+      predicted_good_win_pct: (good_win_probability * 100).round(1),
+      predicted_good_avg_rating: good_avg.round(1),
+      predicted_evil_avg_rating: evil_avg.round(1),
+      predicted_good_score: good_score_avg.round(1),
+      predicted_evil_score: evil_score_avg.round(1)
+    )
+  end
+
+  # Calculate player prediction score using same formula as LobbyWinPredictor
+  def calculate_player_prediction_score(player, faction_id)
+    stats = @player_stats[player.id]
+    games_played = stats[:games_played]
+
+    # Get CR and ML score at this point in time
+    cr = player.custom_rating || DEFAULT_RATING
+    ml = calculate_ml_score_for_player(player)
+
+    # Adaptive weighting based on games played
+    cr_weight, ml_weight = if games_played < PREDICTION_GAMES_THRESHOLD
+      [NEW_PLAYER_CR_WEIGHT, NEW_PLAYER_ML_WEIGHT]
+    else
+      [EXPERIENCED_CR_WEIGHT, EXPERIENCED_ML_WEIGHT]
+    end
+
+    # Normalize CR to 0-100 scale
+    cr_norm = normalize_cr_for_prediction(cr)
+
+    # Calculate base score
+    base_score = (cr_norm * cr_weight + ml * ml_weight) / 100.0
+
+    # Apply faction experience penalty
+    faction_games = stats[:faction_games][faction_id] || 0
+    apply_faction_confidence(base_score, faction_games)
+  end
+
+  # Normalize CR to 0-100 scale (same as LobbyWinPredictor)
+  def normalize_cr_for_prediction(cr)
+    ((cr - CR_MIN) / (CR_MAX - CR_MIN).to_f * 100).clamp(0, 100)
+  end
+
+  # Apply faction experience penalty (same formula as LobbyWinPredictor)
+  def apply_faction_confidence(score, faction_games)
+    confidence = 1 - Math.exp(-faction_games.to_f / FACTION_GAMES_FOR_FULL_CONFIDENCE)
+    penalty = (1 - confidence) * MAX_FACTION_PENALTY_POINTS
+    score - penalty
+  end
+
+  # Calculate ML score for a player based on their running stats (before current match)
+  def calculate_ml_score_for_player(player)
+    stats = @player_stats[player.id]
+    weights = MlScoreRecalculator::WEIGHTS
+
+    # Get averages from running stats, default to baseline if no data
+    avg_hk = stats[:hk_contribs].any? ? (stats[:hk_contribs].sum / stats[:hk_contribs].size) : 20.0
+    avg_uk = stats[:uk_contribs].any? ? (stats[:uk_contribs].sum / stats[:uk_contribs].size) : 20.0
+    avg_cr = stats[:cr_contribs].any? ? (stats[:cr_contribs].sum / stats[:cr_contribs].size) : 20.0
+    avg_th = stats[:th_contribs].any? ? (stats[:th_contribs].sum / stats[:th_contribs].size) : 20.0
+    avg_uptime = stats[:hero_uptime].any? ? (stats[:hero_uptime].sum / stats[:hero_uptime].size) : 80.0
+    games_played = stats[:games_played]
+
+    # Use current custom_rating (which is rating BEFORE this match during recalculation)
+    elo = player.custom_rating || DEFAULT_RATING
+
+    # Calculate raw score using weights
+    raw_score = 0.0
+    raw_score += weights[:elo] * (elo - 1300)
+    raw_score += weights[:hero_kill_contribution] * (avg_hk - 20.0)
+    raw_score += weights[:unit_kill_contribution] * (avg_uk - 20.0)
+    raw_score += weights[:castle_raze_contribution] * (avg_cr - 20.0)
+    raw_score += weights[:team_heal_contribution] * (avg_th - 20.0)
+    raw_score += weights[:hero_uptime] * (avg_uptime - 80.0)
+
+    # Apply sigmoid to get 0-100 scale
+    sigmoid_value = 1.0 / (1.0 + Math.exp(-raw_score.clamp(-500, 500) * 0.5))
+    raw_ml_score = sigmoid_value * 100
+
+    # Apply confidence adjustment based on games played
+    confidence = 1.0 - Math.exp(-games_played / 10.0)
+    (50.0 + (raw_ml_score - 50.0) * confidence).round(1)
+  end
+
+  # Update running stats for a player after processing a match appearance
+  def update_player_running_stats(appearance, team_appearances, match)
+    player = appearance.player
+    return unless player
+
+    stats = @player_stats[player.id]
+
+    # Hero kill contribution
+    if appearance.hero_kills && !appearance.ignore_hero_kills?
+      team_hero_kills = team_appearances.sum { |a| (a.hero_kills && !a.ignore_hero_kills?) ? a.hero_kills : 0 }
+      if team_hero_kills > 0
+        stats[:hk_contribs] << (appearance.hero_kills.to_f / team_hero_kills * 100)
+      end
+    end
+
+    # Unit kill contribution
+    if appearance.unit_kills && !appearance.ignore_unit_kills?
+      team_unit_kills = team_appearances.sum { |a| (a.unit_kills && !a.ignore_unit_kills?) ? a.unit_kills : 0 }
+      if team_unit_kills > 0
+        stats[:uk_contribs] << (appearance.unit_kills.to_f / team_unit_kills * 100)
+      end
+    end
+
+    # Castle raze contribution
+    if appearance.castles_razed
+      team_castles = team_appearances.sum { |a| a.castles_razed || 0 }
+      if team_castles > 0
+        stats[:cr_contribs] << (appearance.castles_razed.to_f / team_castles * 100)
+      end
+    end
+
+    # Team heal contribution
+    if appearance.team_heal && appearance.team_heal > 0
+      team_heal_total = team_appearances.sum { |a| (a.team_heal && a.team_heal > 0) ? a.team_heal : 0 }
+      if team_heal_total > 0
+        stats[:th_contribs] << (appearance.team_heal.to_f / team_heal_total * 100)
+      end
+    end
+
+    # Hero uptime
+    hero_uptime = calculate_hero_uptime(appearance, match)
+    stats[:hero_uptime] << hero_uptime if hero_uptime
+
+    stats[:games_played] += 1
+    stats[:faction_games][appearance.faction_id] += 1
   end
 end

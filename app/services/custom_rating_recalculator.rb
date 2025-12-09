@@ -279,41 +279,43 @@ class CustomRatingRecalculator
 
     score = 0.0
 
-    # Hero kill contribution (capped at 20% per hero killed, max 40% for scoring)
+    # Hero kill contribution (capped at 10% per hero killed)
     if appearance.hero_kills && !appearance.ignore_hero_kills?
       team_hero_kills = team_appearances.sum { |a| (a.hero_kills && !a.ignore_hero_kills?) ? a.hero_kills : 0 }
       if team_hero_kills > 0
         raw_contrib = (appearance.hero_kills.to_f / team_hero_kills) * 100
-        # Cap at 20% contribution per hero killed
-        max_contrib_by_kills = appearance.hero_kills * 20.0
-        hk_contrib = [ raw_contrib, max_contrib_by_kills, 40.0 ].min
+        max_contrib = appearance.hero_kills * MlScoreRecalculator::HERO_KILL_CAP_PER_KILL
+        hk_contrib = [ raw_contrib, max_contrib ].min
         score += (hk_contrib - 20.0) * weights[:hero_kill_contribution]
       end
     end
 
-    # Unit kill contribution (0-100%, capped at 40% for scoring)
+    # Unit kill contribution (no cap)
     if appearance.unit_kills && !appearance.ignore_unit_kills?
       team_unit_kills = team_appearances.sum { |a| (a.unit_kills && !a.ignore_unit_kills?) ? a.unit_kills : 0 }
       if team_unit_kills > 0
-        uk_contrib = [ (appearance.unit_kills.to_f / team_unit_kills) * 100, 40.0 ].min
+        uk_contrib = (appearance.unit_kills.to_f / team_unit_kills) * 100
         score += (uk_contrib - 20.0) * weights[:unit_kill_contribution]
       end
     end
 
-    # Castle raze contribution (0-100%, capped at 30% for scoring)
+    # Castle raze contribution (capped at 20% per castle razed)
     if appearance.castles_razed
       team_castles = team_appearances.sum { |a| a.castles_razed || 0 }
       if team_castles > 0
-        cr_contrib = [ (appearance.castles_razed.to_f / team_castles) * 100, 30.0 ].min
+        raw_contrib = (appearance.castles_razed.to_f / team_castles) * 100
+        max_contrib = appearance.castles_razed * MlScoreRecalculator::CASTLE_RAZE_CAP_PER_KILL
+        cr_contrib = [ raw_contrib, max_contrib ].min
         score += (cr_contrib - 20.0) * weights[:castle_raze_contribution]
       end
     end
 
-    # Team heal contribution (0-100%, capped at 40% for scoring)
+    # Team heal contribution (capped at 40% per game)
     if appearance.team_heal && appearance.team_heal > 0
       team_heal_total = team_appearances.sum { |a| (a.team_heal && a.team_heal > 0) ? a.team_heal : 0 }
       if team_heal_total > 0
-        th_contrib = [ (appearance.team_heal.to_f / team_heal_total) * 100, 40.0 ].min
+        raw_contrib = (appearance.team_heal.to_f / team_heal_total) * 100
+        th_contrib = [ raw_contrib, MlScoreRecalculator::TEAM_HEAL_CAP_PER_GAME ].min
         score += (th_contrib - 20.0) * weights[:team_heal_contribution]
       end
     end
@@ -577,145 +579,87 @@ class CustomRatingRecalculator
   end
 
   # Constants matching LobbyWinPredictor
-  GAMES_THRESHOLD_LOW = 10
-  GAMES_THRESHOLD_HIGH = 100
-  NEW_PLAYER_CR_WEIGHT = 50
-  NEW_PLAYER_RANK_WEIGHT = 50
-  MID_CR_WEIGHT = 60
-  MID_RANK_WEIGHT = 40
-  EXPERIENCED_CR_WEIGHT = 80
-  EXPERIENCED_RANK_WEIGHT = 20
-  CR_MIN = 1200
-  CR_MAX = 1800
-  FACTION_GAMES_FOR_FULL_CONFIDENCE = 10
-  MAX_FACTION_PENALTY_POINTS = 5.0
+  GAMES_FOR_FULL_CR_TRUST = 30
+  MAX_ML_CR_ADJUSTMENT = 200
+  ML_BASELINE = 50
 
   # Store match prediction using same logic as LobbyWinPredictor
-  # Uses adaptive CR/ML weighting and faction experience adjustments
+  # Uses CR with ML score adjustment for new players
   def store_match_prediction(match, good_avg, evil_avg)
-    good_scores = []
-    evil_scores = []
+    good_effective_crs = []
+    evil_effective_crs = []
 
     match.appearances.each do |app|
       next unless app.faction
       player = app.player
 
-      score = if player
-        calculate_player_prediction_score(player, app.faction_id)
+      effective_cr = if player
+        calculate_player_effective_cr(player)
       else
-        # New player without match history: use default CR and below-average rank
-        cr = NewPlayerDefaults.custom_rating
-        cr_norm = normalize_cr_for_prediction(cr)
-        rank_score = rank_to_score(4.0)  # Assume below-average rank for unknown players
-        (cr_norm * NEW_PLAYER_CR_WEIGHT + rank_score * NEW_PLAYER_RANK_WEIGHT) / 100.0
+        # New player without match history
+        calculate_effective_cr(
+          NewPlayerDefaults.custom_rating,
+          0,
+          NewPlayerDefaults.ml_score
+        )
       end
 
       if app.faction.good?
-        good_scores << score
+        good_effective_crs << effective_cr
       else
-        evil_scores << score
+        evil_effective_crs << effective_cr
       end
     end
 
-    return if good_scores.empty? || evil_scores.empty?
+    return if good_effective_crs.empty? || evil_effective_crs.empty?
 
-    good_score_avg = good_scores.sum / good_scores.size.to_f
-    evil_score_avg = evil_scores.sum / evil_scores.size.to_f
+    good_avg_effective = good_effective_crs.sum / good_effective_crs.size.to_f
+    evil_avg_effective = evil_effective_crs.sum / evil_effective_crs.size.to_f
 
-    # Convert score difference to win probability (same as LobbyWinPredictor)
-    score_diff = good_score_avg - evil_score_avg
-    good_win_probability = 1.0 / (1 + Math.exp(-score_diff / 5.0))
+    # Convert CR difference to win probability (same as LobbyWinPredictor)
+    # 100 CR difference ≈ 64% win chance for higher rated team
+    cr_diff = good_avg_effective - evil_avg_effective
+    good_win_probability = 1.0 / (1 + Math.exp(-cr_diff / 150.0))
 
     match.update_columns(
       predicted_good_win_pct: (good_win_probability * 100).round(1),
       predicted_good_avg_rating: good_avg.round(1),
       predicted_evil_avg_rating: evil_avg.round(1),
-      predicted_good_score: good_score_avg.round(1),
-      predicted_evil_score: evil_score_avg.round(1)
+      predicted_good_score: good_avg_effective.round(1),
+      predicted_evil_score: evil_avg_effective.round(1)
     )
   end
 
-  FACTION_GAMES_FOR_FACTION_RANK = 20  # Faction rank fully kicks in after this many games with faction
-  DEFAULT_FACTION_RANK = 4.5  # Default rank for players with no faction experience
-
-  # Calculate player prediction score using same formula as LobbyWinPredictor
-  # Uses CR + blended rank (50% overall + 50% faction rank component)
-  def calculate_player_prediction_score(player, faction_id)
+  # Calculate player effective CR using same formula as LobbyWinPredictor
+  def calculate_player_effective_cr(player)
     stats = @player_stats[player.id]
     games_played = stats[:games_played]
-
-    # Get CR at this point in time
     cr = player.custom_rating || DEFAULT_RATING
+    ml_score = player.ml_score || ML_BASELINE
 
-    # Calculate blended rank: 50% overall avg rank + 50% faction rank component
-    # Faction rank component transitions from 4.5 (0 games) to actual faction avg (20+ games)
-    overall_avg_rank = if stats[:contribution_ranks].any?
-      stats[:contribution_ranks].sum.to_f / stats[:contribution_ranks].size
-    else
-      4.0  # Default for players with no games
-    end
-
-    faction_ranks = stats[:faction_ranks][faction_id]
-    faction_games = faction_ranks.size
-    faction_rank_component = if faction_games >= FACTION_GAMES_FOR_FACTION_RANK
-      # 20+ games: use actual faction avg
-      faction_ranks.sum.to_f / faction_ranks.size
-    elsif faction_games > 0
-      # 1-19 games: gradual transition from 4.5 to faction avg
-      actual_faction_avg = faction_ranks.sum.to_f / faction_ranks.size
-      progress = faction_games.to_f / FACTION_GAMES_FOR_FACTION_RANK
-      DEFAULT_FACTION_RANK + (actual_faction_avg - DEFAULT_FACTION_RANK) * progress
-    else
-      # 0 games: use default 4.5
-      DEFAULT_FACTION_RANK
-    end
-
-    # Blend: 50% overall + 50% faction component
-    avg_rank = (overall_avg_rank * 0.5) + (faction_rank_component * 0.5)
-    rank_score = rank_to_score(avg_rank)
-
-    # Gradual transition: 0 games (50/50) -> 10 games (60/40) -> 100 games (80/20)
-    cr_weight, rank_weight = if games_played >= GAMES_THRESHOLD_HIGH
-      [EXPERIENCED_CR_WEIGHT, EXPERIENCED_RANK_WEIGHT]
-    elsif games_played >= GAMES_THRESHOLD_LOW
-      progress = (games_played - GAMES_THRESHOLD_LOW).to_f / (GAMES_THRESHOLD_HIGH - GAMES_THRESHOLD_LOW)
-      cr_w = MID_CR_WEIGHT + (EXPERIENCED_CR_WEIGHT - MID_CR_WEIGHT) * progress
-      rank_w = MID_RANK_WEIGHT + (EXPERIENCED_RANK_WEIGHT - MID_RANK_WEIGHT) * progress
-      [cr_w, rank_w]
-    else
-      progress = games_played.to_f / GAMES_THRESHOLD_LOW
-      cr_w = NEW_PLAYER_CR_WEIGHT + (MID_CR_WEIGHT - NEW_PLAYER_CR_WEIGHT) * progress
-      rank_w = NEW_PLAYER_RANK_WEIGHT + (MID_RANK_WEIGHT - NEW_PLAYER_RANK_WEIGHT) * progress
-      [cr_w, rank_w]
-    end
-
-    # Normalize CR to 0-100 scale
-    cr_norm = normalize_cr_for_prediction(cr)
-
-    # Calculate base score
-    base_score = (cr_norm * cr_weight + rank_score * rank_weight) / 100.0
-
-    # Apply faction experience penalty
-    faction_games = stats[:faction_games][faction_id] || 0
-    apply_faction_confidence(base_score, faction_games)
+    calculate_effective_cr(cr, games_played, ml_score)
   end
 
-  # Convert contribution rank (1-5) to 0-100 score
-  # Rank 1 (best) = 100, Rank 3 (average) = 50, Rank 5 (worst) = 0
-  def rank_to_score(rank)
-    ((5.0 - rank) / 4.0 * 100).clamp(0, 100)
-  end
+  # Calculate effective CR with ML score adjustment for new players
+  # Only applies penalty for new players with ML score < 50
+  # No bonus for any new player - trust their CR if they perform well
+  def calculate_effective_cr(cr, games, ml_score)
+    return cr.to_f if games >= GAMES_FOR_FULL_CR_TRUST
 
-  # Normalize CR to 0-100 scale (same as LobbyWinPredictor)
-  def normalize_cr_for_prediction(cr)
-    ((cr - CR_MIN) / (CR_MAX - CR_MIN).to_f * 100).clamp(0, 100)
-  end
+    # Only apply penalty if ML score is below baseline (50)
+    # No bonus for new players above 50
+    return cr.to_f if ml_score >= ML_BASELINE
 
-  # Apply faction experience penalty (same formula as LobbyWinPredictor)
-  def apply_faction_confidence(score, faction_games)
-    confidence = 1 - Math.exp(-faction_games.to_f / FACTION_GAMES_FOR_FULL_CONFIDENCE)
-    penalty = (1 - confidence) * MAX_FACTION_PENALTY_POINTS
-    score - penalty
+    # ML score deviation from baseline (negative only at this point)
+    ml_deviation = ml_score - ML_BASELINE
+
+    # Penalty scales down as games increase
+    adjustment_factor = 1.0 - (games.to_f / GAMES_FOR_FULL_CR_TRUST)
+
+    # Scale deviation to CR adjustment (max -200 for ML score 0)
+    ml_cr_adjustment = (ml_deviation / 50.0) * MAX_ML_CR_ADJUSTMENT * adjustment_factor
+
+    cr + ml_cr_adjustment
   end
 
   # Update running stats for a player after processing a match appearance

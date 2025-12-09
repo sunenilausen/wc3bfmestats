@@ -7,6 +7,8 @@ one:
   battlenet_name: Player1
   custom_rating: 1320  # 1300 + 20 (from match one)
   ml_score: 50.0
+  leave_pct: 2.0
+  games_left: 0
   region: eu
   battlenet_number: 1234
 
@@ -16,6 +18,8 @@ two:
   battlenet_name: Player2
   custom_rating: 1320  # 1300 + 20 (from match one)
   ml_score: 50.0
+  leave_pct: 5.0
+  games_left: 1
   region: eu
   battlenet_number: 5678
 
@@ -25,6 +29,8 @@ three:
   battlenet_name: Player3
   custom_rating: 1320  # 1300 + 20 (from match one)
   ml_score: 50.0
+  leave_pct: 8.0
+  games_left: 2
   region: eu
   battlenet_number: 9012
 
@@ -34,6 +40,8 @@ four:
   battlenet_name: Player4
   custom_rating: 1320  # 1300 + 20 (from match one)
   ml_score: 50.0
+  leave_pct: 0.0
+  games_left: 0
   region: eu
   battlenet_number: 3456
 
@@ -43,6 +51,8 @@ five:
   battlenet_name: Player5
   custom_rating: 1368  # 1350 + 18 (from match one)
   ml_score: 55.0
+  leave_pct: 3.0
+  games_left: 1
   region: eu
   battlenet_number: 1111
 
@@ -53,6 +63,8 @@ six:
   battlenet_name: Player6
   custom_rating: 1230  # 1250 - 20 (from match one)
   ml_score: 45.0
+  leave_pct: 25.0
+  games_left: 5
   region: eu
   battlenet_number: 2222
 
@@ -62,6 +74,8 @@ seven:
   battlenet_name: Player7
   custom_rating: 1302  # 1320 - 18 (from match one)
   ml_score: 48.0
+  leave_pct: 12.0
+  games_left: 3
   region: eu
   battlenet_number: 3333
 
@@ -71,6 +85,8 @@ eight:
   battlenet_name: Player8
   custom_rating: 1261  # 1280 - 19 (from match one)
   ml_score: 46.0
+  leave_pct: 4.0
+  games_left: 1
   region: eu
   battlenet_number: 4444
 
@@ -80,6 +96,8 @@ nine:
   battlenet_name: Player9
   custom_rating: 1292  # 1310 - 18 (from match one)
   ml_score: 47.0
+  leave_pct: 1.0
+  games_left: 0
   region: eu
   battlenet_number: 5555
 
@@ -89,6 +107,8 @@ ten:
   battlenet_name: Player10
   custom_rating: 1271  # 1290 - 19 (from match one)
   ml_score: 46.5
+  leave_pct: 6.0
+  games_left: 2
   region: eu
   battlenet_number: 6666
 
@@ -99,5 +119,7 @@ unused:
   battlenet_name: UnusedPlayer
   custom_rating: 1300
   ml_score: 35.0
+  leave_pct: 0.0
+  games_left: 0
   region: eu
   battlenet_number: 7890

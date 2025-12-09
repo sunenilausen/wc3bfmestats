@@ -115,7 +115,8 @@ module Wc3stats
           castles_razed: player_data.dig("variables", "castlesRazed"),
           self_heal: self_heal,
           team_heal: team_heal,
-          total_heal: total_heal
+          total_heal: total_heal,
+          stay_pct: player_data["stayPercent"]
         )
       end
     end

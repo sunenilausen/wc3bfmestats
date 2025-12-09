@@ -5,7 +5,7 @@ class PlayersController < ApplicationController
 
   # GET /players or /players.json
   def index
-    @sort_column = %w[custom_rating matches_played matches_observed ml_score].include?(params[:sort]) ? params[:sort] : "ml_score"
+    @sort_column = %w[custom_rating matches_played matches_observed ml_score].include?(params[:sort]) ? params[:sort] : "custom_rating"
     @sort_direction = %w[asc desc].include?(params[:direction]) ? params[:direction] : "desc"
 
     @players = Player.all

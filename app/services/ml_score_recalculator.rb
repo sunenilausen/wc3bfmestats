@@ -10,6 +10,11 @@ class MlScoreRecalculator
     hero_uptime: 0.01
   }.freeze
 
+  # Contribution caps per game (same as PlayerStatsCalculator)
+  HERO_KILL_CAP_PER_KILL = 10.0
+  CASTLE_RAZE_CAP_PER_KILL = 20.0
+  TEAM_HEAL_CAP_PER_GAME = 40.0
+
   def call
     weights = WEIGHTS
     player_ids = Player.pluck(:id)
@@ -113,8 +118,10 @@ class MlScoreRecalculator
       team_total = hero_kill_totals_by_match.dig(match_id, is_good)
       next unless team_total && team_total > 0
 
-      # No cap - raw percentage for ML score calculation
-      player_contributions[player_id][:hk_contribs] << (hk.to_f / team_total * 100)
+      # Cap at 10% per hero killed
+      raw_contrib = (hk.to_f / team_total * 100)
+      max_contrib = hk * HERO_KILL_CAP_PER_KILL
+      player_contributions[player_id][:hk_contribs] << [ raw_contrib, max_contrib ].min
     end
 
     unit_kill_appearances.each do |player_id, match_id, is_good, uk|
@@ -128,14 +135,19 @@ class MlScoreRecalculator
       team_total = castle_totals_by_match.dig(match_id, is_good)
       next unless team_total && team_total > 0
 
-      player_contributions[player_id][:cr_contribs] << (cr.to_f / team_total * 100)
+      # Cap at 20% per castle razed
+      raw_contrib = (cr.to_f / team_total * 100)
+      max_contrib = cr * CASTLE_RAZE_CAP_PER_KILL
+      player_contributions[player_id][:cr_contribs] << [ raw_contrib, max_contrib ].min
     end
 
     team_heal_appearances.each do |player_id, match_id, is_good, th|
       team_total = team_heal_by_match.dig(match_id, is_good)
       next unless team_total && team_total > 0
 
-      player_contributions[player_id][:th_contribs] << (th.to_f / team_total * 100)
+      # Cap at 40% per game
+      raw_contrib = (th.to_f / team_total * 100)
+      player_contributions[player_id][:th_contribs] << [ raw_contrib, TEAM_HEAL_CAP_PER_GAME ].min
     end
 
     # Batch query: Custom ratings per match for enemy CR diff calculation
@@ -162,44 +174,45 @@ class MlScoreRecalculator
     # Batch compute event stats for all players (hero K/D)
     event_stats = batch_compute_event_stats
 
-    # Update each player's ML score
+    # First pass: calculate raw ML scores for all players
+    player_raw_scores = {}
     Player.find_each do |player|
       contribs = player_contributions[player.id]
       avg_hk = contribs[:hk_contribs].any? ? (contribs[:hk_contribs].sum / contribs[:hk_contribs].size) : 20.0
       avg_uk = contribs[:uk_contribs].any? ? (contribs[:uk_contribs].sum / contribs[:uk_contribs].size) : 20.0
       avg_cr = contribs[:cr_contribs].any? ? (contribs[:cr_contribs].sum / contribs[:cr_contribs].size) : 20.0
       avg_th = contribs[:th_contribs].any? ? (contribs[:th_contribs].sum / contribs[:th_contribs].size) : 20.0
-      avg_enemy_elo_diff = contribs[:enemy_elo_diffs].any? ? (contribs[:enemy_elo_diffs].sum / contribs[:enemy_elo_diffs].size) : 0
-      total_matches = games_played[player.id] || 0
 
       es = event_stats[player.id] || {}
-      hero_kd = es[:hero_kd_ratio] || 1.0
       hero_uptime = es[:hero_uptime] || 80.0
 
-      # Use hardcoded weights directly (no elo - CR is weighted separately in predictions)
-      hero_kill_weight = weights[:hero_kill_contribution]
-      unit_kill_weight = weights[:unit_kill_contribution]
-      castle_raze_weight = weights[:castle_raze_contribution]
-      team_heal_weight = weights[:team_heal_contribution]
-      hero_uptime_weight = weights[:hero_uptime]
-
       raw_score = 0.0
-      raw_score += hero_kill_weight * (avg_hk - 20.0)
-      raw_score += unit_kill_weight * (avg_uk - 20.0)
-      raw_score += castle_raze_weight * (avg_cr - 20.0)
-      raw_score += team_heal_weight * (avg_th - 20.0)
-      raw_score += hero_uptime_weight * (hero_uptime - 80.0)
+      raw_score += weights[:hero_kill_contribution] * (avg_hk - 20.0)
+      raw_score += weights[:unit_kill_contribution] * (avg_uk - 20.0)
+      raw_score += weights[:castle_raze_contribution] * (avg_cr - 20.0)
+      raw_score += weights[:team_heal_contribution] * (avg_th - 20.0)
+      raw_score += weights[:hero_uptime] * (hero_uptime - 80.0)
 
       sigmoid_value = 1.0 / (1.0 + Math.exp(-raw_score.clamp(-500, 500) * 0.5))
-      raw_ml_score = sigmoid_value * 100
+      ml_score = sigmoid_value * 100
 
-      # Apply confidence adjustment based on games played
-      # Players with few games get pulled toward 50 (average)
-      # Confidence reaches ~95% at 20 games, ~99% at 50 games
-      confidence = 1.0 - Math.exp(-total_matches / 10.0)
-      ml_score = (50.0 + (raw_ml_score - 50.0) * confidence).round(1)
+      player_raw_scores[player.id] = ml_score
+    end
 
-      player.update_column(:ml_score, ml_score)
+    # Normalize scores so average = 0 (subtract 50 from sigmoid output, then shift to true average of 0)
+    # This makes it easy to tell: positive = above average, negative = below average
+    if player_raw_scores.any?
+      # Convert from 0-100 scale to centered scale (subtract 50)
+      centered_scores = player_raw_scores.transform_values { |v| v - 50.0 }
+
+      # Calculate shift needed to make average exactly 0
+      current_avg = centered_scores.values.sum / centered_scores.size
+
+      # Apply shift and save normalized scores
+      centered_scores.each do |player_id, centered_score|
+        normalized_score = (centered_score - current_avg).round(1)
+        Player.where(id: player_id).update_all(ml_score: normalized_score)
+      end
     end
 
     # Recalculate tier thresholds based on new ML score distribution

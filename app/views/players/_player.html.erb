@@ -101,6 +101,24 @@
             <td class="py-0.5">Region</td>
             <td class="text-right py-0.5"><%= player.region || "-" %></td>
           </tr>
+          <% if player.games_stayed.to_i + player.games_left.to_i > 0 %>
+            <tr>
+              <td class="py-0.5" title="Percentage of games where player stayed until the end (didn't leave early)">Stay Rate</td>
+              <td class="text-right py-0.5">
+                <span class="<%= player.stay_pct >= 95 ? 'text-green-600' : (player.stay_pct < 80 ? 'text-red-600' : '') %> font-medium"><%= player.stay_pct %>%</span>
+                <span class="text-gray-500">(<%= player.games_stayed %>/<%= player.games_stayed + player.games_left %>)</span>
+              </td>
+            </tr>
+            <% if player.games_left.to_i > 0 %>
+              <tr>
+                <td class="py-0.5" title="Number of games where player left before the match ended">Early Leaves</td>
+                <td class="text-right py-0.5">
+                  <span class="text-red-600 font-medium"><%= player.games_left %></span>
+                  <span class="text-gray-500">(<%= player.leave_pct %>%)</span>
+                </td>
+              </tr>
+            <% end %>
+          <% end %>
         </tbody>
       </table>
     </div>
@@ -124,7 +142,7 @@
             <td class="py-0.5">Performance Score</td>
             <td class="text-right py-0.5">
               <%= tier_badge(player.ml_score) %>
-              <span class="<%= ml_score_color_class(player.ml_score) %> font-medium"><%= player.ml_score %></span>
+              <span class="<%= ml_score_color_class(player.ml_score) %> font-medium"><%= format_perf_score(player.ml_score) %></span>
               <% if local_assigns.key?(:ranks) && ranks && ranks[:ml_rank] && ranks[:ml_total] %>
                 <% ml_percentile = (ranks[:ml_rank].to_f / ranks[:ml_total] * 100).round %>
                 <span class="text-gray-500">(#<%= ranks[:ml_rank] %> - top<%= ml_percentile %>%)</span>
@@ -459,7 +477,7 @@
             <thead>
               <tr class="border-b">
                 <th class="text-left py-1">Faction</th>
-                <th class="text-center py-1" title="Faction Score (like ML score but faction-specific)">F.Score</th>
+                <th class="text-center py-1" title="Faction performance (0 = avg, positive = above avg)">F.Perf</th>
                 <th class="text-center py-1" title="Faction-specific rating">F.Rating</th>
                 <th class="text-center py-1" title="Percentage of games played with this faction">Play%</th>
                 <th class="text-center py-1">W/L</th>
@@ -488,7 +506,7 @@
                   </td>
                   <td class="text-center py-1">
                     <% if pfs&.faction_score %>
-                      <span class="font-medium"><%= pfs.faction_score.round(1) %></span>
+                      <span class="<%= ml_score_color_class(pfs.faction_score) %> font-medium"><%= format_perf_score(pfs.faction_score.round(1)) %></span>
                       <% if pfs.rank %>
                         <% total = faction_totals[faction.id] || 0 %>
                         <% percentile = total > 0 ? (pfs.rank.to_f / total * 100).round : 0 %>
@@ -537,7 +555,7 @@
             <thead>
               <tr class="border-b">
                 <th class="text-left py-1">Faction</th>
-                <th class="text-center py-1" title="Faction Score (like ML score but faction-specific)">F.Score</th>
+                <th class="text-center py-1" title="Faction performance (0 = avg, positive = above avg)">F.Perf</th>
                 <th class="text-center py-1" title="Faction-specific rating">F.Rating</th>
                 <th class="text-center py-1" title="Percentage of games played with this faction">Play%</th>
                 <th class="text-center py-1">W/L</th>
@@ -566,7 +584,7 @@
                   </td>
                   <td class="text-center py-1">
                     <% if pfs&.faction_score %>
-                      <span class="font-medium"><%= pfs.faction_score.round(1) %></span>
+                      <span class="<%= ml_score_color_class(pfs.faction_score) %> font-medium"><%= format_perf_score(pfs.faction_score.round(1)) %></span>
                       <% if pfs.rank %>
                         <% total = faction_totals[faction.id] || 0 %>
                         <% percentile = total > 0 ? (pfs.rank.to_f / total * 100).round : 0 %>

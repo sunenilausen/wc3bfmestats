@@ -256,9 +256,9 @@
       <% end %>
     </div>
 
-    <%# Top Faction Score %>
+    <%# Top Faction Performance %>
     <div class="bg-gray-50 rounded-md p-3">
-      <h3 class="font-semibold mb-2 text-gray-700">Top Faction Score <span class="text-xs text-gray-400">(min 10 games)</span></h3>
+      <h3 class="font-semibold mb-2 text-gray-700">Top Faction Performance <span class="text-xs text-gray-400">(min 10 games)</span></h3>
       <% if @top_performers.any? %>
         <table class="w-full text-sm">
           <tbody>
@@ -269,8 +269,33 @@
                   <%= link_to pfs.player.nickname, player_path(pfs.player), class: "text-blue-600 hover:underline" %>
                 </td>
                 <td class="text-right py-1">
-                  <span class="font-medium"><%= pfs.faction_score&.round(1) || "-" %></span>
-                  <span class="text-gray-400 text-xs">(<%= pfs.faction_rating&.to_i || "-" %> FR)</span>
+                  <span class="<%= ml_score_color_class(pfs.faction_score) %> font-medium"><%= pfs.faction_score ? format_perf_score(pfs.faction_score.round(1)) : "-" %></span>
+                  <span class="text-gray-400 text-xs">(<%= pfs.games_played %> games)</span>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <p class="text-gray-400 text-sm">No players with 10+ games yet.</p>
+      <% end %>
+    </div>
+
+    <%# Best Average Rank %>
+    <div class="bg-gray-50 rounded-md p-3">
+      <h3 class="font-semibold mb-2 text-gray-700">Best Average Rank <span class="text-xs text-gray-400">(min 10 games)</span></h3>
+      <% if @top_rank_players.any? %>
+        <table class="w-full text-sm">
+          <tbody>
+            <% @top_rank_players.each_with_index do |data, i| %>
+              <tr class="<%= i < @top_rank_players.size - 1 ? 'border-b border-gray-100' : '' %>">
+                <td class="py-1">
+                  <span class="<%= i < 3 ? 'text-yellow-600 font-semibold' : '' %>"><%= i + 1 %>.</span>
+                  <%= link_to data[:player].nickname, player_path(data[:player]), class: "text-blue-600 hover:underline" %>
+                </td>
+                <td class="text-right py-1">
+                  <span class="<%= data[:avg_rank] <= 2 ? 'text-green-600' : (data[:avg_rank] >= 4 ? 'text-red-600' : '') %> font-medium">#<%= data[:avg_rank] %></span>
+                  <span class="text-gray-400 text-xs">(<%= data[:games] %> games)</span>
                 </td>
               </tr>
             <% end %>

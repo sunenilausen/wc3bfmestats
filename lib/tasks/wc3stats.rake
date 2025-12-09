@@ -448,8 +448,18 @@ namespace :wc3stats do
     puts "  Faction scores updated with new ratings"
     puts
 
-    # Step 14: Invalidate stats cache
-    puts "Step 14: Invalidating stats cache..."
+    # Step 14: Calculate stay/leave percentages
+    puts "Step 14: Calculating stay/leave percentages..."
+    stay_leave_recalculator = StayLeaveRecalculator.new
+    stay_leave_recalculator.call
+    puts "  Updated #{stay_leave_recalculator.players_updated} players with stay/leave stats"
+    if stay_leave_recalculator.errors.any?
+      puts "  Errors: #{stay_leave_recalculator.errors.count}"
+    end
+    puts
+
+    # Step 15: Invalidate stats cache
+    puts "Step 15: Invalidating stats cache..."
     StatsCacheKey.invalidate!
     puts "  Cache invalidated"
     puts
@@ -753,8 +763,18 @@ namespace :wc3stats do
     puts "  Faction scores updated with new ratings"
     puts
 
-    # Step 6: Invalidate cache
-    puts "Step 6: Invalidating stats cache..."
+    # Step 6: Calculate stay/leave percentages
+    puts "Step 6: Calculating stay/leave percentages..."
+    stay_leave_recalculator = StayLeaveRecalculator.new
+    stay_leave_recalculator.call
+    puts "  Updated #{stay_leave_recalculator.players_updated} players with stay/leave stats"
+    if stay_leave_recalculator.errors.any?
+      puts "  Errors: #{stay_leave_recalculator.errors.count}"
+    end
+    puts
+
+    # Step 7: Invalidate cache
+    puts "Step 7: Invalidating stats cache..."
     StatsCacheKey.invalidate!
     puts "  Cache invalidated"
     puts

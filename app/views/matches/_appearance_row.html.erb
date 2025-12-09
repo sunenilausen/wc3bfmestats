@@ -10,6 +10,22 @@
     <% end %>
   </td>
   <td class="px-2 py-1">
+    <% if appearance.stay_pct %>
+      <% is_low_stay = appearance.stay_pct < 90 %>
+      <% is_real_leave = is_low_stay && !is_excused_leave?(appearance, appearance.match) %>
+      <span class="<%= is_real_leave ? 'text-red-600' : (is_low_stay ? 'text-yellow-600' : 'text-green-600') %>">
+        <%= appearance.stay_pct.round %>%
+      </span>
+      <% if is_real_leave %>
+        <span class="text-red-600 text-xs font-medium" title="Early leave (first to leave, no teammate followed within 60s)">LEAVE</span>
+      <% elsif is_low_stay %>
+        <span class="text-yellow-600 text-xs" title="Left early but excused (not first to leave or teammate followed)">left</span>
+      <% end %>
+    <% else %>
+      <span class="text-gray-400">-</span>
+    <% end %>
+  </td>
+  <td class="px-2 py-1">
     <%= previous_record_for_appearance(appearance) %>
   </td>
   <td class="px-2 py-1">

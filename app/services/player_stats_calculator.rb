@@ -163,22 +163,28 @@ class PlayerStatsCalculator
   MVP_UNIT_KILL_BOOST_FACTIONS = [ "Minas Morgul", "Fellowship" ].freeze
   MVP_UNIT_KILL_BOOST = 1.5
 
+  # Cap hero kill contribution at 10% per hero killed for avg stats
+  HERO_KILL_CAP_PER_KILL = 10.0
+  # Cap castle raze contribution at 20% per castle razed for avg stats
+  CASTLE_RAZE_CAP_PER_KILL = 20.0
+  # Cap team heal contribution at 40% per game for avg stats
+  TEAM_HEAL_CAP_PER_GAME = 40.0
+
   def process_kill_stats(appearance, team_appearances, player_won, match, stats, faction_id)
     faction_stats = stats[:faction_stats][faction_id]
 
-    # Hero kills - use stored values if available
-    if appearance.hero_kill_pct
-      stats[:hero_kill_contributions] << appearance.hero_kill_pct
-      faction_stats[:hero_kill_contributions] << appearance.hero_kill_pct
-    elsif !appearance.hero_kills.nil? && !appearance.ignore_hero_kills?
-      # Fallback: calculate if not stored (no cap - raw percentage for display)
+    # Hero kills - cap at 10% per hero killed for player avg stats
+    if !appearance.hero_kills.nil? && !appearance.ignore_hero_kills?
       team_with_hero_kills = team_appearances.select { |a| !a.hero_kills.nil? && !a.ignore_hero_kills? }
       if team_with_hero_kills.any?
         team_total = team_with_hero_kills.sum(&:hero_kills)
         if team_total > 0
-          contribution = (appearance.hero_kills.to_f / team_total * 100)
-          stats[:hero_kill_contributions] << contribution
-          faction_stats[:hero_kill_contributions] << contribution
+          raw_contribution = (appearance.hero_kills.to_f / team_total * 100)
+          # Cap at 10% per hero killed
+          max_contribution = appearance.hero_kills * HERO_KILL_CAP_PER_KILL
+          capped_contribution = [ raw_contribution, max_contribution ].min
+          stats[:hero_kill_contributions] << capped_contribution
+          faction_stats[:hero_kill_contributions] << capped_contribution
         end
       end
     end
@@ -272,19 +278,25 @@ class PlayerStatsCalculator
     stats[:castles_razed_values] << appearance.castles_razed
     faction_stats[:castles_razed_values] << appearance.castles_razed
 
-    # Use stored percentage if available
+    # Use stored percentage if available, but apply cap for player avg stats
     if appearance.castle_raze_pct
-      stats[:castle_raze_contributions] << appearance.castle_raze_pct
-      faction_stats[:castle_raze_contributions] << appearance.castle_raze_pct
+      # Cap at 20% per castle razed
+      max_contribution = appearance.castles_razed * CASTLE_RAZE_CAP_PER_KILL
+      capped_contribution = [ appearance.castle_raze_pct, max_contribution ].min
+      stats[:castle_raze_contributions] << capped_contribution
+      faction_stats[:castle_raze_contributions] << capped_contribution
     else
       # Fallback: calculate if not stored
       team_with_castles = team_appearances.select { |a| a.castles_razed.present? }
       if team_with_castles.any?
         team_total = team_with_castles.sum(&:castles_razed)
         if team_total > 0
-          contribution = (appearance.castles_razed.to_f / team_total * 100)
-          stats[:castle_raze_contributions] << contribution
-          faction_stats[:castle_raze_contributions] << contribution
+          raw_contribution = (appearance.castles_razed.to_f / team_total * 100)
+          # Cap at 20% per castle razed
+          max_contribution = appearance.castles_razed * CASTLE_RAZE_CAP_PER_KILL
+          capped_contribution = [ raw_contribution, max_contribution ].min
+          stats[:castle_raze_contributions] << capped_contribution
+          faction_stats[:castle_raze_contributions] << capped_contribution
         end
       end
     end
@@ -310,19 +322,21 @@ class PlayerStatsCalculator
       end
     end
 
-    # Team heal contribution - use stored percentage if available
+    # Team heal contribution - use stored percentage if available, cap at 40%
     if appearance.team_heal_pct
-      stats[:team_heal_contributions] << appearance.team_heal_pct
-      faction_stats[:team_heal_contributions] << appearance.team_heal_pct
+      capped_contribution = [ appearance.team_heal_pct, TEAM_HEAL_CAP_PER_GAME ].min
+      stats[:team_heal_contributions] << capped_contribution
+      faction_stats[:team_heal_contributions] << capped_contribution
     elsif appearance.team_heal.present? && appearance.team_heal > 0
       # Fallback: calculate if not stored
       team_with_team_heal = team_appearances.select { |a| a.team_heal.present? && a.team_heal > 0 }
       if team_with_team_heal.any?
         team_total = team_with_team_heal.sum(&:team_heal)
         if team_total > 0
-          contribution = (appearance.team_heal.to_f / team_total * 100)
-          stats[:team_heal_contributions] << contribution
-          faction_stats[:team_heal_contributions] << contribution
+          raw_contribution = (appearance.team_heal.to_f / team_total * 100)
+          capped_contribution = [ raw_contribution, TEAM_HEAL_CAP_PER_GAME ].min
+          stats[:team_heal_contributions] << capped_contribution
+          faction_stats[:team_heal_contributions] << capped_contribution
         end
       end
     end
@@ -355,40 +369,43 @@ class PlayerStatsCalculator
     weights = MlScoreRecalculator::WEIGHTS
     score = 0.0
 
-    # Hero kill contribution (capped at 20% per hero killed, max 40%)
+    # Hero kill contribution (capped at 10% per hero killed)
     if appearance.hero_kills && !appearance.ignore_hero_kills?
       team_hero_kills = team_appearances.sum { |a| (a.hero_kills && !a.ignore_hero_kills?) ? a.hero_kills : 0 }
       if team_hero_kills > 0
         raw_contrib = (appearance.hero_kills.to_f / team_hero_kills) * 100
-        max_contrib_by_kills = appearance.hero_kills * 20.0
-        hk_contrib = [ raw_contrib, max_contrib_by_kills, 40.0 ].min
+        max_contrib = appearance.hero_kills * HERO_KILL_CAP_PER_KILL
+        hk_contrib = [ raw_contrib, max_contrib ].min
         score += (hk_contrib - 20.0) * weights[:hero_kill_contribution]
       end
     end
 
-    # Unit kill contribution (capped at 40%)
+    # Unit kill contribution (no cap)
     if appearance.unit_kills && !appearance.ignore_unit_kills?
       team_unit_kills = team_appearances.sum { |a| (a.unit_kills && !a.ignore_unit_kills?) ? a.unit_kills : 0 }
       if team_unit_kills > 0
-        uk_contrib = [ (appearance.unit_kills.to_f / team_unit_kills) * 100, 40.0 ].min
+        uk_contrib = (appearance.unit_kills.to_f / team_unit_kills) * 100
         score += (uk_contrib - 20.0) * weights[:unit_kill_contribution]
       end
     end
 
-    # Castle raze contribution (capped at 30%)
+    # Castle raze contribution (capped at 20% per castle razed)
     if appearance.castles_razed
       team_castles = team_appearances.sum { |a| a.castles_razed || 0 }
       if team_castles > 0
-        cr_contrib = [ (appearance.castles_razed.to_f / team_castles) * 100, 30.0 ].min
+        raw_contrib = (appearance.castles_razed.to_f / team_castles) * 100
+        max_contrib = appearance.castles_razed * CASTLE_RAZE_CAP_PER_KILL
+        cr_contrib = [ raw_contrib, max_contrib ].min
         score += (cr_contrib - 20.0) * weights[:castle_raze_contribution]
       end
     end
 
-    # Team heal contribution (capped at 40%)
+    # Team heal contribution (capped at 40% per game)
     if appearance.team_heal && appearance.team_heal > 0
       team_heal_total = team_appearances.sum { |a| (a.team_heal && a.team_heal > 0) ? a.team_heal : 0 }
       if team_heal_total > 0
-        th_contrib = [ (appearance.team_heal.to_f / team_heal_total) * 100, 40.0 ].min
+        raw_contrib = (appearance.team_heal.to_f / team_heal_total) * 100
+        th_contrib = [ raw_contrib, TEAM_HEAL_CAP_PER_GAME ].min
         score += (th_contrib - 20.0) * weights[:team_heal_contribution]
       end
     end

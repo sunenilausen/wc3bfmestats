@@ -255,7 +255,7 @@ class HomeController < ApplicationController
     end
 
     matches.find_each do |match|
-      # CR+Rank prediction
+      # CR+ prediction
       good_pct = match.predicted_good_win_pct.to_f
       confidence_pct = [ good_pct, 100 - good_pct ].max
       good_favored = good_pct >= 50
@@ -272,8 +272,9 @@ class HomeController < ApplicationController
       if good_crs.any? && evil_crs.any?
         good_cr_avg = good_crs.sum / good_crs.size.to_f
         evil_cr_avg = evil_crs.sum / evil_crs.size.to_f
-        cr_diff = ((good_cr_avg - 1200) / 600.0 * 100).clamp(0, 100) - ((evil_cr_avg - 1200) / 600.0 * 100).clamp(0, 100)
-        cr_good_pct = (1.0 / (1 + Math.exp(-cr_diff / 5.0)) * 100)
+        cr_diff = good_cr_avg - evil_cr_avg
+        # Same formula as LobbyWinPredictor
+        cr_good_pct = (1.0 / (1 + Math.exp(-cr_diff / 150.0)) * 100)
 
         cr_confidence_pct = [ cr_good_pct, 100 - cr_good_pct ].max
         cr_good_favored = cr_good_pct >= 50
@@ -305,25 +306,43 @@ class HomeController < ApplicationController
   # Calculate how many games are "balanced" (neither team heavily favored)
   # A balanced game is one where neither side has >60% predicted win chance
   def calculate_balanced_games_stats(map_version = nil)
-    matches = Match.where(ignored: false)
-                   .where.not(predicted_good_win_pct: nil)
+    matches = Match.includes(appearances: :faction)
+                   .where(ignored: false)
     matches = matches.where(map_version: map_version) if map_version.present?
 
     total_matches = 0
-    balanced_matches = 0
+    balanced_cr_ml = 0
+    balanced_cr_only = 0
 
     matches.find_each do |match|
-      total_matches += 1
+      # CR+ balanced (from stored prediction)
+      if match.predicted_good_win_pct.present?
+        total_matches += 1
+        good_pct = match.predicted_good_win_pct.to_f
+        balanced_cr_ml += 1 if good_pct >= 40 && good_pct <= 60
+      end
 
-      good_pct = match.predicted_good_win_pct.to_f
-      # Balanced if both teams are between 40-60%
-      balanced_matches += 1 if good_pct >= 40 && good_pct <= 60
+      # CR-only balanced (calculate from appearances)
+      good_crs = match.appearances.select { |a| a.faction&.good? }.filter_map(&:custom_rating)
+      evil_crs = match.appearances.reject { |a| a.faction&.good? }.filter_map(&:custom_rating)
+
+      if good_crs.any? && evil_crs.any?
+        good_avg = good_crs.sum / good_crs.size.to_f
+        evil_avg = evil_crs.sum / evil_crs.size.to_f
+        cr_diff = good_avg - evil_avg
+
+        # Convert CR difference to win probability (same formula as LobbyWinPredictor)
+        cr_good_pct = (1.0 / (1 + Math.exp(-cr_diff / 150.0)) * 100)
+        balanced_cr_only += 1 if cr_good_pct >= 40 && cr_good_pct <= 60
+      end
     end
 
     {
-      balanced_matches: balanced_matches,
+      balanced_cr_ml: balanced_cr_ml,
+      balanced_cr_only: balanced_cr_only,
       total_matches: total_matches,
-      percentage: total_matches > 0 ? (balanced_matches.to_f / total_matches * 100).round(1) : 0
+      cr_ml_percentage: total_matches > 0 ? (balanced_cr_ml.to_f / total_matches * 100).round(1) : 0,
+      cr_only_percentage: total_matches > 0 ? (balanced_cr_only.to_f / total_matches * 100).round(1) : 0
     }
   end
 end

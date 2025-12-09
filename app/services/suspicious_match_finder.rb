@@ -164,7 +164,7 @@ class SuspiciousMatchFinder
   def check_upset(match)
     reasons = []
 
-    # Use stored prediction from CR+Rank system
+    # Use stored prediction from CR+ system
     predicted_good_pct = match.predicted_good_win_pct
     return reasons unless predicted_good_pct
 

@@ -357,6 +357,61 @@ module MatchesHelper
     score
   end
 
+  # Check if a player's early leave should be "excused" (not count as a real leave)
+  # Excused if:
+  # 1. Someone else left before them (they're not first to leave), OR
+  # 2. A teammate left within 60 seconds after them (game was ending anyway)
+  LEAVE_GRACE_PERIOD = 60 # seconds
+
+  def is_excused_leave?(appearance, match)
+    replay = match.wc3stats_replay
+    return true unless replay&.body # Can't determine, assume excused
+
+    game_players = replay.body.dig("data", "game", "players")
+    return true unless game_players
+
+    player = appearance.player
+    return true unless player
+
+    # Find this player in the replay
+    player_data = find_player_in_replay_data(game_players, player, replay)
+    return true unless player_data
+
+    my_left_at = player_data["leftAt"]
+    return true unless my_left_at # No leave time, assume stayed
+
+    my_team = player_data["team"]
+
+    # Get all non-observer players with leave times
+    all_players_with_leave = game_players.reject { |p| p["isObserver"] }
+                                          .select { |p| p["leftAt"].present? }
+                                          .sort_by { |p| p["leftAt"] }
+
+    return true if all_players_with_leave.empty?
+
+    # Check if someone left before this player
+    first_leave_time = all_players_with_leave.first["leftAt"]
+    return true if my_left_at > first_leave_time # Not the first to leave
+
+    # Check if a teammate left within grace period after this player
+    teammates = all_players_with_leave.select { |p| p["team"] == my_team && p["leftAt"] > my_left_at }
+    teammate_left_soon = teammates.any? { |p| p["leftAt"] - my_left_at <= LEAVE_GRACE_PERIOD }
+    return true if teammate_left_soon
+
+    false # This is a real leave
+  end
+
+  def find_player_in_replay_data(game_players, player, replay)
+    game_players.find do |p|
+      battletag = p["name"]
+      next unless battletag
+      fixed_battletag = replay.fix_encoding(battletag.gsub("\\", ""))
+      player.battletag == fixed_battletag || player.battletag == battletag ||
+        player.alternative_battletags&.include?(fixed_battletag) ||
+        player.alternative_battletags&.include?(battletag)
+    end
+  end
+
   # Calculate hero uptime for an appearance from replay events
   def calculate_hero_uptime_for_appearance(appearance, match)
     replay = match.wc3stats_replay

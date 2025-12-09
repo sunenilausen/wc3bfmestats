@@ -98,41 +98,129 @@ Note: Hero kill contribution is capped at 20% per hero killed **only for perform
 - On match update (MatchesController#update)
 - Via rake task: `bin/rails wc3stats:sync`
 
-### ML Score
-- Stored on Player model as `ml_score` (0-100 scale, 50 = average)
-- Computed by `MlScoreRecalculator` service using logistic regression weights
-- Weights are learned from historical match data by `PredictionModelTrainer`
-- Stored in `PredictionWeight` model, retrained every 20 new matches
+### Performance Score (PERF / ml_score)
 
-**Features used:**
-- Custom Rating (CR) relative to 1300 baseline
-- Hero kill contribution % (player's share of team hero kills)
-- Unit kill contribution % (player's share of team unit kills)
-- Castle raze contribution % (player's share of team castles razed)
-- Team heal contribution % (player's share of team healing to teammates)
-- Hero uptime % (percentage of match time heroes are alive)
+The Performance Score measures a player's average contribution to their team, independent of wins/losses or CR. Stored on Player model as `ml_score` (0-100 scale).
 
-**Confidence adjustment:**
-Players with few games have their score pulled toward 50 to prevent inflated scores from small sample sizes:
+**Key concept:** A score of 50 means average contribution (20% of team stats in a 5-player team). Above 50 = above average contributor, below 50 = below average.
+
+**How it's calculated:**
+The score is based on deviation from the expected 20% team contribution:
+
+| Stat | Weight | Baseline |
+|------|--------|----------|
+| Hero kill contribution % | 0.06 | 20% |
+| Unit kill contribution % | 0.04 | 20% |
+| Castle raze contribution % | 0.02 | 20% |
+| Team heal contribution % | 0.01 | 20% |
+| Hero uptime % | 0.01 | 80% |
+
 ```
-confidence = 1 - e^(-games_played / 10)
-final_score = 50 + (raw_score - 50) * confidence
+raw_score = Σ(weight × (actual% - baseline%))
+perf_score = sigmoid(raw_score × 0.5) × 100
 ```
-- 1 game: ~10% confidence (score ≈ 50)
-- 10 games: ~63% confidence
-- 20 games: ~86% confidence
-- 50+ games: ~99% confidence (full score)
 
-**Lobby prediction:**
-`LobbyScorePredictor` uses the same weights to predict match outcomes by comparing team averages. Shows win probability for Good vs Evil teams.
+**Examples:**
+- Player with 20% of all team stats → score ≈ 50 (average)
+- Player with 30% hero kills, 25% unit kills → score > 50 (above average)
+- Player with 10% unit kills, 0% hero kills → score < 50 (below average)
+
+**No confidence adjustment:** The raw score is used directly. A player with 1 terrible game will show their actual poor performance, not be pulled toward 50.
+
+Managed by `MlScoreRecalculator` service.
+
+### CR+ Prediction System (Lobby Win Prediction)
+
+CR+ combines Custom Rating (CR) with Performance Score to predict match outcomes. For new players, their performance score adjusts their effective CR. Managed by `LobbyWinPredictor` service.
+
+**Formula:**
+```
+# For players with 30+ games: just use CR
+effective_cr = cr
+
+# For players with <30 games:
+ml_deviation = perf_score - 50
+
+if ml_deviation >= 0:
+  # Bonus (good performer): always apply full adjustment
+  adjustment = (ml_deviation / 50) × 200
+else:
+  # Penalty (poor performer): scales down as games increase
+  adjustment = (ml_deviation / 50) × 200 × (1 - games / 30)
+
+effective_cr = cr + adjustment
+```
+
+**Key behavior:**
+- **Experienced players (30+ games):** Uses CR directly, no adjustment
+- **New players with PERF ≥ 50:** Always get the full bonus (rewarding good performance)
+- **New players with PERF < 50:** Penalty scales down as they play more games (giving them a chance to improve)
+
+**Examples:**
+- New player (0 games), PERF 70: +80 CR bonus (always applied)
+- New player (0 games), PERF 30: -80 CR penalty
+- Player (15 games), PERF 30: -40 CR penalty (half, since 15/30 games)
+- Player (30+ games), any PERF: no adjustment
+
+**Win probability calculation:**
+```
+good_win_prob = 1 / (1 + exp(-cr_diff / 150))
+```
+Where `cr_diff = good_avg_effective_cr - evil_avg_effective_cr`
+
+**Constants:**
+- `GAMES_FOR_FULL_CR_TRUST = 30`
+- `MAX_ML_CR_ADJUSTMENT = 200`
+- `ML_BASELINE = 50` (average performance)
+
+The same formula is used in:
+- `LobbyWinPredictor` - for lobby predictions
+- `LobbyBalancer` - for auto-balancing teams
+- `CustomRatingRecalculator#store_match_prediction` - stores prediction on Match model
 
 **New player defaults:**
 When adding an unknown player to a lobby (via "New Player" option), the defaults are:
 - Custom Rating: 1300
 - Glicko-2: 1200
-- ML Score: 35
+- Performance Score: 35 (below average, conservative estimate)
 
 These values are defined in `NewPlayerDefaults` model.
+
+### Stay/Leave Tracking
+
+Players have stay/leave percentages tracked based on replay data. Managed by `StayLeaveRecalculator` service.
+
+**Player fields:**
+- `stay_pct` - Percentage of games where player stayed or leave was excused (default 100%)
+- `leave_pct` - Percentage of games where player had a real early leave (default 0%)
+- `games_stayed` - Count of games stayed (includes excused leaves)
+- `games_left` - Count of real early leaves
+
+**Appearance field:**
+- `stay_pct` - How long the player stayed in this specific match (from replay `stayPercent`)
+
+**Logic for counting a "real leave":**
+A leave only counts if ALL of these are true:
+1. Player left before 90% of the game ended
+2. Player was the FIRST to leave (no one left before them)
+3. No teammate left within 60 seconds after them
+
+This means leaves are "excused" if:
+- Someone else left first (game was already ruined)
+- A teammate quickly followed (coordinated surrender/disconnect)
+
+**Data source:**
+- `leftAt` field in replay JSON (`body.data.game.players[].leftAt`)
+- `stayPercent` field for appearance-level stay percentage
+
+**Displayed on:**
+- Player show page in the "Player Info" section
+- Green color for stay rate ≥95%, red for <80%
+
+**Recalculation:**
+- Included in `wc3stats:sync` task (Step 14)
+- Included in `wc3stats:recalculate` task (Step 6)
+- Manual: `StayLeaveRecalculator.new.call`
 
 ## Match Chronological Ordering
 
@@ -162,6 +250,24 @@ Test maps (containing "test" in filename) are automatically marked as `ignored: 
 Stats handle ties by sharing credit (e.g., if 2 players tie for top hero killer, each gets 0.5).
 
 The faction show page includes a map version dropdown to filter stats by specific game versions (e.g., "4.5e").
+
+### Player Average Stats Contribution Caps
+
+When calculating player average contribution percentages (displayed on player stats page), contributions are capped per game to prevent outliers from skewing averages:
+
+| Stat | Cap per game |
+|------|--------------|
+| Hero kill contribution | 10% per hero killed |
+| Castle raze contribution | 20% per castle razed |
+| Team heal contribution | 40% flat cap |
+| Unit kill contribution | No cap |
+
+**Examples:**
+- Player kills 1 hero when team has 2 total: raw 50% → capped to 10% (1 kill × 10%)
+- Player razes 1 castle when team has 2 total: raw 50% → capped to 20% (1 castle × 20%)
+- Player does 80% of team healing: capped to 40%
+
+These same caps are applied when calculating Performance Score (ml_score) and Faction Score.
 
 ## Stats Caching
 

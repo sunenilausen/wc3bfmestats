@@ -1,13 +1,21 @@
 module PlayersHelper
+  # Color class for performance score (centered on 0)
+  # Positive = above average (green), Negative = below average (red)
   def ml_score_color_class(score)
-    score ||= 50.0
-    if score >= 55
+    score ||= 0.0
+    if score >= 5
       "text-green-600"
-    elsif score <= 45
+    elsif score <= -5
       "text-red-600"
     else
       "text-gray-600"
     end
+  end
+
+  # Format performance score with + sign for positive values
+  def format_perf_score(score)
+    return "-" if score.nil?
+    score >= 0 ? "+#{score}" : score.to_s
   end
 
   # Display player name with alternative name if present

@@ -226,7 +226,7 @@ class LobbiesController < ApplicationController
         }
       end
 
-      @players_for_select = Player.order(:nickname).select(:id, :nickname, :alternative_name, :ml_score, :custom_rating)
+      @players_for_select = Player.order(:nickname).select(:id, :nickname, :alternative_name, :ml_score, :custom_rating, :leave_pct, :games_left)
 
       # Precompute average contribution ranks for all players
       avg_ranks = Appearance.joins(:match)
@@ -248,6 +248,12 @@ class LobbiesController < ApplicationController
         @faction_rank_stats[[ player_id, faction_id ]] = { avg: avg_rank.to_f, count: count }
       end
 
+      # Precompute faction-specific performance scores from PlayerFactionStat
+      @faction_perf_stats = {}
+      PlayerFactionStat.where.not(faction_score: nil).pluck(:player_id, :faction_id, :faction_score).each do |player_id, faction_id, score|
+        @faction_perf_stats[[ player_id, faction_id ]] = score.round
+      end
+
       # Build player search data with games played count and avg rank
       @players_search_data = @players_for_select.map do |player|
         stats = @player_stats[player.id] || { wins: 0, losses: 0 }
@@ -261,7 +267,9 @@ class LobbiesController < ApplicationController
           avgRank: avg_ranks[player.id]&.round(2) || 4.0,
           wins: stats[:wins],
           losses: stats[:losses],
-          games: games
+          games: games,
+          leavePct: player.leave_pct&.round || 0,
+          gamesLeft: player.games_left || 0
         }
       end.sort_by { |p| -p[:games] } # Sort by most games first
 

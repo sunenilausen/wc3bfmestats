@@ -84,6 +84,33 @@ class FactionsController < ApplicationController
         .limit(10)
         .includes(:player)
     end
+
+    # Top 10 players by average contribution rank (lowest = best)
+    @top_rank_players = Rails.cache.fetch(cache_key + [ "top_rank_players" ]) do
+      # Get player_ids with 10+ games for this faction
+      eligible_player_ids = Appearance.joins(:match)
+        .where(faction_id: @faction.id, matches: { ignored: false })
+        .where.not(contribution_rank: nil)
+        .group(:player_id)
+        .having("COUNT(*) >= ?", PlayerFactionStatsCalculator::MIN_GAMES_FOR_RANKING)
+        .pluck(:player_id)
+
+      # Calculate average rank for eligible players
+      avg_ranks = Appearance.joins(:match)
+        .where(player_id: eligible_player_ids, faction_id: @faction.id, matches: { ignored: false })
+        .where.not(contribution_rank: nil)
+        .group(:player_id)
+        .pluck(:player_id, Arel.sql("AVG(contribution_rank)"), Arel.sql("COUNT(*)"))
+        .map { |pid, avg, count| { player_id: pid, avg_rank: avg.to_f.round(2), games: count } }
+        .sort_by { |d| d[:avg_rank] }
+        .first(10)
+
+      # Load players
+      player_ids = avg_ranks.map { |d| d[:player_id] }
+      players_by_id = Player.where(id: player_ids).index_by(&:id)
+
+      avg_ranks.map { |d| d.merge(player: players_by_id[d[:player_id]]) }
+    end
   end
 
   # GET /factions/1/edit

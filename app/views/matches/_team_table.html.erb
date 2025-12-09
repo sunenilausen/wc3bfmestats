@@ -66,8 +66,18 @@
             <td class="px-2 py-1">Avg</td>
             <td class="px-2 py-1"></td>
             <td class="px-2 py-1"></td>
-            <td class="px-2 py-1"></td>
-            <td class="px-2 py-1"></td>
+            <td class="px-2 py-1">
+              <% overall_rank = avg_overall_rank(appearances) %>
+              <% if overall_rank %>
+                <span class="<%= overall_rank <= 2.5 ? 'text-green-600' : (overall_rank >= 3.5 ? 'text-red-600' : '') %>"><%= overall_rank %></span>
+              <% end %>
+            </td>
+            <td class="px-2 py-1">
+              <% faction_rank = avg_faction_rank(appearances) %>
+              <% if faction_rank %>
+                <span class="<%= faction_rank <= 2.5 ? 'text-green-600' : (faction_rank >= 3.5 ? 'text-red-600' : '') %>"><%= faction_rank %></span>
+              <% end %>
+            </td>
             <td class="px-2 py-1"><%= avg_unit_kills(appearances) %></td>
             <td class="px-2 py-1"><%= avg_hero_kills(appearances) %></td>
             <td class="px-2 py-1"></td>

@@ -27,7 +27,8 @@ class LobbiesController < ApplicationController
         score_prediction: @score_prediction,
         feature_contributions: @feature_contributions,
         overall_avg_ranks: @overall_avg_ranks,
-        faction_rank_data: @faction_rank_data
+        faction_rank_data: @faction_rank_data,
+        faction_perf_stats: @faction_perf_stats
       }
     end
 
@@ -40,6 +41,7 @@ class LobbiesController < ApplicationController
     @feature_contributions = cached_stats[:feature_contributions]
     @overall_avg_ranks = cached_stats[:overall_avg_ranks]
     @faction_rank_data = cached_stats[:faction_rank_data]
+    @faction_perf_stats = cached_stats[:faction_perf_stats]
 
     # Get historical accuracy for the current prediction confidence level
     if @score_prediction
@@ -345,6 +347,7 @@ class LobbiesController < ApplicationController
       @recent_stats = {}
       @overall_avg_ranks = {}
       @faction_rank_data = {}
+      @faction_perf_stats = {}
       return if player_ids.empty?
 
       # Preload players in one query
@@ -367,6 +370,12 @@ class LobbiesController < ApplicationController
 
       faction_rank_data.each do |player_id, faction_id, avg_rank, count|
         @faction_rank_data[[ player_id, faction_id ]] = { avg: avg_rank.to_f, count: count }
+      end
+
+      # Preload faction-specific performance scores
+      PlayerFactionStat.where(player_id: player_ids).where.not(faction_score: nil)
+        .pluck(:player_id, :faction_id, :faction_score).each do |player_id, faction_id, score|
+        @faction_perf_stats[[ player_id, faction_id ]] = score.round
       end
 
       # Preload all appearances with necessary associations in optimized queries

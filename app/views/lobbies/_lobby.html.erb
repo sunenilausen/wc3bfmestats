@@ -7,6 +7,28 @@
 <% evil_avg_ml = evil_with_players.any? ? (evil_with_players.sum { |lp| lp.player.ml_score.to_f } / evil_with_players.size).round(1) : 0 %>
 <% good_avg_cr = good_with_players.any? ? (good_with_players.sum { |lp| lp.player.custom_rating.to_i } / good_with_players.size) : 0 %>
 <% evil_avg_cr = evil_with_players.any? ? (evil_with_players.sum { |lp| lp.player.custom_rating.to_i } / evil_with_players.size) : 0 %>
+<%# Calculate faction-specific PERF averages %>
+<% faction_perf_data = @faction_perf_stats || {} %>
+<% good_fac_perfs = good_with_players.map { |lp| faction_perf_data[[lp.player_id, lp.faction_id]] }.compact %>
+<% evil_fac_perfs = evil_with_players.map { |lp| faction_perf_data[[lp.player_id, lp.faction_id]] }.compact %>
+<% good_avg_fac_perf = good_fac_perfs.any? ? (good_fac_perfs.sum / good_fac_perfs.size.to_f).round : nil %>
+<% evil_avg_fac_perf = evil_fac_perfs.any? ? (evil_fac_perfs.sum / evil_fac_perfs.size.to_f).round : nil %>
+<%# Calculate overall and faction-specific rank averages %>
+<% rank_data = editable ? (@faction_rank_stats || {}) : (@faction_rank_data || {}) %>
+<% overall_ranks_data = @overall_avg_ranks || {} %>
+<% if editable && defined?(@players_search_data) %>
+  <% good_overall_ranks = good_with_players.map { |lp| @players_search_data&.find { |p| p[:id] == lp.player_id }&.dig(:avgRank) }.compact %>
+  <% evil_overall_ranks = evil_with_players.map { |lp| @players_search_data&.find { |p| p[:id] == lp.player_id }&.dig(:avgRank) }.compact %>
+<% else %>
+  <% good_overall_ranks = good_with_players.map { |lp| overall_ranks_data[lp.player_id] }.compact %>
+  <% evil_overall_ranks = evil_with_players.map { |lp| overall_ranks_data[lp.player_id] }.compact %>
+<% end %>
+<% good_avg_overall_rank = good_overall_ranks.any? ? (good_overall_ranks.sum / good_overall_ranks.size.to_f).round(1) : nil %>
+<% evil_avg_overall_rank = evil_overall_ranks.any? ? (evil_overall_ranks.sum / evil_overall_ranks.size.to_f).round(1) : nil %>
+<% good_fac_ranks = good_with_players.map { |lp| rank_data[[lp.player_id, lp.faction_id]]&.dig(:avg) }.compact %>
+<% evil_fac_ranks = evil_with_players.map { |lp| rank_data[[lp.player_id, lp.faction_id]]&.dig(:avg) }.compact %>
+<% good_avg_fac_rank = good_fac_ranks.any? ? (good_fac_ranks.sum / good_fac_ranks.size.to_f).round(1) : nil %>
+<% evil_avg_fac_rank = evil_fac_ranks.any? ? (evil_fac_ranks.sum / evil_fac_ranks.size.to_f).round(1) : nil %>
 <% col_count = editable ? 8 : 10 %>
 
 <div id="<%= dom_id lobby %>" class="w-full sm:w-auto <%= editable ? 'mt-2 space-y-5' : 'my-5 space-y-5' %>">
@@ -42,11 +64,20 @@
           <td class="px-4 py-2 font-bold text-sm">Average</td>
           <td class="px-4 py-2"></td>
           <td class="px-4 py-2"></td>
-          <td class="px-4 py-2 font-bold text-sm"><span data-average-elo-target="mlValue"><%= format_perf_score(good_avg_ml.round) %></span></td>
+          <td class="px-4 py-2 font-bold text-sm">
+            <span data-average-elo-target="mlValue"><%= format_perf_score(good_avg_ml.round) %></span><% if good_avg_fac_perf %><span id="good-avg-fac-perf" class="text-gray-400 font-normal">/<%= format_perf_score(good_avg_fac_perf) %></span><% else %><span id="good-avg-fac-perf" class="text-gray-400 font-normal"></span><% end %>
+          </td>
           <td class="px-4 py-2 font-bold text-sm"><span data-average-elo-target="crValue"><%= good_avg_cr %></span></td>
           <td class="px-4 py-2"></td>
           <td class="px-4 py-2"></td>
-          <td class="px-4 py-2"></td>
+          <td class="px-4 py-2 font-bold text-sm">
+            <% if good_avg_overall_rank %>
+              <% rank_color = good_avg_overall_rank <= 2.5 ? 'text-green-600' : (good_avg_overall_rank >= 3.5 ? 'text-red-600' : '') %>
+              <span id="good-avg-overall-rank" class="<%= rank_color %>"><%= good_avg_overall_rank %></span><% if good_avg_fac_rank %><span id="good-avg-fac-rank" class="text-gray-400 font-normal">/<%= good_avg_fac_rank %></span><% else %><span id="good-avg-fac-rank" class="text-gray-400 font-normal"></span><% end %>
+            <% else %>
+              <span id="good-avg-overall-rank"></span><span id="good-avg-fac-rank" class="text-gray-400 font-normal"></span>
+            <% end %>
+          </td>
           <% unless editable %>
             <td class="px-4 py-2"></td>
             <td class="px-4 py-2"></td>
@@ -62,11 +93,20 @@
           <td class="px-4 py-2 font-bold text-sm">Average</td>
           <td class="px-4 py-2"></td>
           <td class="px-4 py-2"></td>
-          <td class="px-4 py-2 font-bold text-sm"><span data-average-elo-target="mlValue"><%= format_perf_score(evil_avg_ml.round) %></span></td>
+          <td class="px-4 py-2 font-bold text-sm">
+            <span data-average-elo-target="mlValue"><%= format_perf_score(evil_avg_ml.round) %></span><% if evil_avg_fac_perf %><span id="evil-avg-fac-perf" class="text-gray-400 font-normal">/<%= format_perf_score(evil_avg_fac_perf) %></span><% else %><span id="evil-avg-fac-perf" class="text-gray-400 font-normal"></span><% end %>
+          </td>
           <td class="px-4 py-2 font-bold text-sm"><span data-average-elo-target="crValue"><%= evil_avg_cr %></span></td>
           <td class="px-4 py-2"></td>
           <td class="px-4 py-2"></td>
-          <td class="px-4 py-2"></td>
+          <td class="px-4 py-2 font-bold text-sm">
+            <% if evil_avg_overall_rank %>
+              <% rank_color = evil_avg_overall_rank <= 2.5 ? 'text-green-600' : (evil_avg_overall_rank >= 3.5 ? 'text-red-600' : '') %>
+              <span id="evil-avg-overall-rank" class="<%= rank_color %>"><%= evil_avg_overall_rank %></span><% if evil_avg_fac_rank %><span id="evil-avg-fac-rank" class="text-gray-400 font-normal">/<%= evil_avg_fac_rank %></span><% else %><span id="evil-avg-fac-rank" class="text-gray-400 font-normal"></span><% end %>
+            <% else %>
+              <span id="evil-avg-overall-rank"></span><span id="evil-avg-fac-rank" class="text-gray-400 font-normal"></span>
+            <% end %>
+          </td>
           <% unless editable %>
             <td class="px-4 py-2"></td>
             <td class="px-4 py-2"></td>

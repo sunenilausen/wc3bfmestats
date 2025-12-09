@@ -115,23 +115,14 @@
             <td class="py-0.5">Region</td>
             <td class="text-right py-0.5"><%= player.region || "-" %></td>
           </tr>
-          <% if player.games_stayed.to_i + player.games_left.to_i > 0 %>
+          <% if player.games_left.to_i > 0 %>
             <tr>
-              <td class="py-0.5" title="Percentage of games where player stayed until the end (didn't leave early)">Stay Rate</td>
+              <td class="py-0.5" title="Number of games where player left before the match ended">Early Leaves</td>
               <td class="text-right py-0.5">
-                <span class="<%= player.stay_pct >= 95 ? 'text-green-600' : (player.stay_pct < 80 ? 'text-red-600' : '') %> font-medium"><%= player.stay_pct %>%</span>
-                <span class="text-gray-500">(<%= player.games_stayed %>/<%= player.games_stayed + player.games_left %>)</span>
+                <span class="text-red-600 font-medium"><%= player.games_left %></span>
+                <span class="text-gray-500">(<%= player.leave_pct %>%)</span>
               </td>
             </tr>
-            <% if player.games_left.to_i > 0 %>
-              <tr>
-                <td class="py-0.5" title="Number of games where player left before the match ended">Early Leaves</td>
-                <td class="text-right py-0.5">
-                  <span class="text-red-600 font-medium"><%= player.games_left %></span>
-                  <span class="text-gray-500">(<%= player.leave_pct %>%)</span>
-                </td>
-              </tr>
-            <% end %>
           <% end %>
         </tbody>
       </table>

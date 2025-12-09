@@ -667,6 +667,12 @@
     let evilCRs = [];
     let goodMLScores = [];
     let evilMLScores = [];
+    let goodFacPerfs = [];
+    let evilFacPerfs = [];
+    let goodOverallRanks = [];
+    let evilOverallRanks = [];
+    let goodFacRanks = [];
+    let evilFacRanks = [];
 
     rows.forEach(row => {
       const team = row.dataset.team;
@@ -676,6 +682,12 @@
       let cr = null;
       let mlScore = null;
       let games = 0;
+      let playerId = null;
+      let factionId = null;
+
+      // Get faction ID from hidden input
+      const factionInput = row.querySelector('input[name*="[faction_id]"]');
+      if (factionInput) factionId = parseInt(factionInput.value);
 
       if (isNewPlayer) {
         cr = newPlayerDefaults.custom_rating || 1300;
@@ -686,6 +698,7 @@
         if (select) {
           const selectedOption = select.options[select.selectedIndex];
           if (selectedOption && selectedOption.value) {
+            playerId = parseInt(selectedOption.value);
             cr = parseFloat(selectedOption.dataset.customRating) || 1300;
             mlScore = parseFloat(selectedOption.dataset.mlScore) || 50;
             games = parseInt(selectedOption.dataset.games) || 0;
@@ -696,14 +709,34 @@
       if (cr !== null && !isNaN(cr)) {
         const effectiveCR = calculateEffectiveCR(cr, games, mlScore);
 
+        // Get faction-specific perf and rank if we have a player
+        let facPerf = null;
+        let overallRank = null;
+        let facRank = null;
+
+        if (playerId && factionId) {
+          facPerf = getFactionPerfScore(playerId, factionId);
+          const facRankData = getFactionRankStats(playerId, factionId);
+          if (facRankData) facRank = facRankData.avg;
+          // Get overall rank from players search data
+          const playerData = allPlayers.find(p => p.id === playerId);
+          if (playerData) overallRank = playerData.avgRank;
+        }
+
         if (team === '1') {
           goodEffectiveCRs.push(effectiveCR);
           goodCRs.push(cr);
           goodMLScores.push(mlScore);
+          if (facPerf !== null) goodFacPerfs.push(facPerf);
+          if (overallRank !== null) goodOverallRanks.push(overallRank);
+          if (facRank !== null) goodFacRanks.push(facRank);
         } else if (team === '2') {
           evilEffectiveCRs.push(effectiveCR);
           evilCRs.push(cr);
           evilMLScores.push(mlScore);
+          if (facPerf !== null) evilFacPerfs.push(facPerf);
+          if (overallRank !== null) evilOverallRanks.push(overallRank);
+          if (facRank !== null) evilFacRanks.push(facRank);
         }
       }
     });
@@ -763,6 +796,69 @@
     // Show ML avg instead of rank score now
     if (predGoodRank) predGoodRank.textContent = Math.round(goodMLAvg);
     if (predEvilRank) predEvilRank.textContent = Math.round(evilMLAvg);
+
+    // Update team average faction PERF displays
+    const goodAvgFacPerfEl = document.getElementById('good-avg-fac-perf');
+    const evilAvgFacPerfEl = document.getElementById('evil-avg-fac-perf');
+    if (goodAvgFacPerfEl) {
+      if (goodFacPerfs.length > 0) {
+        const avgFacPerf = Math.round(goodFacPerfs.reduce((a, b) => a + b, 0) / goodFacPerfs.length);
+        goodAvgFacPerfEl.textContent = '/' + formatPerfScore(avgFacPerf);
+      } else {
+        goodAvgFacPerfEl.textContent = '';
+      }
+    }
+    if (evilAvgFacPerfEl) {
+      if (evilFacPerfs.length > 0) {
+        const avgFacPerf = Math.round(evilFacPerfs.reduce((a, b) => a + b, 0) / evilFacPerfs.length);
+        evilAvgFacPerfEl.textContent = '/' + formatPerfScore(avgFacPerf);
+      } else {
+        evilAvgFacPerfEl.textContent = '';
+      }
+    }
+
+    // Update team average rank displays (overall/faction)
+    const goodAvgOverallRankEl = document.getElementById('good-avg-overall-rank');
+    const goodAvgFacRankEl = document.getElementById('good-avg-fac-rank');
+    const evilAvgOverallRankEl = document.getElementById('evil-avg-overall-rank');
+    const evilAvgFacRankEl = document.getElementById('evil-avg-fac-rank');
+
+    if (goodAvgOverallRankEl) {
+      if (goodOverallRanks.length > 0) {
+        const avgRank = (goodOverallRanks.reduce((a, b) => a + b, 0) / goodOverallRanks.length).toFixed(1);
+        goodAvgOverallRankEl.textContent = avgRank;
+        goodAvgOverallRankEl.className = avgRank <= 2.5 ? 'text-green-600' : (avgRank >= 3.5 ? 'text-red-600' : '');
+      } else {
+        goodAvgOverallRankEl.textContent = '';
+        goodAvgOverallRankEl.className = '';
+      }
+    }
+    if (goodAvgFacRankEl) {
+      if (goodFacRanks.length > 0) {
+        const avgFacRank = (goodFacRanks.reduce((a, b) => a + b, 0) / goodFacRanks.length).toFixed(1);
+        goodAvgFacRankEl.textContent = '/' + avgFacRank;
+      } else {
+        goodAvgFacRankEl.textContent = '';
+      }
+    }
+    if (evilAvgOverallRankEl) {
+      if (evilOverallRanks.length > 0) {
+        const avgRank = (evilOverallRanks.reduce((a, b) => a + b, 0) / evilOverallRanks.length).toFixed(1);
+        evilAvgOverallRankEl.textContent = avgRank;
+        evilAvgOverallRankEl.className = avgRank <= 2.5 ? 'text-green-600' : (avgRank >= 3.5 ? 'text-red-600' : '');
+      } else {
+        evilAvgOverallRankEl.textContent = '';
+        evilAvgOverallRankEl.className = '';
+      }
+    }
+    if (evilAvgFacRankEl) {
+      if (evilFacRanks.length > 0) {
+        const avgFacRank = (evilFacRanks.reduce((a, b) => a + b, 0) / evilFacRanks.length).toFixed(1);
+        evilAvgFacRankEl.textContent = '/' + avgFacRank;
+      } else {
+        evilAvgFacRankEl.textContent = '';
+      }
+    }
   }
 
   // Drag handlers

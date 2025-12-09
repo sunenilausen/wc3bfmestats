@@ -92,41 +92,6 @@ module MatchesHelper
     (total.to_f / appearances.size).round
   end
 
-  # Average overall rank for players in the team
-  def avg_overall_rank(appearances)
-    player_ids = appearances.map(&:player_id).compact
-    return nil if player_ids.empty?
-
-    avg_ranks = Appearance.joins(:match)
-      .where(player_id: player_ids, matches: { ignored: false })
-      .where.not(contribution_rank: nil)
-      .group(:player_id)
-      .average(:contribution_rank)
-
-    ranks = player_ids.map { |id| avg_ranks[id]&.to_f }.compact
-    return nil if ranks.empty?
-
-    (ranks.sum / ranks.size).round(1)
-  end
-
-  # Average faction-specific rank for players in the team
-  def avg_faction_rank(appearances)
-    player_faction_pairs = appearances.map { |a| [a.player_id, a.faction_id] }.select { |p, f| p && f }
-    return nil if player_faction_pairs.empty?
-
-    faction_ranks = Appearance.joins(:match)
-      .where(matches: { ignored: false })
-      .where.not(contribution_rank: nil)
-      .where(player_id: player_faction_pairs.map(&:first), faction_id: player_faction_pairs.map(&:last))
-      .group(:player_id, :faction_id)
-      .average(:contribution_rank)
-
-    ranks = player_faction_pairs.map { |p, f| faction_ranks[[p, f]]&.to_f }.compact
-    return nil if ranks.empty?
-
-    (ranks.sum / ranks.size).round(1)
-  end
-
   def per_minute_unit_kills(appearances)
     total_seconds = appearances.first.match.seconds.to_f
     return 0 if total_seconds.zero?

@@ -244,6 +244,9 @@ class CustomRatingRecalculator
       appearance.is_mvp = is_mvp
       appearance.performance_score = perf_score.round(2)
 
+      # Store historical rank and PERF scores at time of match
+      store_historical_stats(appearance)
+
       # Store contribution percentages and kill stats
       team_appearances = is_good ? good_appearances : evil_appearances
       store_contribution_percentages(appearance, team_appearances)
@@ -490,6 +493,38 @@ class CustomRatingRecalculator
         appearance.team_heal_pct = (appearance.team_heal.to_f / team_team_heal * 100).round(1)
       end
     end
+  end
+
+  # Store historical rank and PERF scores at time of match
+  def store_historical_stats(appearance)
+    player_id = appearance.player_id
+    faction_id = appearance.faction_id
+    return unless player_id && faction_id
+
+    # Calculate overall avg rank from previous matches
+    overall_avg = Appearance.joins(:match)
+      .where(player_id: player_id, matches: { ignored: false })
+      .where.not(contribution_rank: nil)
+      .where.not(id: appearance.id)
+      .average(:contribution_rank)
+
+    appearance.overall_avg_rank = overall_avg&.round(2)
+
+    # Calculate faction-specific avg rank from previous matches
+    faction_avg = Appearance.joins(:match)
+      .where(player_id: player_id, faction_id: faction_id, matches: { ignored: false })
+      .where.not(contribution_rank: nil)
+      .where.not(id: appearance.id)
+      .average(:contribution_rank)
+
+    appearance.faction_avg_rank = faction_avg&.round(2)
+
+    # Get current PERF scores
+    player = appearance.player
+    appearance.perf_score = player&.ml_score
+
+    faction_stat = PlayerFactionStat.find_by(player_id: player_id, faction_id: faction_id)
+    appearance.faction_perf_score = faction_stat&.faction_score
   end
 
   # Store top hero/unit kills flags

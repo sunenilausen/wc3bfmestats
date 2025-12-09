@@ -4,8 +4,8 @@
             <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" style="min-width: 200px;">Player</th>
             <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Stay Percentage (how long player stayed in match)">Stay</th>
             <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Previous Games">Prev</th>
-            <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Overall Avg Rank (1=best, 5=worst)">Rank</th>
-            <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Faction Avg Rank (games with faction)">F.Rank</th>
+            <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Overall/Faction Avg Rank at time of match (1=best, 5=worst)">Rank</th>
+            <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Overall/Faction Performance Score at time of match (0=average)">PERF</th>
             <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Unit Kills">UK</th>
             <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Hero Kills">HK</th>
             <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider" title="Castles Razed">CK</th>
@@ -67,15 +67,25 @@
             <td class="px-2 py-1"></td>
             <td class="px-2 py-1"></td>
             <td class="px-2 py-1">
-              <% overall_rank = avg_overall_rank(appearances) %>
-              <% if overall_rank %>
-                <span class="<%= overall_rank <= 2.5 ? 'text-green-600' : (overall_rank >= 3.5 ? 'text-red-600' : '') %>"><%= overall_rank %></span>
+              <%
+                overall_ranks = appearances.map(&:overall_avg_rank).compact
+                faction_ranks = appearances.map(&:faction_avg_rank).compact
+                avg_overall = overall_ranks.any? ? (overall_ranks.sum / overall_ranks.size.to_f).round(1) : nil
+                avg_faction = faction_ranks.any? ? (faction_ranks.sum / faction_ranks.size.to_f).round(1) : nil
+              %>
+              <% if avg_overall %>
+                <span class="<%= avg_overall <= 2.5 ? 'text-green-600' : (avg_overall >= 3.5 ? 'text-red-600' : '') %>"><%= avg_overall %></span><% if avg_faction %><span class="text-gray-400 font-normal">/<%= avg_faction %></span><% end %>
               <% end %>
             </td>
             <td class="px-2 py-1">
-              <% faction_rank = avg_faction_rank(appearances) %>
-              <% if faction_rank %>
-                <span class="<%= faction_rank <= 2.5 ? 'text-green-600' : (faction_rank >= 3.5 ? 'text-red-600' : '') %>"><%= faction_rank %></span>
+              <%
+                perf_scores = appearances.map(&:perf_score).compact
+                faction_perfs = appearances.map(&:faction_perf_score).compact
+                avg_perf = perf_scores.any? ? (perf_scores.sum / perf_scores.size.to_f).round : nil
+                avg_fac_perf = faction_perfs.any? ? (faction_perfs.sum / faction_perfs.size.to_f).round : nil
+              %>
+              <% if avg_perf %>
+                <span class="<%= avg_perf >= 5 ? 'text-green-600' : (avg_perf <= -5 ? 'text-red-600' : '') %>"><%= format_perf_score(avg_perf) %></span><% if avg_fac_perf %><span class="text-gray-400 font-normal">/<%= format_perf_score(avg_fac_perf) %></span><% end %>
               <% end %>
             </td>
             <td class="px-2 py-1"><%= avg_unit_kills(appearances) %></td>

@@ -29,6 +29,7 @@ class HomeController < ApplicationController
     @recent_prediction_stats = calculate_recent_prediction_stats
     @recent_cr_stats = calculate_recent_cr_stats
     @good_vs_evil_stats = calculate_good_vs_evil_stats(@map_version)
+    @balanced_games_stats = calculate_balanced_games_stats(@map_version)
     @prediction_accuracy_by_confidence = calculate_prediction_accuracy_by_confidence(@map_version)
     @avg_match_time = calculate_avg_match_time(@map_version)
     @matches_count = Match.where(ignored: false).count
@@ -299,5 +300,30 @@ class HomeController < ApplicationController
   def bucket_for_confidence(pct)
     bucket_start = ((pct.to_i / 5) * 5).clamp(50, 95)
     "#{bucket_start}-#{bucket_start + 5}"
+  end
+
+  # Calculate how many games are "balanced" (neither team heavily favored)
+  # A balanced game is one where neither side has >60% predicted win chance
+  def calculate_balanced_games_stats(map_version = nil)
+    matches = Match.where(ignored: false)
+                   .where.not(predicted_good_win_pct: nil)
+    matches = matches.where(map_version: map_version) if map_version.present?
+
+    total_matches = 0
+    balanced_matches = 0
+
+    matches.find_each do |match|
+      total_matches += 1
+
+      good_pct = match.predicted_good_win_pct.to_f
+      # Balanced if both teams are between 40-60%
+      balanced_matches += 1 if good_pct >= 40 && good_pct <= 60
+    end
+
+    {
+      balanced_matches: balanced_matches,
+      total_matches: total_matches,
+      percentage: total_matches > 0 ? (balanced_matches.to_f / total_matches * 100).round(1) : 0
+    }
   end
 end

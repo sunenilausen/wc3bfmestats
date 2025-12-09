@@ -109,6 +109,17 @@
           across <%= @avg_match_time[:count] %> matches
         </p>
       </div>
+
+      <% if @balanced_games_stats[:total_matches] > 0 %>
+      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
+        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Balanced Games</h2>
+        <p class="mt-2 text-3xl font-bold text-teal-600"><%= @balanced_games_stats[:percentage] %>%</p>
+        <p class="mt-1 text-sm text-gray-500">
+          <%= @balanced_games_stats[:balanced_matches] %> of <%= @balanced_games_stats[:total_matches] %> matches
+        </p>
+        <p class="mt-1 text-xs text-gray-400">40-60% predicted win chance</p>
+      </div>
+      <% end %>
     </div>
   </div>
 

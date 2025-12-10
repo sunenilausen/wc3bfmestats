@@ -99,6 +99,9 @@ class Wc3statsSyncJob < ApplicationJob
 
     # Recalculate ratings and retrain model if needed
     recalculate_ratings
+
+    # Calculate stay/leave percentages
+    recalculate_stay_leave
   end
 
   def set_ignore_kill_flags
@@ -338,5 +341,15 @@ class Wc3statsSyncJob < ApplicationJob
     Rails.logger.info "Wc3statsSyncJob: Recalculating Custom Rating (full)"
     custom = CustomRatingRecalculator.new
     custom.call
+  end
+
+  def recalculate_stay_leave
+    Rails.logger.info "Wc3statsSyncJob: Recalculating stay/leave percentages"
+    recalculator = StayLeaveRecalculator.new
+    recalculator.call
+    Rails.logger.info "Wc3statsSyncJob: Updated #{recalculator.players_updated} players with stay/leave stats"
+    if recalculator.errors.any?
+      Rails.logger.warn "Wc3statsSyncJob: Stay/leave errors: #{recalculator.errors.count}"
+    end
   end
 end

@@ -240,6 +240,8 @@ This means leaves are "excused" if:
 **Recalculation:**
 - Included in `wc3stats:sync` task (Step 14)
 - Included in `wc3stats:recalculate` task (Step 6)
+- Included in `Wc3statsSyncJob` (runs after match sync via UI button)
+- Included in `RatingRecalculationJob` (runs after manual match create/update)
 - Manual: `StayLeaveRecalculator.new.call`
 
 ## Match Chronological Ordering

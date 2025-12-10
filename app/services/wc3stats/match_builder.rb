@@ -116,7 +116,8 @@ module Wc3stats
           self_heal: self_heal,
           team_heal: team_heal,
           total_heal: total_heal,
-          stay_pct: player_data["stayPercent"]
+          stay_pct: player_data["stayPercent"],
+          apm: player_data["apm"]
         )
       end
     end

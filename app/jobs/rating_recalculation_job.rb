@@ -17,6 +17,9 @@ class RatingRecalculationJob < ApplicationJob
     Rails.logger.info "RatingRecalculationJob: Recalculating ML scores"
     MlScoreRecalculator.new.call
 
+    Rails.logger.info "RatingRecalculationJob: Recalculating stay/leave percentages"
+    StayLeaveRecalculator.new.call
+
     Rails.logger.info "RatingRecalculationJob: Completed"
   end
 

@@ -134,6 +134,47 @@ class MatchesController < ApplicationController
     redirect_to matches_path, notice: "Sync job started for #{limit} replays. New matches will appear shortly."
   end
 
+  # POST /matches/:id/refetch
+  def refetch
+    @match = Match.find_by_checksum_or_id(params[:id])
+    raise ActiveRecord::RecordNotFound, "Match not found" unless @match
+
+    unless current_user&.admin?
+      redirect_to @match, alert: "You are not authorized to perform this action."
+      return
+    end
+
+    replay = @match.wc3stats_replay
+    unless replay
+      redirect_to @match, alert: "Cannot refetch: no replay data associated with this match."
+      return
+    end
+
+    replay_id = replay.wc3stats_replay_id
+
+    # Delete match and replay
+    @match.destroy
+    replay.destroy
+
+    # Refetch from wc3stats
+    replay_fetcher = Wc3stats::ReplayFetcher.new(replay_id)
+    new_replay = replay_fetcher.call
+
+    if new_replay
+      builder = Wc3stats::MatchBuilder.new(new_replay)
+      if builder.call
+        new_match = new_replay.match
+        # Recalculate ratings
+        RatingRecalculationJob.enqueue_and_cancel_pending
+        redirect_to new_match, notice: "Match refetched successfully. Ratings are being recalculated."
+      else
+        redirect_to matches_path, alert: "Failed to rebuild match from refetched replay."
+      end
+    else
+      redirect_to matches_path, alert: "Failed to refetch replay: #{replay_fetcher.errors.first}"
+    end
+  end
+
   private
 
   def authorize_admin!

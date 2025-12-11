@@ -10,6 +10,9 @@ Rails.application.routes.draw do
     collection do
       post :sync
     end
+    member do
+      post :refetch
+    end
   end
   resources :factions, except: [ :new, :create, :destroy ]
   resources :players, constraints: { id: /[^\/]+/ } do

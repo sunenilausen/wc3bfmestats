@@ -26,8 +26,8 @@
       if good_crs.any? && evil_crs.any?
         good_cr_avg = good_crs.sum / good_crs.size.to_f
         evil_cr_avg = evil_crs.sum / evil_crs.size.to_f
-        cr_diff = ((good_cr_avg - 1200) / 600.0 * 100).clamp(0, 100) - ((evil_cr_avg - 1200) / 600.0 * 100).clamp(0, 100)
-        cr_good_pct = (1.0 / (1 + Math.exp(-cr_diff / 5.0)) * 100).round(1)
+        cr_diff = good_cr_avg - evil_cr_avg
+        cr_good_pct = (1.0 / (1 + Math.exp(-cr_diff / 150.0)) * 100).round(1)
         cr_evil_pct = 100 - cr_good_pct
         cr_good_favored = cr_good_pct >= 50
         cr_prediction_correct = (cr_good_favored && match.good_victory) || (!cr_good_favored && !match.good_victory)

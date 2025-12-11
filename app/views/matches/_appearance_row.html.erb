@@ -67,7 +67,7 @@
     <% uptime = calculate_hero_uptime_for_appearance(appearance, appearance.match) %>
     <% if uptime %>
       <span class="<%= uptime >= 80 ? 'text-green-600' : (uptime >= 60 ? 'text-yellow-600' : 'text-red-600') %>">
-        <%= uptime %>%
+        <%= uptime.round %>%
       </span>
     <% else %>
       -
@@ -79,9 +79,6 @@
     <% else %>
       <%= bases_lost_for_appearance(appearance) || "-" %>
     <% end %>
-  </td>
-  <td class="px-2 py-1">
-    <%= appearance.self_heal || "-" %>
   </td>
   <td class="px-2 py-1">
     <%= appearance.team_heal || "-" %>

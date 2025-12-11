@@ -5,4 +5,9 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     get home_index_url
     assert_response :success
   end
+
+  test "should get statistics" do
+    get statistics_url
+    assert_response :success
+  end
 end

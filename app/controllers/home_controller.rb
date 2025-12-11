@@ -1,5 +1,23 @@
 class HomeController < ApplicationController
   def index
+    @matches_count = Match.where(ignored: false).count
+    # Players who have played at least one valid (non-ignored) match
+    @players_count = Player.joins(:matches).where(matches: { ignored: false }).distinct.count
+    # Players who have never played a valid match (only observed or only played ignored matches)
+    players_with_valid_matches = Player.joins(:matches).where(matches: { ignored: false }).distinct.pluck(:id)
+    @observers_count = Player.where.not(id: players_with_valid_matches).count
+
+    # Most recent lobbies and matches
+    @recent_lobbies = Lobby.order(updated_at: :desc).limit(2)
+    @recent_matches = Match.where(ignored: false).order(uploaded_at: :desc).includes(appearances: [ :player, :faction ]).limit(3)
+
+    # User's most recent lobby (based on session)
+    if session[:lobby_token].present?
+      @my_lobby = Lobby.where(session_token: session[:lobby_token]).order(updated_at: :desc).first
+    end
+  end
+
+  def statistics
     @available_map_versions = Rails.cache.fetch([ "available_map_versions", StatsCacheKey.key ]) do
       Match.where(ignored: false)
         .where.not(map_version: nil)
@@ -38,15 +56,6 @@ class HomeController < ApplicationController
     # Players who have never played a valid match (only observed or only played ignored matches)
     players_with_valid_matches = Player.joins(:matches).where(matches: { ignored: false }).distinct.pluck(:id)
     @observers_count = Player.where.not(id: players_with_valid_matches).count
-
-    # Most recent lobby and match
-    @recent_lobby = Lobby.order(updated_at: :desc).first
-    @recent_match = Match.where(ignored: false).order(uploaded_at: :desc).includes(appearances: [ :player, :faction ]).first
-
-    # User's most recent lobby (based on session)
-    if session[:lobby_token].present?
-      @my_lobby = Lobby.where(session_token: session[:lobby_token]).order(updated_at: :desc).first
-    end
   end
 
   private

@@ -1,5 +1,5 @@
 <div>
-  <h1 class="font-bold text-4xl">BfME Stats</h1>
+  <h1 class="font-bold text-4xl">BFME Stats</h1>
 
   <div class="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
     <div class="flex items-start gap-3">
@@ -7,6 +7,22 @@
       <div class="text-sm text-yellow-800">
         <p class="font-medium">This site is currently in beta and under active development.</p>
         <p class="mt-1">Player ratings, performance scores, and statistics are being tuned and may change as we improve the algorithms. Data is imported from wc3stats.com replays and some historical match ordering may be imperfect due to limitations in the source data.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+    <div class="flex items-start gap-3">
+      <span class="bg-blue-500 text-white text-xs font-semibold px-2 py-1 rounded">HOW TO</span>
+      <div class="text-sm text-blue-800">
+        <p class="font-medium">Upload Your Replays</p>
+        <p class="mt-1">To have your matches tracked on this site:</p>
+        <ol class="mt-2 ml-4 list-decimal space-y-1">
+          <li>Go to <a href="https://wc3stats.com/upload" target="_blank" rel="noopener" class="underline hover:text-blue-600">wc3stats.com/upload, or use the autouploader program</a></li>
+          <li>Upload your BFME replay file (.w3g)</li>
+          <li>Your match will automatically appear here within a few hours</li>
+        </ol>
+        <p class="mt-2 text-xs text-blue-600">Replays are synced periodically from wc3stats.com. Only BFME map replays are imported.</p>
       </div>
     </div>
   </div>
@@ -30,318 +46,133 @@
   </div>
   <% end %>
 
-  <%# Recent prediction stats - not dependent on map version %>
-  <% if @recent_prediction_stats[:total_matches] > 0 || @recent_cr_stats[:underdog_matches] > 0 %>
-  <div class="mt-4">
-    <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-1">Last 100 Matches</h2>
-    <p class="text-xs text-gray-400 mb-3">Underdog win rate = &lt;45% predicted, Favorite win rate = &gt;55% predicted</p>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      <% if @recent_cr_stats[:underdog_matches] > 0 %>
-      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Underdog Win Rate (CR)</h2>
-        <p class="mt-2 text-3xl font-bold text-purple-600"><%= @recent_cr_stats[:underdog_win_rate] %>%</p>
-        <p class="mt-1 text-sm text-gray-500">
-          <%= @recent_cr_stats[:underdog_wins] %> of <%= @recent_cr_stats[:underdog_matches] %> matches
-        </p>
-      </div>
-      <% end %>
+  <div class="mt-4 text-center">
+    <%= link_to "View Detailed Statistics", statistics_path, class: "text-blue-600 hover:text-blue-800 font-medium" %>
+  </div>
 
-      <% if @recent_cr_stats[:favorite_matches] > 0 %>
-      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Favorite Win Rate (CR)</h2>
-        <p class="mt-2 text-3xl font-bold text-orange-600"><%= @recent_cr_stats[:favorite_win_rate] %>%</p>
-        <p class="mt-1 text-sm text-gray-500">
-          <%= @recent_cr_stats[:favorite_wins] %> of <%= @recent_cr_stats[:favorite_matches] %> matches
-        </p>
+  <% if @my_lobby %>
+  <div class="mt-8">
+    <h2 class="text-lg font-semibold text-gray-900 mb-3">Your Lobby</h2>
+    <div class="bg-white rounded-lg shadow border border-blue-200">
+      <div class="px-4 py-2 border-b border-blue-200 bg-blue-50 flex justify-between items-center">
+        <p class="text-xs text-gray-500"><%= time_ago_in_words(@my_lobby.updated_at) %> ago</p>
+        <div class="flex gap-2">
+          <%= link_to "Edit", edit_lobby_path(@my_lobby), class: "text-xs text-blue-600 hover:text-blue-800 font-medium" %>
+          <%= link_to "View", lobby_path(@my_lobby), class: "text-xs text-blue-600 hover:text-blue-800" %>
+        </div>
       </div>
-      <% end %>
-
-      <% if @recent_prediction_stats[:underdog_matches] > 0 %>
-      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Underdog Win Rate (CR+)</h2>
-        <p class="mt-2 text-3xl font-bold text-purple-600"><%= @recent_prediction_stats[:underdog_win_rate] %>%</p>
-        <p class="mt-1 text-sm text-gray-500">
-          <%= @recent_prediction_stats[:underdog_wins] %> of <%= @recent_prediction_stats[:underdog_matches] %> matches
-        </p>
+      <div class="p-3 text-xs">
+        <div class="space-y-0.5">
+          <% @my_lobby.lobby_players.includes(:faction, :player).select { |lp| lp.faction&.good? }.each do |lp| %>
+            <div class="flex justify-between items-center">
+              <span class="flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full" style="background-color: <%= lp.faction.color_hex %>"></span>
+                <span class="text-green-700"><%= lp.player&.nickname || (lp.is_new_player? ? "New" : "-") %></span>
+              </span>
+              <span class="text-gray-500"><%= lp.faction&.name %></span>
+            </div>
+          <% end %>
+          <% @my_lobby.lobby_players.includes(:faction, :player).select { |lp| lp.faction && !lp.faction.good? }.each do |lp| %>
+            <div class="flex justify-between items-center">
+              <span class="flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full" style="background-color: <%= lp.faction.color_hex %>"></span>
+                <span class="text-red-700"><%= lp.player&.nickname || (lp.is_new_player? ? "New" : "-") %></span>
+              </span>
+              <span class="text-gray-500"><%= lp.faction&.name %></span>
+            </div>
+          <% end %>
+        </div>
       </div>
-      <% end %>
-
-      <% if @recent_prediction_stats[:favorite_matches] > 0 %>
-      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Favorite Win Rate (CR+)</h2>
-        <p class="mt-2 text-3xl font-bold text-orange-600"><%= @recent_prediction_stats[:favorite_win_rate] %>%</p>
-        <p class="mt-1 text-sm text-gray-500">
-          <%= @recent_prediction_stats[:favorite_wins] %> of <%= @recent_prediction_stats[:favorite_matches] %> matches
-        </p>
-      </div>
-      <% end %>
     </div>
   </div>
   <% end %>
 
-  <%# Stats that depend on map_version param - outside cache %>
-  <div class="mt-6">
-    <div class="flex items-center justify-between mb-3">
-      <%= form_with url: root_path, method: :get, local: true, class: "flex items-center gap-2" do %>
-        <span class="text-sm text-gray-500">Map version:</span>
-        <%= select_tag :map_version,
-          options_for_select([["All versions", ""]] + @available_map_versions.map { |v| [v, v] }, @map_version),
-          class: "text-sm border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50",
-          onchange: "this.form.submit()" %>
-      <% end %>
-      <p class="text-xs text-gray-400">Underdog win rate = &lt;45% predicted, Favorite win rate = &gt;55% predicted</p>
-    </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Good vs Evil</h2>
-        <div class="mt-2 flex items-baseline gap-2">
-          <span class="text-2xl font-bold text-green-600"><%= @good_vs_evil_stats[:good_percentage] %>%</span>
-          <span class="text-gray-400">vs</span>
-          <span class="text-2xl font-bold text-red-600"><%= @good_vs_evil_stats[:evil_percentage] %>%</span>
-        </div>
-        <p class="mt-1 text-sm text-gray-500">
-          <span class="text-green-600"><%= @good_vs_evil_stats[:good_wins] %> Good</span> /
-          <span class="text-red-600"><%= @good_vs_evil_stats[:evil_wins] %> Evil</span>
-          wins (<%= @good_vs_evil_stats[:total] %> matches)
-        </p>
-      </div>
-
-      <% if @underdog_stats[:underdog_matches] > 0 %>
-      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Underdog Win Rate (CR)</h2>
-        <p class="mt-2 text-3xl font-bold text-purple-600"><%= @underdog_stats[:percentage] %>%</p>
-        <p class="mt-1 text-sm text-gray-500">
-          <%= @underdog_stats[:underdog_wins] %> of <%= @underdog_stats[:underdog_matches] %> matches
-        </p>
-      </div>
-      <% end %>
-
-      <% if @underdog_stats[:favorite_matches] > 0 %>
-      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Favorite Win Rate (CR)</h2>
-        <p class="mt-2 text-3xl font-bold text-orange-600"><%= @underdog_stats[:favorite_percentage] %>%</p>
-        <p class="mt-1 text-sm text-gray-500">
-          <%= @underdog_stats[:favorite_wins] %> of <%= @underdog_stats[:favorite_matches] %> matches
-        </p>
-      </div>
-      <% end %>
-
-      <% if @ml_prediction_stats[:underdog_matches] > 0 %>
-      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Underdog Win Rate (CR+)</h2>
-        <p class="mt-2 text-3xl font-bold text-purple-600"><%= @ml_prediction_stats[:underdog_win_rate] %>%</p>
-        <p class="mt-1 text-sm text-gray-500">
-          <%= @ml_prediction_stats[:underdog_wins] %> of <%= @ml_prediction_stats[:underdog_matches] %> matches
-        </p>
-      </div>
-      <% end %>
-
-      <% if @ml_prediction_stats[:favorite_matches] > 0 %>
-      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Favorite Win Rate (CR+)</h2>
-        <p class="mt-2 text-3xl font-bold text-orange-600"><%= @ml_prediction_stats[:favorite_win_rate] %>%</p>
-        <p class="mt-1 text-sm text-gray-500">
-          <%= @ml_prediction_stats[:favorite_wins] %> of <%= @ml_prediction_stats[:favorite_matches] %> matches
-        </p>
-      </div>
-      <% end %>
-
-      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Avg Match Time</h2>
-        <p class="mt-2 text-3xl font-bold text-blue-600"><%= @avg_match_time[:avg_formatted] %></p>
-        <p class="mt-1 text-sm text-gray-500">
-          across <%= @avg_match_time[:count] %> matches
-        </p>
-      </div>
-
-      <% if @balanced_games_stats[:total_matches] > 0 %>
-      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Balanced Games (CR)</h2>
-        <p class="mt-2 text-3xl font-bold text-teal-600"><%= @balanced_games_stats[:cr_only_percentage] %>%</p>
-        <p class="mt-1 text-sm text-gray-500">
-          <%= @balanced_games_stats[:balanced_cr_only] %> of <%= @balanced_games_stats[:total_matches] %> matches
-        </p>
-        <p class="mt-1 text-xs text-gray-400">45-55% CR-only prediction</p>
-      </div>
-
-      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Balanced Games (CR+)</h2>
-        <p class="mt-2 text-3xl font-bold text-teal-600"><%= @balanced_games_stats[:cr_ml_percentage] %>%</p>
-        <p class="mt-1 text-sm text-gray-500">
-          <%= @balanced_games_stats[:balanced_cr_ml] %> of <%= @balanced_games_stats[:total_matches] %> matches
-        </p>
-        <p class="mt-1 text-xs text-gray-400">45-55% CR+ prediction</p>
-      </div>
-      <% end %>
-    </div>
-  </div>
-
-  <div class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-    <% if @my_lobby %>
-      <%# Your Lobby - not cached, user-specific %>
-      <div class="bg-white rounded-lg shadow border border-blue-200">
-        <div class="px-4 py-2 border-b border-blue-200 bg-blue-50 flex justify-between items-center">
-          <h2 class="text-sm font-semibold text-gray-900">Your Lobby</h2>
-          <div class="flex gap-2">
-            <%= link_to "Edit", edit_lobby_path(@my_lobby), class: "text-xs text-blue-600 hover:text-blue-800 font-medium" %>
-            <%= link_to "View", lobby_path(@my_lobby), class: "text-xs text-blue-600 hover:text-blue-800" %>
-          </div>
-        </div>
-        <div class="p-3 text-xs">
-          <p class="text-gray-500 mb-2"><%= time_ago_in_words(@my_lobby.updated_at) %> ago</p>
-          <div class="space-y-0.5">
-            <% @my_lobby.lobby_players.includes(:faction, :player).select { |lp| lp.faction&.good? }.each do |lp| %>
-              <div class="flex justify-between items-center">
-                <span class="flex items-center gap-1">
-                  <span class="w-2 h-2 rounded-full" style="background-color: <%= lp.faction.color_hex %>"></span>
-                  <span class="text-green-700"><%= lp.player&.nickname || (lp.is_new_player? ? "New" : "-") %></span>
-                </span>
-                <span class="text-gray-500"><%= lp.faction&.name %></span>
-              </div>
-            <% end %>
-            <% @my_lobby.lobby_players.includes(:faction, :player).select { |lp| lp.faction && !lp.faction.good? }.each do |lp| %>
-              <div class="flex justify-between items-center">
-                <span class="flex items-center gap-1">
-                  <span class="w-2 h-2 rounded-full" style="background-color: <%= lp.faction.color_hex %>"></span>
-                  <span class="text-red-700"><%= lp.player&.nickname || (lp.is_new_player? ? "New" : "-") %></span>
-                </span>
-                <span class="text-gray-500"><%= lp.faction&.name %></span>
-              </div>
-            <% end %>
-          </div>
-        </div>
-      </div>
-    <% end %>
-
-    <% cache ["home_recent", StatsCacheKey.key, @recent_lobby&.updated_at, @recent_match&.updated_at] do %>
-    <%# Most Recent Lobby %>
-    <div class="bg-white rounded-lg shadow border border-gray-200">
-      <div class="px-4 py-2 border-b border-gray-200 flex justify-between items-center">
-        <h2 class="text-sm font-semibold text-gray-900">Recent Lobby</h2>
-        <% if @recent_lobby %>
-          <%= link_to "View", lobby_path(@recent_lobby), class: "text-xs text-blue-600 hover:text-blue-800" %>
-        <% end %>
-      </div>
-      <div class="p-3 text-xs">
-        <% if @recent_lobby %>
-          <p class="text-gray-500 mb-2"><%= time_ago_in_words(@recent_lobby.updated_at) %> ago</p>
-          <div class="space-y-0.5">
-            <% @recent_lobby.lobby_players.includes(:faction, :player).select { |lp| lp.faction&.good? }.each do |lp| %>
-              <div class="flex justify-between items-center">
-                <span class="flex items-center gap-1">
-                  <span class="w-2 h-2 rounded-full" style="background-color: <%= lp.faction.color_hex %>"></span>
-                  <span class="text-green-700"><%= lp.player&.nickname || (lp.is_new_player? ? "New" : "-") %></span>
-                </span>
-                <span class="text-gray-500"><%= lp.faction&.name %></span>
-              </div>
-            <% end %>
-            <% @recent_lobby.lobby_players.includes(:faction, :player).select { |lp| lp.faction && !lp.faction.good? }.each do |lp| %>
-              <div class="flex justify-between items-center">
-                <span class="flex items-center gap-1">
-                  <span class="w-2 h-2 rounded-full" style="background-color: <%= lp.faction.color_hex %>"></span>
-                  <span class="text-red-700"><%= lp.player&.nickname || (lp.is_new_player? ? "New" : "-") %></span>
-                </span>
-                <span class="text-gray-500"><%= lp.faction&.name %></span>
-              </div>
-            <% end %>
-          </div>
-        <% else %>
-          <p class="text-gray-500 text-center py-2">No lobbies yet</p>
-        <% end %>
-      </div>
-    </div>
-
-    <%# Most Recent Match %>
-    <div class="bg-white rounded-lg shadow border border-gray-200">
-      <div class="px-4 py-2 border-b border-gray-200 flex justify-between items-center">
-        <h2 class="text-sm font-semibold text-gray-900">Recent Match</h2>
-        <% if @recent_match %>
-          <%= link_to "View", match_path(@recent_match), class: "text-xs text-blue-600 hover:text-blue-800" %>
-        <% end %>
-      </div>
-      <div class="p-3 text-xs">
-        <% if @recent_match %>
-          <div class="flex justify-between items-center mb-2">
-            <p class="text-gray-500"><%= time_ago_in_words(@recent_match.uploaded_at) %> ago</p>
-            <span class="font-medium <%= @recent_match.good_victory? ? 'text-green-600' : 'text-red-600' %>">
-              <%= @recent_match.good_victory? ? 'Good' : 'Evil' %> Win
-            </span>
-          </div>
-          <div class="space-y-0.5">
-            <% @recent_match.appearances.select { |a| a.faction&.good? }.each do |app| %>
-              <div class="flex justify-between items-center">
-                <span class="flex items-center gap-1">
-                  <span class="w-2 h-2 rounded-full" style="background-color: <%= app.faction.color_hex %>"></span>
-                  <span class="text-green-700"><%= app.player&.nickname || "-" %></span>
-                </span>
-                <span class="text-gray-500"><%= app.faction&.name %></span>
-              </div>
-            <% end %>
-            <% @recent_match.appearances.select { |a| a.faction && !a.faction.good? }.each do |app| %>
-              <div class="flex justify-between items-center">
-                <span class="flex items-center gap-1">
-                  <span class="w-2 h-2 rounded-full" style="background-color: <%= app.faction.color_hex %>"></span>
-                  <span class="text-red-700"><%= app.player&.nickname || "-" %></span>
-                </span>
-                <span class="text-gray-500"><%= app.faction&.name %></span>
-              </div>
-            <% end %>
-          </div>
-        <% else %>
-          <p class="text-gray-500 text-center py-2">No matches yet</p>
-        <% end %>
-      </div>
-    </div>
-    <% end %>
-  </div>
-
-  <%# Prediction Accuracy Table %>
-  <% if @prediction_accuracy_by_confidence.any? { |b| b[:total] > 0 } %>
+  <% cache ["home_recent", StatsCacheKey.key, @recent_lobbies.maximum(:updated_at), @recent_matches.maximum(:uploaded_at)] do %>
+  <%# Recent Lobbies %>
   <div class="mt-8">
-    <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-      <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">Prediction Accuracy</h2>
-      <p class="text-xs text-gray-500 mb-4">50% = even match, 95-100% = heavily favored</p>
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-sm">
-          <thead>
-            <tr class="border-b border-gray-200">
-              <th class="text-left py-2 px-3 font-medium text-gray-600">Prediction</th>
-              <th class="text-right py-2 px-3 font-medium text-blue-600">CR+ Accuracy</th>
-              <th class="text-right py-2 px-3 font-medium text-gray-400 text-xs">matches</th>
-              <th class="text-right py-2 px-3 font-medium text-purple-600">CR-only Accuracy</th>
-              <th class="text-right py-2 px-3 font-medium text-gray-400 text-xs">matches</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% @prediction_accuracy_by_confidence.each do |bucket| %>
-              <tr class="border-b border-gray-100 hover:bg-gray-50">
-                <td class="py-2 px-3 font-medium text-gray-700"><%= bucket[:label] %>%</td>
-                <td class="py-2 px-3 text-right">
-                  <% if bucket[:accuracy] %>
-                    <span class="font-medium <%= bucket[:accuracy] >= 60 ? 'text-green-600' : bucket[:accuracy] >= 50 ? 'text-gray-700' : 'text-red-600' %>">
-                      <%= bucket[:accuracy] %>%
+    <h2 class="text-lg font-semibold text-gray-900 mb-3">Recent Lobbies</h2>
+    <% if @recent_lobbies.any? %>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <% @recent_lobbies.each do |lobby| %>
+          <div class="bg-white rounded-lg shadow border border-gray-200">
+            <div class="px-4 py-2 border-b border-gray-200 flex justify-between items-center">
+              <p class="text-xs text-gray-500"><%= time_ago_in_words(lobby.updated_at) %> ago</p>
+              <%= link_to "View", lobby_path(lobby), class: "text-xs text-blue-600 hover:text-blue-800" %>
+            </div>
+            <div class="p-3 text-xs">
+              <div class="space-y-0.5">
+                <% lobby.lobby_players.includes(:faction, :player).select { |lp| lp.faction&.good? }.each do |lp| %>
+                  <div class="flex justify-between items-center">
+                    <span class="flex items-center gap-1">
+                      <span class="w-2 h-2 rounded-full" style="background-color: <%= lp.faction.color_hex %>"></span>
+                      <span class="text-green-700"><%= lp.player&.nickname || (lp.is_new_player? ? "New" : "-") %></span>
                     </span>
-                  <% else %>
-                    <span class="text-gray-400">-</span>
-                  <% end %>
-                </td>
-                <td class="py-2 px-3 text-right text-gray-400 text-xs"><%= bucket[:total] %></td>
-                <td class="py-2 px-3 text-right">
-                  <% if bucket[:cr_accuracy] %>
-                    <span class="font-medium <%= bucket[:cr_accuracy] >= 60 ? 'text-green-600' : bucket[:cr_accuracy] >= 50 ? 'text-gray-700' : 'text-red-600' %>">
-                      <%= bucket[:cr_accuracy] %>%
+                    <span class="text-gray-500"><%= lp.faction&.name %></span>
+                  </div>
+                <% end %>
+                <% lobby.lobby_players.includes(:faction, :player).select { |lp| lp.faction && !lp.faction.good? }.each do |lp| %>
+                  <div class="flex justify-between items-center">
+                    <span class="flex items-center gap-1">
+                      <span class="w-2 h-2 rounded-full" style="background-color: <%= lp.faction.color_hex %>"></span>
+                      <span class="text-red-700"><%= lp.player&.nickname || (lp.is_new_player? ? "New" : "-") %></span>
                     </span>
-                  <% else %>
-                    <span class="text-gray-400">-</span>
-                  <% end %>
-                </td>
-                <td class="py-2 px-3 text-right text-gray-400 text-xs"><%= bucket[:cr_total] %></td>
-              </tr>
-            <% end %>
-          </tbody>
-        </table>
+                    <span class="text-gray-500"><%= lp.faction&.name %></span>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        <% end %>
       </div>
-    </div>
+    <% else %>
+      <p class="text-gray-500 text-center py-4">No lobbies yet</p>
+    <% end %>
+  </div>
+
+  <%# Recent Matches %>
+  <div class="mt-8">
+    <h2 class="text-lg font-semibold text-gray-900 mb-3">Recent Matches</h2>
+    <% if @recent_matches.any? %>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <% @recent_matches.each do |match| %>
+          <div class="bg-white rounded-lg shadow border border-gray-200">
+            <div class="px-4 py-2 border-b border-gray-200 flex justify-between items-center">
+              <div class="flex items-center gap-2">
+                <p class="text-xs text-gray-500"><%= time_ago_in_words(match.uploaded_at) %> ago</p>
+                <span class="text-xs font-medium <%= match.good_victory? ? 'text-green-600' : 'text-red-600' %>">
+                  <%= match.good_victory? ? 'Good' : 'Evil' %> Win
+                </span>
+              </div>
+              <%= link_to "View", match_path(match), class: "text-xs text-blue-600 hover:text-blue-800" %>
+            </div>
+            <div class="p-3 text-xs">
+              <div class="space-y-0.5">
+                <% match.appearances.select { |a| a.faction&.good? }.each do |app| %>
+                  <div class="flex justify-between items-center">
+                    <span class="flex items-center gap-1">
+                      <span class="w-2 h-2 rounded-full" style="background-color: <%= app.faction.color_hex %>"></span>
+                      <span class="text-green-700"><%= app.player&.nickname || "-" %></span>
+                    </span>
+                    <span class="text-gray-500"><%= app.faction&.name %></span>
+                  </div>
+                <% end %>
+                <% match.appearances.select { |a| a.faction && !a.faction.good? }.each do |app| %>
+                  <div class="flex justify-between items-center">
+                    <span class="flex items-center gap-1">
+                      <span class="w-2 h-2 rounded-full" style="background-color: <%= app.faction.color_hex %>"></span>
+                      <span class="text-red-700"><%= app.player&.nickname || "-" %></span>
+                    </span>
+                    <span class="text-gray-500"><%= app.faction&.name %></span>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <p class="text-gray-500 text-center py-4">No matches yet</p>
+    <% end %>
   </div>
   <% end %>
 </div>

@@ -94,6 +94,9 @@ class Wc3statsSyncJob < ApplicationJob
     # Fix unicode encoding
     fix_unicode_names
 
+    # Backfill APM data
+    backfill_apm
+
     # Refetch last auto-ignored match (in case it was fixed on wc3stats)
     refetch_last_ignored
 
@@ -350,6 +353,18 @@ class Wc3statsSyncJob < ApplicationJob
     Rails.logger.info "Wc3statsSyncJob: Updated #{recalculator.players_updated} players with stay/leave stats"
     if recalculator.errors.any?
       Rails.logger.warn "Wc3statsSyncJob: Stay/leave errors: #{recalculator.errors.count}"
+    end
+  end
+
+  def backfill_apm
+    Rails.logger.info "Wc3statsSyncJob: Backfilling APM data"
+    backfiller = ApmBackfiller.new
+    backfiller.call
+    if backfiller.updated_count > 0
+      Rails.logger.info "Wc3statsSyncJob: Updated #{backfiller.updated_count} appearances with APM data"
+    end
+    if backfiller.errors.any?
+      Rails.logger.warn "Wc3statsSyncJob: APM backfill errors: #{backfiller.errors.count}"
     end
   end
 end

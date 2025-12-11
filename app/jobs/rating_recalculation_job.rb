@@ -12,6 +12,11 @@ class RatingRecalculationJob < ApplicationJob
   def perform
     Rails.logger.info "RatingRecalculationJob: Starting full rating recalculation"
 
+    Rails.logger.info "RatingRecalculationJob: Backfilling APM data"
+    apm = ApmBackfiller.new
+    apm.call
+    Rails.logger.info "RatingRecalculationJob: Updated #{apm.updated_count} appearances with APM"
+
     CustomRatingRecalculator.new.call
 
     Rails.logger.info "RatingRecalculationJob: Recalculating ML scores"

@@ -722,8 +722,18 @@ namespace :wc3stats do
     puts "=" * 60
     puts
 
-    # Step 1: Recalculate Custom Ratings
-    puts "Step 1: Recalculating Custom Ratings..."
+    # Step 1: Backfill APM data
+    puts "Step 1: Backfilling APM data..."
+    apm_backfiller = ApmBackfiller.new
+    apm_backfiller.call
+    puts "  Updated #{apm_backfiller.updated_count} appearances with APM data"
+    if apm_backfiller.errors.any?
+      puts "  Errors: #{apm_backfiller.errors.count}"
+    end
+    puts
+
+    # Step 2: Recalculate Custom Ratings
+    puts "Step 2: Recalculating Custom Ratings..."
     custom_rating_recalculator = CustomRatingRecalculator.new
     custom_rating_recalculator.call
 
@@ -734,21 +744,21 @@ namespace :wc3stats do
     end
     puts
 
-    # Step 2: Recalculate ML scores
-    puts "Step 2: Recalculating ML scores..."
+    # Step 3: Recalculate ML scores
+    puts "Step 3: Recalculating ML scores..."
     MlScoreRecalculator.new.call
     puts "  Updated ML scores for #{Player.count} players"
     puts
 
-    # Step 3: Calculate player faction stats
-    puts "Step 3: Calculating player faction stats..."
+    # Step 4: Calculate player faction stats
+    puts "Step 4: Calculating player faction stats..."
     faction_stats_calculator = PlayerFactionStatsCalculator.new
     faction_stats_calculator.call
     puts "  Updated #{faction_stats_calculator.stats_updated} player-faction stats"
     puts
 
-    # Step 4: Calculate faction ratings
-    puts "Step 4: Calculating faction ratings..."
+    # Step 5: Calculate faction ratings
+    puts "Step 5: Calculating faction ratings..."
     faction_rating_recalculator = FactionRatingRecalculator.new
     faction_rating_recalculator.call
     puts "  Faction ratings calculated"
@@ -757,14 +767,14 @@ namespace :wc3stats do
     end
     puts
 
-    # Step 5: Recalculate faction scores with updated ratings
-    puts "Step 5: Recalculating faction scores..."
+    # Step 6: Recalculate faction scores with updated ratings
+    puts "Step 6: Recalculating faction scores..."
     faction_stats_calculator.recalculate_scores_only
     puts "  Faction scores updated with new ratings"
     puts
 
-    # Step 6: Calculate stay/leave percentages
-    puts "Step 6: Calculating stay/leave percentages..."
+    # Step 7: Calculate stay/leave percentages
+    puts "Step 7: Calculating stay/leave percentages..."
     stay_leave_recalculator = StayLeaveRecalculator.new
     stay_leave_recalculator.call
     puts "  Updated #{stay_leave_recalculator.players_updated} players with stay/leave stats"
@@ -773,8 +783,8 @@ namespace :wc3stats do
     end
     puts
 
-    # Step 7: Invalidate cache
-    puts "Step 7: Invalidating stats cache..."
+    # Step 8: Invalidate cache
+    puts "Step 8: Invalidating stats cache..."
     StatsCacheKey.invalidate!
     puts "  Cache invalidated"
     puts

@@ -151,26 +151,30 @@ class MatchesController < ApplicationController
     end
 
     replay_id = replay.wc3stats_replay_id
+    Rails.logger.info "Refetch: Starting refetch for replay #{replay_id}"
 
     # Delete match and replay
     @match.destroy
     replay.destroy
+    Rails.logger.info "Refetch: Deleted old match and replay"
 
     # Refetch from wc3stats
     replay_fetcher = Wc3stats::ReplayFetcher.new(replay_id)
     new_replay = replay_fetcher.call
 
     if new_replay
-      builder = Wc3stats::MatchBuilder.new(new_replay)
-      if builder.call
-        new_match = new_replay.match
+      new_match = new_replay.match
+      if new_match
+        Rails.logger.info "Refetch: Successfully rebuilt match #{new_match.id}"
         # Recalculate ratings
         RatingRecalculationJob.enqueue_and_cancel_pending
-        redirect_to new_match, notice: "Match refetched successfully. Ratings are being recalculated."
+        redirect_to new_match, notice: "Match refetched successfully (replay ##{replay_id}). Ratings are being recalculated."
       else
+        Rails.logger.error "Refetch: Replay saved but no match created"
         redirect_to matches_path, alert: "Failed to rebuild match from refetched replay."
       end
     else
+      Rails.logger.error "Refetch: Failed to fetch replay: #{replay_fetcher.errors.join(', ')}"
       redirect_to matches_path, alert: "Failed to refetch replay: #{replay_fetcher.errors.first}"
     end
   end

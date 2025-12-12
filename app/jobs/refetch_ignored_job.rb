@@ -34,19 +34,14 @@ class RefetchIgnoredJob < ApplicationJob
       replay_fetcher = Wc3stats::ReplayFetcher.new(replay_id)
       new_replay = replay_fetcher.call
 
-      if new_replay
-        # Build match from replay
-        builder = Wc3stats::MatchBuilder.new(new_replay)
-        if builder.call
-          refetched += 1
-          now_valid += 1 unless new_replay.match&.ignored?
-        else
-          failed += 1
-          Rails.logger.warn "RefetchIgnoredJob: Failed to build match for replay #{replay_id}"
-        end
+      if new_replay && new_replay.match
+        refetched += 1
+        now_valid += 1 unless new_replay.match.ignored?
+        Rails.logger.info "RefetchIgnoredJob: Successfully refetched replay #{replay_id}, match #{new_replay.match.id}, ignored: #{new_replay.match.ignored?}"
       else
         failed += 1
-        Rails.logger.warn "RefetchIgnoredJob: Failed to fetch replay #{replay_id}: #{replay_fetcher.errors.first}"
+        errors = replay_fetcher.errors.any? ? replay_fetcher.errors.join(", ") : "No match created"
+        Rails.logger.warn "RefetchIgnoredJob: Failed to refetch replay #{replay_id}: #{errors}"
       end
 
       # Be respectful to the API
@@ -55,9 +50,9 @@ class RefetchIgnoredJob < ApplicationJob
 
     Rails.logger.info "RefetchIgnoredJob: Completed - refetched: #{refetched}, now valid: #{now_valid}, failed: #{failed}"
 
-    # Recalculate ratings if any matches became valid
-    if now_valid > 0
-      Rails.logger.info "RefetchIgnoredJob: Recalculating ratings for #{now_valid} newly valid matches"
+    # Recalculate ratings if any matches were refetched (data may have changed)
+    if refetched > 0
+      Rails.logger.info "RefetchIgnoredJob: Recalculating ratings for #{refetched} refetched matches"
       CustomRatingRecalculator.new.call
       MlScoreRecalculator.new.call
     end

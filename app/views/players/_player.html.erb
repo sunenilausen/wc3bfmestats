@@ -666,6 +666,7 @@
             <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Uploaded</th>
             <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Faction</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase">Result</th>
+            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Stay percentage - how long the player stayed in the game">Stay</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Contribution Rank (1=best)">Rank</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Hero Kills">HK</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Unit Kills">UK</th>
@@ -699,6 +700,19 @@
                   <span class="text-green-600 font-medium">Win</span>
                 <% else %>
                   <span class="text-red-600 font-medium">Loss</span>
+                <% end %>
+              </td>
+              <td class="px-2 py-1 text-center whitespace-nowrap">
+                <% if appearance.stay_pct.present? %>
+                  <% if appearance.stay_pct >= 100 %>
+                    <span class="text-green-600">100%</span>
+                  <% elsif appearance.stay_pct >= 90 %>
+                    <span class="text-yellow-600"><%= appearance.stay_pct.round %>%</span>
+                  <% else %>
+                    <span class="text-red-600"><%= appearance.stay_pct.round %>%</span>
+                  <% end %>
+                <% else %>
+                  -
                 <% end %>
               </td>
               <td class="px-2 py-1 text-center whitespace-nowrap">

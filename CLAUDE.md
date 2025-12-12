@@ -345,7 +345,15 @@ Matches use checksums instead of IDs in URLs for SEO-friendly links:
 
 ## Production Server
 
-The application is deployed at **https://bfme.snaps.games**
+The application is deployed at **https://bfme.snaps.games** on server `157.90.158.244`.
+
+### Clone Production Database to Local
+
+```bash
+scp root@157.90.158.244:/var/lib/docker/volumes/wc3bfmestats_storage/_data/production.sqlite3 ./storage/development.sqlite3
+```
+
+### Database Migrations
 
 When making database changes (migrations), remember to also apply them to production:
 ```bash

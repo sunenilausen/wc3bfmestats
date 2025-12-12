@@ -1,5 +1,5 @@
 class MatchesController < ApplicationController
-  load_and_authorize_resource except: %i[index show new create sync edit update destroy]
+  load_and_authorize_resource except: %i[index show new create sync edit update destroy refetch]
   before_action :set_match, only: %i[show edit update destroy]
   authorize_resource only: %i[new create show edit update destroy]
   before_action :authorize_admin!, only: [ :sync ]

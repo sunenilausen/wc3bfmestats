@@ -91,10 +91,6 @@
   <%= raw @last_match_players.to_json %>
 </script>
 
-<script id="prediction-accuracy-data" type="application/json">
-  <%= raw @prediction_accuracy_buckets.to_json %>
-</script>
-
 <style>
   .drop-zone-active {
     outline: 2px dashed #cbd5e1;
@@ -129,7 +125,6 @@
   const factionRankStats = JSON.parse(document.getElementById('faction-rank-stats-data').textContent);
   const factionPerfStats = JSON.parse(document.getElementById('faction-perf-stats-data').textContent);
   const lastMatchPlayers = JSON.parse(document.getElementById('last-match-data').textContent);
-  const predictionAccuracyBuckets = JSON.parse(document.getElementById('prediction-accuracy-data').textContent);
 
   // Helper to get faction W/L for a player
   function getFactionWL(playerId, factionId) {
@@ -161,17 +156,6 @@
   function formatPerfScore(score) {
     if (score === null || score === undefined) return '-';
     return score >= 0 ? `+${score}` : `${score}`;
-  }
-
-  // Helper to get historical prediction accuracy for a confidence level
-  function getPredictionAccuracy(confidencePct) {
-    const bucketStart = Math.min(95, Math.max(50, Math.floor(confidencePct / 5) * 5));
-    const bucketKey = `${bucketStart}-${bucketStart + 5}`;
-    const bucket = predictionAccuracyBuckets[bucketKey];
-    if (bucket && bucket.total > 0) {
-      return { accuracy: bucket.accuracy, total: bucket.total, bucket: bucketKey };
-    }
-    return null;
   }
 
   // Special "New Player" option with default ratings
@@ -767,21 +751,25 @@
     if (combinedGoodPct) combinedGoodPct.textContent = goodPct + '%';
     if (combinedEvilPct) combinedEvilPct.textContent = evilPct + '%';
 
-    // Update historical accuracy label
-    const accuracyLabel = document.getElementById('prediction-accuracy-label');
-    if (accuracyLabel) {
-      const confidencePct = Math.max(goodPct, evilPct);
-      const accuracy = getPredictionAccuracy(confidencePct);
-      if (accuracy) {
-        accuracyLabel.innerHTML = `Historical: <span class="font-medium">${accuracy.accuracy}%</span> accurate`;
-        accuracyLabel.title = `Based on ${accuracy.total} historical matches with ${accuracy.bucket}% confidence`;
-        accuracyLabel.classList.remove('text-gray-400');
-        accuracyLabel.classList.add('text-gray-500');
+    // Show balance indicator with three states
+    const balanceIndicator = document.getElementById('balance-indicator');
+    const confidencePct = Math.max(goodPct, evilPct);
+    if (balanceIndicator) {
+      // Remove all color classes first
+      balanceIndicator.classList.remove('text-teal-600', 'text-yellow-600', 'text-red-600');
+
+      if (confidencePct <= 55) {
+        // Balanced: 45-55%
+        balanceIndicator.textContent = 'BALANCED';
+        balanceIndicator.classList.add('text-teal-600');
+      } else if (confidencePct <= 60) {
+        // Possibly unbalanced: 55-60%
+        balanceIndicator.textContent = 'POSSIBLY UNBALANCED';
+        balanceIndicator.classList.add('text-yellow-600');
       } else {
-        accuracyLabel.textContent = 'CR+ (improved for new players)';
-        accuracyLabel.title = '';
-        accuracyLabel.classList.remove('text-gray-500');
-        accuracyLabel.classList.add('text-gray-400');
+        // Not balanced: 60%+
+        balanceIndicator.textContent = 'NOT BALANCED';
+        balanceIndicator.classList.add('text-red-600');
       }
     }
 

@@ -43,11 +43,6 @@ class LobbiesController < ApplicationController
     @faction_rank_data = cached_stats[:faction_rank_data]
     @faction_perf_stats = cached_stats[:faction_perf_stats]
 
-    # Get historical accuracy for the current prediction confidence level
-    if @score_prediction
-      confidence_pct = [@score_prediction[:good_win_pct], @score_prediction[:evil_win_pct]].max
-      @prediction_accuracy = PredictionAccuracyCache.accuracy_for(confidence_pct)
-    end
   end
 
   # GET /lobbies/new - creates lobby instantly with previous match players
@@ -83,9 +78,6 @@ class LobbiesController < ApplicationController
 
     preload_player_stats
     @new_player_defaults = NewPlayerDefaults.all
-
-    # Provide prediction accuracy by confidence bucket for JavaScript
-    @prediction_accuracy_buckets = PredictionAccuracyCache.all
 
     # Get last match data for "Last Match" button (most recently uploaded non-ignored match)
     @last_match = Match.includes(appearances: [ :faction, :player ])

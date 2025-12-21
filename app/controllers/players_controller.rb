@@ -56,6 +56,16 @@ class PlayersController < ApplicationController
       end
     end
 
+    # Precompute CR ranks for all players (global ranks, not affected by filters)
+    @cr_ranks = {}
+    Player.joins(:matches)
+      .where(matches: { ignored: false })
+      .where.not(players: { custom_rating: nil })
+      .distinct
+      .order(custom_rating: :desc)
+      .pluck(:id)
+      .each_with_index { |id, idx| @cr_ranks[id] = idx + 1 }
+
     if @sort_column == "matches_played"
       @players = @players.left_joins(:matches).where(matches: { ignored: false }).or(@players.left_joins(:matches).where(matches: { id: nil })).group("players.id").order(Arel.sql("COUNT(matches.id) #{@sort_direction}"))
     elsif @sort_column == "matches_observed"
@@ -112,8 +122,6 @@ class PlayersController < ApplicationController
       @available_map_versions
     end
 
-    cache_key = [ "player_stats", @player.id, @version_filter, StatsCacheKey.key ]
-
     # Preload all data needed for stats computation (exclude ignored matches)
     # Order by reverse chronological (newest first) using same ordering as matches index
     base_scope = @player.appearances
@@ -128,6 +136,8 @@ class PlayersController < ApplicationController
     end
 
     @appearances = base_scope
+
+    cache_key = [ "player_stats", @player.id, @version_filter, StatsCacheKey.key ]
 
     # Compute all stats in a single pass (cached)
     @stats = Rails.cache.fetch(cache_key + [ "basic" ]) do

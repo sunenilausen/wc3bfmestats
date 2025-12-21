@@ -12,6 +12,16 @@ class Match < ApplicationRecord
     StatsCacheKey.invalidate!
   end
 
+  # Balanced games: prediction between 45-55%
+  scope :balanced, -> {
+    where("predicted_good_win_pct >= 45 AND predicted_good_win_pct <= 55")
+  }
+
+  # Imbalanced games: prediction outside 45-55%
+  scope :imbalanced, -> {
+    where("predicted_good_win_pct < 45 OR predicted_good_win_pct > 55")
+  }
+
   scope :by_uploaded_at, ->(direction = :asc) {
     case direction.to_s.downcase
     when "desc"

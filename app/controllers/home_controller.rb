@@ -85,14 +85,14 @@ class HomeController < ApplicationController
       cr_diff = good_avg - evil_avg
       good_pct = (1.0 / (1 + Math.exp(-cr_diff / 150.0)) * 100)
 
-      # Track underdog wins (<45% predicted win chance)
+      # Track underdog wins (<40% predicted win chance)
       if good_pct < 45 || good_pct > 55
         if good_pct < 45
           underdog_matches += 1
           underdog_wins += 1 if match.good_victory
           favorite_matches += 1
           favorite_wins += 1 unless match.good_victory
-        else # good_pct > 55
+        else # good_pct > 60
           favorite_matches += 1
           favorite_wins += 1 if match.good_victory
           underdog_matches += 1
@@ -168,14 +168,14 @@ class HomeController < ApplicationController
 
       correct_predictions += 1 if prediction_correct
 
-      # Track underdog wins (<45% predicted win chance)
+      # Track underdog wins (<40% predicted win chance)
       if good_pct < 45 || good_pct > 55
         if good_pct < 45
           underdog_matches += 1
           underdog_wins += 1 if match.good_victory
           favorite_matches += 1
           favorite_wins += 1 unless match.good_victory
-        else # good_pct > 55
+        else # good_pct > 60
           favorite_matches += 1
           favorite_wins += 1 if match.good_victory
           underdog_matches += 1
@@ -221,14 +221,14 @@ class HomeController < ApplicationController
 
       correct_predictions += 1 if prediction_correct
 
-      # Track underdog wins (<45% predicted win chance)
+      # Track underdog wins (<40% predicted win chance)
       if good_pct < 45 || good_pct > 55
         if good_pct < 45
           underdog_matches += 1
           underdog_wins += 1 if match.good_victory
           favorite_matches += 1
           favorite_wins += 1 unless match.good_victory
-        else # good_pct > 55
+        else # good_pct > 60
           favorite_matches += 1
           favorite_wins += 1 if match.good_victory
           underdog_matches += 1
@@ -279,14 +279,14 @@ class HomeController < ApplicationController
       cr_diff = good_avg - evil_avg
       good_pct = (1.0 / (1 + Math.exp(-cr_diff / 150.0)) * 100)
 
-      # Track underdog wins (<45% predicted win chance)
+      # Track underdog wins (<40% predicted win chance)
       if good_pct < 45 || good_pct > 55
         if good_pct < 45
           underdog_matches += 1
           underdog_wins += 1 if match.good_victory
           favorite_matches += 1
           favorite_wins += 1 unless match.good_victory
-        else # good_pct > 55
+        else # good_pct > 60
           favorite_matches += 1
           favorite_wins += 1 if match.good_victory
           underdog_matches += 1

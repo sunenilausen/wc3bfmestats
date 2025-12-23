@@ -114,6 +114,7 @@ module Wc3stats
           hero_kills: player_data.dig("variables", "heroKills") || 0,
           unit_kills: player_data.dig("variables", "unitKills") || 0,
           castles_razed: player_data.dig("variables", "castlesRazed"),
+          main_base_destroyed: player_data.dig("variables", "mainBaseDestroyed"),
           self_heal: self_heal,
           team_heal: team_heal,
           total_heal: total_heal,

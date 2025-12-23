@@ -352,6 +352,10 @@
             <td class="text-right py-0.5"><%= stats[:avg_castle_raze_contribution] %>%</td>
           </tr>
           <tr>
+            <td class="py-0.5" title="Average share of team's base kills (4.6+ only)">Avg Base Kill Contrib</td>
+            <td class="text-right py-0.5"><%= stats[:avg_main_base_contribution] %>%</td>
+          </tr>
+          <tr>
             <td class="py-0.5" title="Average share of team's total healing (self + teammates)">Avg Heal Contrib</td>
             <td class="text-right py-0.5"><%= stats[:avg_heal_contribution] %>%</td>
           </tr>
@@ -400,6 +404,10 @@
           <tr>
             <td class="py-0.5">Castles Razed</td>
             <td class="text-right py-0.5"><%= number_with_precision(stats[:avg_castles_razed], precision: 2) %></td>
+          </tr>
+          <tr>
+            <td class="py-0.5" title="Average base kills per game (4.6+ only)">Base Kills</td>
+            <td class="text-right py-0.5"><%= number_with_precision(stats[:avg_main_base_destroyed], precision: 2) %></td>
           </tr>
           <tr>
             <td class="py-0.5" title="Actions Per Minute">APM</td>

@@ -1,0 +1,3139 @@
+{
+  "hash": "f040f0ec872f2f2e0ea34c4141e0d322",
+  "name": "LOTR BFME",
+  "map": "BFME",
+  "variant": null,
+  "flags": 76,
+  "file": "/data/replays/2025/12/22/f040f0ec872f2f2e0ea34c4141e0d322.w3g",
+  "size": 1361753,
+  "length": 1586,
+  "playedOn": 1766441336,
+  "ladder": "Public",
+  "season": "Season 1",
+  "keys": [
+    {
+      "name": "Ligoulas#2247",
+      "key": {
+        "map": "BFME",
+        "ladder": "Public",
+        "season": "Season 1",
+        "round": "Global",
+        "mode": "Global"
+      }
+    },
+    {
+      "name": "PowerDefence#1122",
+      "key": {
+        "map": "BFME",
+        "ladder": "Public",
+        "season": "Season 1",
+        "round": "Global",
+        "mode": "Global"
+      }
+    },
+    {
+      "name": "Archindar#11846",
+      "key": {
+        "map": "BFME",
+        "ladder": "Public",
+        "season": "Season 1",
+        "round": "Global",
+        "mode": "Global"
+      }
+    },
+    {
+      "name": "Keso#2483",
+      "key": {
+        "map": "BFME",
+        "ladder": "Public",
+        "season": "Season 1",
+        "round": "Global",
+        "mode": "Global"
+      }
+    },
+    {
+      "name": "Redlance246#1525",
+      "key": {
+        "map": "BFME",
+        "ladder": "Public",
+        "season": "Season 1",
+        "round": "Global",
+        "mode": "Global"
+      }
+    },
+    {
+      "name": "Finrod#11997",
+      "key": {
+        "map": "BFME",
+        "ladder": "Public",
+        "season": "Season 1",
+        "round": "Global",
+        "mode": "Global"
+      }
+    },
+    {
+      "name": "Rohan#1139",
+      "key": {
+        "map": "BFME",
+        "ladder": "Public",
+        "season": "Season 1",
+        "round": "Global",
+        "mode": "Global"
+      }
+    },
+    {
+      "name": "GothikaA#2296",
+      "key": {
+        "map": "BFME",
+        "ladder": "Public",
+        "season": "Season 1",
+        "round": "Global",
+        "mode": "Global"
+      }
+    },
+    {
+      "name": "BroManBillbo#2829",
+      "key": {
+        "map": "BFME",
+        "ladder": "Public",
+        "season": "Season 1",
+        "round": "Global",
+        "mode": "Global"
+      }
+    },
+    {
+      "name": "skyplague#11228",
+      "key": {
+        "map": "BFME",
+        "ladder": "Public",
+        "season": "Season 1",
+        "round": "Global",
+        "mode": "Global"
+      }
+    }
+  ],
+  "processed": true,
+  "uploads": [
+    {
+      "saver": "PowerDefence#1122",
+      "file": "/data/replays/2025/12/22/f040f0ec872f2f2e0ea34c4141e0d322.w3g",
+      "size": 1359479,
+      "timestamp": 1766441336
+    }
+  ],
+  "data": {
+    "header": {
+      "intro": "Warcraft III recorded game\u001a",
+      "headerSize": 68,
+      "compressedSize": 1361753,
+      "headerVersion": 1,
+      "uncompressedSize": 3580769,
+      "numBlocks": 438,
+      "identification": "PX3W",
+      "majorVersion": 10100,
+      "buildVersion": 6116,
+      "flags": 32768,
+      "length": 1594,
+      "checksum": "809dd7ad"
+    },
+    "game": {
+      "name": "LOTR BFME",
+      "speed": 2,
+      "visibility": 3,
+      "observers": 0,
+      "teamsTogether": true,
+      "lockedTeams": true,
+      "fullShare": false,
+      "randomHero": false,
+      "randomRaces": false,
+      "checksum": "1eb56aab",
+      "path": "Maps/Download/BFME4.6.w3x",
+      "map": "BFME4.6.w3x",
+      "host": "Keso#2483",
+      "sha1": "9158b09ad8ccdccd7f9d722804951389617abaf3",
+      "numSlots": 22,
+      "type": 1,
+      "isLocal": null,
+      "private": 32,
+      "recordId": 25,
+      "recordLength": 205,
+      "slotRecords": 22,
+      "players": [
+        {
+          "type": 0,
+          "id": 13,
+          "name": "Finrod#11997",
+          "partial": null,
+          "race": 1,
+          "isHost": true,
+          "isWinner": false,
+          "isObserver": false,
+          "slot": 0,
+          "order": 0,
+          "colour": 0,
+          "handicap": 100,
+          "leftAt": 1594,
+          "stayPercent": 100,
+          "team": 0,
+          "apm": 134,
+          "activity": [
+            78,
+            66,
+            173,
+            119,
+            135,
+            107,
+            171,
+            172,
+            134,
+            126,
+            102,
+            164,
+            111,
+            128,
+            168,
+            144,
+            114,
+            159,
+            121,
+            67,
+            170,
+            196,
+            203,
+            233,
+            120,
+            95,
+            41
+          ],
+          "flags": [
+            "loser"
+          ],
+          "variables": {
+            "unitKills": 142,
+            "heroKills": 6,
+            "creepsKilled": 0,
+            "teamHeal": 1150,
+            "selfHeal": 3100,
+            "heroHeal": 4250,
+            "unitHeal": 0,
+            "overHeal": 0,
+            "castlesRazed": 0,
+            "mainBaseDestroyed": 1,
+            "unitsRecruited": 0,
+            "unitsSpawned": 94,
+            "spawnIdletime": 583,
+            "xpGained": 2557,
+            "averageGatheringTime": null,
+            "recivedWood": 0,
+            "gatheredWood": null
+          }
+        },
+        {
+          "type": 22,
+          "id": 8,
+          "name": "Rohan#1139",
+          "partial": null,
+          "race": 1,
+          "isHost": false,
+          "isWinner": false,
+          "isObserver": false,
+          "slot": 1,
+          "order": 1,
+          "colour": 1,
+          "handicap": 100,
+          "leftAt": 1594,
+          "stayPercent": 100,
+          "team": 0,
+          "apm": 141,
+          "activity": [
+            77,
+            202,
+            208,
+            130,
+            141,
+            119,
+            89,
+            102,
+            142,
+            109,
+            193,
+            197,
+            87,
+            182,
+            118,
+            114,
+            129,
+            273,
+            219,
+            196,
+            118,
+            150,
+            119,
+            68,
+            152,
+            118,
+            41
+          ],
+          "flags": [
+            "loser"
+          ],
+          "variables": {
+            "unitKills": 103,
+            "heroKills": 0,
+            "creepsKilled": 0,
+            "teamHeal": 200,
+            "selfHeal": 1491,
+            "heroHeal": 1291,
+            "unitHeal": 400,
+            "overHeal": 356,
+            "castlesRazed": 0,
+            "mainBaseDestroyed": null,
+            "unitsRecruited": 0,
+            "unitsSpawned": 166,
+            "spawnIdletime": 539,
+            "xpGained": 1303,
+            "averageGatheringTime": null,
+            "recivedWood": 0,
+            "gatheredWood": null
+          }
+        },
+        {
+          "type": 22,
+          "id": 3,
+          "name": "GothikaA#2296",
+          "partial": null,
+          "race": 1,
+          "isHost": false,
+          "isWinner": false,
+          "isObserver": false,
+          "slot": 2,
+          "order": 2,
+          "colour": 2,
+          "handicap": 100,
+          "leftAt": 1594,
+          "stayPercent": 100,
+          "team": 0,
+          "apm": 144,
+          "activity": [
+            106,
+            124,
+            142,
+            152,
+            177,
+            162,
+            199,
+            130,
+            141,
+            132,
+            145,
+            137,
+            106,
+            135,
+            135,
+            116,
+            122,
+            95,
+            119,
+            203,
+            133,
+            134,
+            108,
+            204,
+            189,
+            230,
+            99
+          ],
+          "flags": [
+            "loser"
+          ],
+          "variables": {
+            "unitKills": 192,
+            "heroKills": 5,
+            "creepsKilled": 7,
+            "teamHeal": 427,
+            "selfHeal": 4077,
+            "heroHeal": 4504,
+            "unitHeal": 0,
+            "overHeal": 593,
+            "castlesRazed": 2,
+            "mainBaseDestroyed": 2,
+            "unitsRecruited": 0,
+            "unitsSpawned": 90,
+            "spawnIdletime": 419,
+            "xpGained": 2049,
+            "averageGatheringTime": null,
+            "recivedWood": 0,
+            "gatheredWood": null
+          }
+        },
+        {
+          "type": 22,
+          "id": 7,
+          "name": "BroManBillbo#2829",
+          "partial": null,
+          "race": 1,
+          "isHost": false,
+          "isWinner": false,
+          "isObserver": false,
+          "slot": 3,
+          "order": 3,
+          "colour": 3,
+          "handicap": 100,
+          "leftAt": 1594,
+          "stayPercent": 100,
+          "team": 0,
+          "apm": 101,
+          "activity": [
+            37,
+            73,
+            50,
+            96,
+            125,
+            132,
+            106,
+            56,
+            81,
+            63,
+            145,
+            100,
+            98,
+            87,
+            163,
+            121,
+            103,
+            90,
+            137,
+            67,
+            72,
+            133,
+            153,
+            208,
+            151,
+            74,
+            5
+          ],
+          "flags": [
+            "loser"
+          ],
+          "variables": {
+            "unitKills": 39,
+            "heroKills": 2,
+            "creepsKilled": 9,
+            "teamHeal": 450,
+            "selfHeal": 5500,
+            "heroHeal": 5950,
+            "unitHeal": 0,
+            "overHeal": 99,
+            "castlesRazed": 1,
+            "mainBaseDestroyed": null,
+            "unitsRecruited": null,
+            "unitsSpawned": null,
+            "spawnIdletime": null,
+            "xpGained": 7945,
+            "averageGatheringTime": null,
+            "recivedWood": null,
+            "gatheredWood": null
+          }
+        },
+        {
+          "type": 22,
+          "id": 12,
+          "name": "skyplague#11228",
+          "partial": null,
+          "race": 4,
+          "isHost": false,
+          "isWinner": false,
+          "isObserver": false,
+          "slot": 4,
+          "order": 4,
+          "colour": 4,
+          "handicap": 100,
+          "leftAt": 1594,
+          "stayPercent": 100,
+          "team": 0,
+          "apm": 91,
+          "activity": [
+            96,
+            107,
+            100,
+            66,
+            175,
+            123,
+            104,
+            82,
+            68,
+            125,
+            104,
+            106,
+            94,
+            73,
+            76,
+            81,
+            56,
+            88,
+            114,
+            107,
+            88,
+            91,
+            106,
+            61,
+            71,
+            47,
+            35
+          ],
+          "flags": [
+            "loser"
+          ],
+          "variables": {
+            "unitKills": 186,
+            "heroKills": 2,
+            "creepsKilled": 0,
+            "teamHeal": 300,
+            "selfHeal": 1800,
+            "heroHeal": 900,
+            "unitHeal": 1200,
+            "overHeal": 0,
+            "castlesRazed": 0,
+            "mainBaseDestroyed": 1,
+            "unitsRecruited": 3,
+            "unitsSpawned": 116,
+            "spawnIdletime": 347,
+            "xpGained": 3301,
+            "averageGatheringTime": null,
+            "recivedWood": 10500,
+            "gatheredWood": 1945
+          }
+        },
+        {
+          "type": 22,
+          "id": 6,
+          "name": "Ligoulas#2247",
+          "partial": null,
+          "race": 2,
+          "isHost": false,
+          "isWinner": true,
+          "isObserver": false,
+          "slot": 5,
+          "order": 5,
+          "colour": 6,
+          "handicap": 100,
+          "leftAt": 1594,
+          "stayPercent": 100,
+          "team": 1,
+          "apm": 221,
+          "activity": [
+            135,
+            264,
+            400,
+            277,
+            245,
+            159,
+            228,
+            132,
+            179,
+            223,
+            193,
+            183,
+            167,
+            252,
+            259,
+            189,
+            250,
+            214,
+            353,
+            271,
+            181,
+            286,
+            157,
+            255,
+            140,
+            214,
+            157
+          ],
+          "flags": [
+            "winner"
+          ],
+          "variables": {
+            "unitKills": 170,
+            "heroKills": 5,
+            "creepsKilled": 3,
+            "teamHeal": 3292,
+            "selfHeal": 7332,
+            "heroHeal": 7086,
+            "unitHeal": 3538,
+            "overHeal": 3158,
+            "castlesRazed": 1,
+            "mainBaseDestroyed": 1,
+            "unitsRecruited": 0,
+            "unitsSpawned": 170,
+            "spawnIdletime": 380,
+            "xpGained": 465,
+            "averageGatheringTime": null,
+            "recivedWood": 0,
+            "gatheredWood": 2270
+          }
+        },
+        {
+          "type": 22,
+          "id": 5,
+          "name": "PowerDefence#1122",
+          "partial": null,
+          "race": 1,
+          "isHost": false,
+          "isWinner": true,
+          "isObserver": false,
+          "slot": 6,
+          "order": 6,
+          "colour": 8,
+          "handicap": 100,
+          "leftAt": 1594,
+          "stayPercent": 100,
+          "team": 1,
+          "apm": 144,
+          "activity": [
+            73,
+            102,
+            194,
+            197,
+            193,
+            167,
+            205,
+            112,
+            108,
+            101,
+            103,
+            118,
+            124,
+            129,
+            159,
+            219,
+            154,
+            127,
+            156,
+            193,
+            187,
+            151,
+            147,
+            144,
+            119,
+            143,
+            57
+          ],
+          "flags": [
+            "winner"
+          ],
+          "variables": {
+            "unitKills": 90,
+            "heroKills": 2,
+            "creepsKilled": 0,
+            "teamHeal": 0,
+            "selfHeal": 162,
+            "heroHeal": 0,
+            "unitHeal": 162,
+            "overHeal": 187,
+            "castlesRazed": 0,
+            "mainBaseDestroyed": 1,
+            "unitsRecruited": 0,
+            "unitsSpawned": 145,
+            "spawnIdletime": 655,
+            "xpGained": 1217,
+            "averageGatheringTime": null,
+            "recivedWood": 0,
+            "gatheredWood": null
+          }
+        },
+        {
+          "type": 22,
+          "id": 4,
+          "name": "Archindar#11846",
+          "partial": null,
+          "race": 1,
+          "isHost": false,
+          "isWinner": true,
+          "isObserver": false,
+          "slot": 7,
+          "order": 7,
+          "colour": 9,
+          "handicap": 100,
+          "leftAt": 1594,
+          "stayPercent": 100,
+          "team": 1,
+          "apm": 94,
+          "activity": [
+            44,
+            72,
+            76,
+            79,
+            75,
+            91,
+            92,
+            156,
+            168,
+            104,
+            114,
+            102,
+            66,
+            49,
+            119,
+            85,
+            113,
+            83,
+            129,
+            39,
+            55,
+            125,
+            120,
+            110,
+            67,
+            80,
+            110
+          ],
+          "flags": [
+            "winner"
+          ],
+          "variables": {
+            "unitKills": 58,
+            "heroKills": 0,
+            "creepsKilled": 0,
+            "teamHeal": 0,
+            "selfHeal": 1050,
+            "heroHeal": 1050,
+            "unitHeal": 0,
+            "overHeal": 0,
+            "castlesRazed": 1,
+            "mainBaseDestroyed": 2,
+            "unitsRecruited": 1,
+            "unitsSpawned": 126,
+            "spawnIdletime": 877,
+            "xpGained": 1089,
+            "averageGatheringTime": null,
+            "recivedWood": 0,
+            "gatheredWood": null
+          }
+        },
+        {
+          "type": 22,
+          "id": 1,
+          "name": "Keso#2483",
+          "partial": null,
+          "race": 8,
+          "isHost": false,
+          "isWinner": true,
+          "isObserver": false,
+          "slot": 8,
+          "order": 8,
+          "colour": 10,
+          "handicap": 100,
+          "leftAt": 1594,
+          "stayPercent": 100,
+          "team": 1,
+          "apm": 100,
+          "activity": [
+            70,
+            87,
+            80,
+            74,
+            142,
+            156,
+            92,
+            68,
+            78,
+            83,
+            78,
+            107,
+            84,
+            91,
+            180,
+            129,
+            49,
+            27,
+            49,
+            137,
+            26,
+            36,
+            143,
+            137,
+            171,
+            209,
+            99
+          ],
+          "flags": [
+            "winner"
+          ],
+          "variables": {
+            "unitKills": 78,
+            "heroKills": 5,
+            "creepsKilled": 0,
+            "teamHeal": 1992,
+            "selfHeal": 4811,
+            "heroHeal": 6803,
+            "unitHeal": 0,
+            "overHeal": 1066,
+            "castlesRazed": 0,
+            "mainBaseDestroyed": null,
+            "unitsRecruited": 0,
+            "unitsSpawned": 13,
+            "spawnIdletime": 1443,
+            "xpGained": 6,
+            "averageGatheringTime": null,
+            "recivedWood": null,
+            "gatheredWood": null
+          }
+        },
+        {
+          "type": 22,
+          "id": 11,
+          "name": "Redlance246#1525",
+          "partial": null,
+          "race": 2,
+          "isHost": false,
+          "isWinner": true,
+          "isObserver": false,
+          "slot": 9,
+          "order": 9,
+          "colour": 11,
+          "handicap": 100,
+          "leftAt": 1594,
+          "stayPercent": 100,
+          "team": 1,
+          "apm": 238,
+          "activity": [
+            172,
+            161,
+            248,
+            223,
+            270,
+            253,
+            191,
+            200,
+            358,
+            214,
+            219,
+            235,
+            220,
+            173,
+            234,
+            309,
+            255,
+            188,
+            260,
+            225,
+            180,
+            152,
+            289,
+            371,
+            283,
+            318,
+            218
+          ],
+          "flags": [
+            "winner"
+          ],
+          "variables": {
+            "unitKills": 231,
+            "heroKills": 7,
+            "creepsKilled": 5,
+            "teamHeal": 2450,
+            "selfHeal": 8753,
+            "heroHeal": 8045,
+            "unitHeal": 3158,
+            "overHeal": 1936,
+            "castlesRazed": 0,
+            "mainBaseDestroyed": null,
+            "unitsRecruited": 1,
+            "unitsSpawned": 178,
+            "spawnIdletime": 352,
+            "xpGained": 1063,
+            "averageGatheringTime": null,
+            "recivedWood": 4000,
+            "gatheredWood": null
+          }
+        },
+        {
+          "type": 22,
+          "id": 9,
+          "name": "Drathenar#11807",
+          "partial": null,
+          "race": 1,
+          "isHost": false,
+          "isWinner": null,
+          "isObserver": false,
+          "slot": 10,
+          "order": 10,
+          "colour": 12,
+          "handicap": 100,
+          "leftAt": 1523,
+          "stayPercent": 95.55,
+          "team": 2,
+          "apm": 3,
+          "activity": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            7,
+            10,
+            0,
+            0,
+            6,
+            32,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            8,
+            6
+          ],
+          "flags": [],
+          "variables": {
+            "unitKills": null,
+            "heroKills": null,
+            "creepsKilled": null,
+            "teamHeal": null,
+            "selfHeal": null,
+            "heroHeal": null,
+            "unitHeal": null,
+            "overHeal": null,
+            "castlesRazed": null,
+            "mainBaseDestroyed": null,
+            "unitsRecruited": null,
+            "unitsSpawned": null,
+            "spawnIdletime": null,
+            "xpGained": null,
+            "averageGatheringTime": null,
+            "recivedWood": null,
+            "gatheredWood": null
+          }
+        },
+        {
+          "type": 22,
+          "id": 2,
+          "name": "Annihilation#1374",
+          "partial": null,
+          "race": 2,
+          "isHost": false,
+          "isWinner": null,
+          "isObserver": false,
+          "slot": 11,
+          "order": 11,
+          "colour": 13,
+          "handicap": 100,
+          "leftAt": 1594,
+          "stayPercent": 100,
+          "team": 2,
+          "apm": 12,
+          "activity": [
+            24,
+            68,
+            12,
+            14,
+            21,
+            19,
+            40,
+            29,
+            16,
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            18,
+            16,
+            14,
+            1,
+            0,
+            0,
+            0,
+            2,
+            0,
+            0
+          ],
+          "flags": [],
+          "variables": {
+            "unitKills": null,
+            "heroKills": null,
+            "creepsKilled": null,
+            "teamHeal": null,
+            "selfHeal": null,
+            "heroHeal": null,
+            "unitHeal": null,
+            "overHeal": null,
+            "castlesRazed": null,
+            "mainBaseDestroyed": null,
+            "unitsRecruited": null,
+            "unitsSpawned": null,
+            "spawnIdletime": null,
+            "xpGained": null,
+            "averageGatheringTime": null,
+            "recivedWood": null,
+            "gatheredWood": null
+          }
+        },
+        {
+          "type": 22,
+          "id": 14,
+          "name": "Drager#2421",
+          "partial": null,
+          "race": 8,
+          "isHost": false,
+          "isWinner": null,
+          "isObserver": false,
+          "slot": 12,
+          "order": 12,
+          "colour": 14,
+          "handicap": 100,
+          "leftAt": 1386,
+          "stayPercent": 86.95,
+          "team": 2,
+          "apm": 16,
+          "activity": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            43,
+            40,
+            22,
+            14,
+            26,
+            54,
+            16,
+            4,
+            26,
+            22,
+            26,
+            40,
+            6,
+            16
+          ],
+          "flags": [],
+          "variables": {
+            "unitKills": null,
+            "heroKills": null,
+            "creepsKilled": null,
+            "teamHeal": null,
+            "selfHeal": null,
+            "heroHeal": null,
+            "unitHeal": null,
+            "overHeal": null,
+            "castlesRazed": null,
+            "mainBaseDestroyed": null,
+            "unitsRecruited": null,
+            "unitsSpawned": null,
+            "spawnIdletime": null,
+            "xpGained": null,
+            "averageGatheringTime": null,
+            "recivedWood": null,
+            "gatheredWood": null
+          }
+        },
+        {
+          "type": 22,
+          "id": 10,
+          "name": "HeAwaitsUs#1937",
+          "partial": null,
+          "race": 4,
+          "isHost": false,
+          "isWinner": null,
+          "isObserver": false,
+          "slot": 13,
+          "order": 13,
+          "colour": 15,
+          "handicap": 100,
+          "leftAt": 1594,
+          "stayPercent": 100,
+          "team": 2,
+          "apm": 3,
+          "activity": [
+            2,
+            11,
+            3,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2,
+            7,
+            11,
+            0,
+            10,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2,
+            2,
+            6,
+            3,
+            11
+          ],
+          "flags": [],
+          "variables": {
+            "unitKills": null,
+            "heroKills": null,
+            "creepsKilled": null,
+            "teamHeal": null,
+            "selfHeal": null,
+            "heroHeal": null,
+            "unitHeal": null,
+            "overHeal": null,
+            "castlesRazed": null,
+            "mainBaseDestroyed": null,
+            "unitsRecruited": null,
+            "unitsSpawned": null,
+            "spawnIdletime": null,
+            "xpGained": null,
+            "averageGatheringTime": null,
+            "recivedWood": null,
+            "gatheredWood": null
+          }
+        }
+      ],
+      "randomSeed": 1332119396,
+      "selectMode": 3,
+      "startSpots": 22,
+      "events": [
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:32",
+          "message": "Event baseDestroyed Dunland",
+          "type": "event",
+          "eventName": "baseDestroyed",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:11",
+            "message": "DefEvent baseDestroyed 1 base {0}",
+            "type": "defEvent",
+            "eventName": "baseDestroyed",
+            "numParams": "1",
+            "params": [
+              "base"
+            ],
+            "format": "{0}"
+          },
+          "time": 198,
+          "args": [
+            "Dunland"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:33",
+          "message": "Event heroDeath Peregrin\\ Took",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 242,
+          "args": [
+            "Peregrin\\ Took"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:34",
+          "message": "Event heroDeath ZuldÃ¢n",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 249,
+          "args": [
+            "ZuldÃÂ¢n"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:35",
+          "message": "Event heroDeath Treebeard",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 339,
+          "args": [
+            "Treebeard"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:36",
+          "message": "Event heroDeath Gandalf\\ the\\ White",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 353,
+          "args": [
+            "Gandalf\\ the\\ White"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:37",
+          "message": "Event heroDeath Aragorn\\ son\\ of\\ Arathorn",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 361,
+          "args": [
+            "Aragorn\\ son\\ of\\ Arathorn"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:38",
+          "message": "Event heroDeath SharkÃ»",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 390,
+          "args": [
+            "SharkÃÂ»"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:40",
+          "message": "Event baseDestroyed Lossnarch",
+          "type": "event",
+          "eventName": "baseDestroyed",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:11",
+            "message": "DefEvent baseDestroyed 1 base {0}",
+            "type": "defEvent",
+            "eventName": "baseDestroyed",
+            "numParams": "1",
+            "params": [
+              "base"
+            ],
+            "format": "{0}"
+          },
+          "time": 580,
+          "args": [
+            "Lossnarch"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:42",
+          "message": "Event baseDestroyed Dol\\ Guldur",
+          "type": "event",
+          "eventName": "baseDestroyed",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:11",
+            "message": "DefEvent baseDestroyed 1 base {0}",
+            "type": "defEvent",
+            "eventName": "baseDestroyed",
+            "numParams": "1",
+            "params": [
+              "base"
+            ],
+            "format": "{0}"
+          },
+          "time": 599,
+          "args": [
+            "Dol\\ Guldur"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:43",
+          "message": "Event heroDeath Galadriel",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 644,
+          "args": [
+            "Galadriel"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:45",
+          "message": "Event baseDestroyed Calembel",
+          "type": "event",
+          "eventName": "baseDestroyed",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:11",
+            "message": "DefEvent baseDestroyed 1 base {0}",
+            "type": "defEvent",
+            "eventName": "baseDestroyed",
+            "numParams": "1",
+            "params": [
+              "base"
+            ],
+            "format": "{0}"
+          },
+          "time": 647,
+          "args": [
+            "Calembel"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:47",
+          "message": "Event baseDestroyed Skinbark",
+          "type": "event",
+          "eventName": "baseDestroyed",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:11",
+            "message": "DefEvent baseDestroyed 1 base {0}",
+            "type": "defEvent",
+            "eventName": "baseDestroyed",
+            "numParams": "1",
+            "params": [
+              "base"
+            ],
+            "format": "{0}"
+          },
+          "time": 733,
+          "args": [
+            "Skinbark"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:48",
+          "message": "Event heroDeath Beregond\\ son\\ of\\ Baranor",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 889,
+          "args": [
+            "Beregond\\ son\\ of\\ Baranor"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:49",
+          "message": "Event heroDeath Dwar\\ of\\ Waw",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 909,
+          "args": [
+            "Dwar\\ of\\ Waw"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:50",
+          "message": "Event heroDeath Celeborn",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 926,
+          "args": [
+            "Celeborn"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:51",
+          "message": "Event heroDeath Gwaer\\ of\\ RhÃ»n",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 926,
+          "args": [
+            "Gwaer\\ of\\ RhÃÂ»n"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:53",
+          "message": "Event baseDestroyed Haradwaith",
+          "type": "event",
+          "eventName": "baseDestroyed",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:11",
+            "message": "DefEvent baseDestroyed 1 base {0}",
+            "type": "defEvent",
+            "eventName": "baseDestroyed",
+            "numParams": "1",
+            "params": [
+              "base"
+            ],
+            "format": "{0}"
+          },
+          "time": 933,
+          "args": [
+            "Haradwaith"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:54",
+          "message": "Event heroDeath HusÃ¢jek\\ of\\ Southern\\ Harad",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 1071,
+          "args": [
+            "HusÃÂ¢jek\\ of\\ Southern\\ Harad"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:55",
+          "message": "Event heroDeath Owynvan\\ of\\ the\\ Corsairs",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 1080,
+          "args": [
+            "Owynvan\\ of\\ the\\ Corsairs"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:57",
+          "message": "Event baseDestroyed Far\\ Harad",
+          "type": "event",
+          "eventName": "baseDestroyed",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:11",
+            "message": "DefEvent baseDestroyed 1 base {0}",
+            "type": "defEvent",
+            "eventName": "baseDestroyed",
+            "numParams": "1",
+            "params": [
+              "base"
+            ],
+            "format": "{0}"
+          },
+          "time": 1081,
+          "args": [
+            "Far\\ Harad"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:58",
+          "message": "Event heroDeath Carycyn\\ of\\ Far\\ Harad",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 1081,
+          "args": [
+            "Carycyn\\ of\\ Far\\ Harad"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:59",
+          "message": "Event heroDeath SuladÃ¢n",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 1082,
+          "args": [
+            "SuladÃÂ¢n"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:60",
+          "message": "Event heroDeath Ovatha\\ IV",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 1137,
+          "args": [
+            "Ovatha\\ IV"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:61",
+          "message": "Event heroDeath Mouth\\ of\\ Sauron",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 1349,
+          "args": [
+            "Mouth\\ of\\ Sauron"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:63",
+          "message": "Event baseDestroyed Edoras",
+          "type": "event",
+          "eventName": "baseDestroyed",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:11",
+            "message": "DefEvent baseDestroyed 1 base {0}",
+            "type": "defEvent",
+            "eventName": "baseDestroyed",
+            "numParams": "1",
+            "params": [
+              "base"
+            ],
+            "format": "{0}"
+          },
+          "time": 1350,
+          "args": [
+            "Edoras"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:64",
+          "message": "Event heroDeath Meriadoc\\ Brandybuck",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 1361,
+          "args": [
+            "Meriadoc\\ Brandybuck"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:65",
+          "message": "Event heroDeath Legolas\\ son\\ of\\ Thranduil",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 1362,
+          "args": [
+            "Legolas\\ son\\ of\\ Thranduil"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:66",
+          "message": "Event heroDeath ThÃ©oden\\ son\\ of\\ Thengel",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 1371,
+          "args": [
+            "ThÃÂ©oden\\ son\\ of\\ Thengel"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:67",
+          "message": "Event heroDeath EÃ³mer\\ son\\ of\\ EÃ³mund",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 1373,
+          "args": [
+            "EÃÂ³mer\\ son\\ of\\ EÃÂ³mund"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:68",
+          "message": "Event heroDeath Denethor\\ son\\ of\\ Ecthelion",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 1400,
+          "args": [
+            "Denethor\\ son\\ of\\ Ecthelion"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:69",
+          "message": "Event heroDeath Anborn",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 1424,
+          "args": [
+            "Anborn"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:70",
+          "message": "Event heroDeath Frodo\\ Baggins",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 1430,
+          "args": [
+            "Frodo\\ Baggins"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:71",
+          "message": "Event heroDeath Dwar\\ of\\ Waw",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 1435,
+          "args": [
+            "Dwar\\ of\\ Waw"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:72",
+          "message": "Event heroDeath JÃ­\\ IndÃ»r\\ Dawndeath",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 1465,
+          "args": [
+            "JÃÂ­\\ IndÃÂ»r\\ Dawndeath"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:73",
+          "message": "Event heroDeath Ren\\ the\\ Unclean",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 1470,
+          "args": [
+            "Ren\\ the\\ Unclean"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:74",
+          "message": "Event heroDeath Samwise\\ Gamgee",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 1476,
+          "args": [
+            "Samwise\\ Gamgee"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:75",
+          "message": "Event heroDeath Er-MurÃ¢zor",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 1479,
+          "args": [
+            "Er-MurÃÂ¢zor"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:76",
+          "message": "Event heroDeath Boromir",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 1495,
+          "args": [
+            "Boromir"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:77",
+          "message": "Event heroDeath Haldir",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 1510,
+          "args": [
+            "Haldir"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:78",
+          "message": "Event heroDeath HoarmÃ»rath\\ of\\ DÃ­r",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 1517,
+          "args": [
+            "HoarmÃÂ»rath\\ of\\ DÃÂ­r"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:79",
+          "message": "Event heroDeath Gimli\\ son\\ of\\ GloÃ­n",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 1525,
+          "args": [
+            "Gimli\\ son\\ of\\ GloÃÂ­n"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:80",
+          "message": "Event heroDeath Imrahil",
+          "type": "event",
+          "eventName": "heroDeath",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:13",
+            "message": "DefEvent heroDeath 1 hero {0}",
+            "type": "defEvent",
+            "eventName": "heroDeath",
+            "numParams": "1",
+            "params": [
+              "hero"
+            ],
+            "format": "{0}"
+          },
+          "time": 1584,
+          "args": [
+            "Imrahil"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:85",
+          "message": "Event baseDestroyed Lorien",
+          "type": "event",
+          "eventName": "baseDestroyed",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:11",
+            "message": "DefEvent baseDestroyed 1 base {0}",
+            "type": "defEvent",
+            "eventName": "baseDestroyed",
+            "numParams": "1",
+            "params": [
+              "base"
+            ],
+            "format": "{0}"
+          },
+          "time": 1596,
+          "args": [
+            "Lorien"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:84",
+          "message": "Event baseDestroyed Lamedon",
+          "type": "event",
+          "eventName": "baseDestroyed",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:11",
+            "message": "DefEvent baseDestroyed 1 base {0}",
+            "type": "defEvent",
+            "eventName": "baseDestroyed",
+            "numParams": "1",
+            "params": [
+              "base"
+            ],
+            "format": "{0}"
+          },
+          "time": 1596,
+          "args": [
+            "Lamedon"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:81",
+          "message": "Event baseDestroyed Minas\\ Tirith",
+          "type": "event",
+          "eventName": "baseDestroyed",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:11",
+            "message": "DefEvent baseDestroyed 1 base {0}",
+            "type": "defEvent",
+            "eventName": "baseDestroyed",
+            "numParams": "1",
+            "params": [
+              "base"
+            ],
+            "format": "{0}"
+          },
+          "time": 1596,
+          "args": [
+            "Minas\\ Tirith"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:82",
+          "message": "Event baseDestroyed Dunharrow",
+          "type": "event",
+          "eventName": "baseDestroyed",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:11",
+            "message": "DefEvent baseDestroyed 1 base {0}",
+            "type": "defEvent",
+            "eventName": "baseDestroyed",
+            "numParams": "1",
+            "params": [
+              "base"
+            ],
+            "format": "{0}"
+          },
+          "time": 1596,
+          "args": [
+            "Dunharrow"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:83",
+          "message": "Event baseDestroyed Dol\\ Amroth",
+          "type": "event",
+          "eventName": "baseDestroyed",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:11",
+            "message": "DefEvent baseDestroyed 1 base {0}",
+            "type": "defEvent",
+            "eventName": "baseDestroyed",
+            "numParams": "1",
+            "params": [
+              "base"
+            ],
+            "format": "{0}"
+          },
+          "time": 1596,
+          "args": [
+            "Dol\\ Amroth"
+          ]
+        },
+        {
+          "id": 107,
+          "intro": "MMD.Dat",
+          "header": "val:86",
+          "message": "Event baseDestroyed Fangorn",
+          "type": "event",
+          "eventName": "baseDestroyed",
+          "event": {
+            "id": 107,
+            "intro": "MMD.Dat",
+            "header": "val:11",
+            "message": "DefEvent baseDestroyed 1 base {0}",
+            "type": "defEvent",
+            "eventName": "baseDestroyed",
+            "numParams": "1",
+            "params": [
+              "base"
+            ],
+            "format": "{0}"
+          },
+          "time": 1596,
+          "args": [
+            "Fangorn"
+          ]
+        }
+      ],
+      "variables": [],
+      "saver": 5,
+      "hasW3MMD": true
+    },
+    "chatlog": [
+      {
+        "playerId": 7,
+        "length": 27,
+        "flags": 32,
+        "mode": 1,
+        "message": "wanna go dunland sky?",
+        "time": 22
+      },
+      {
+        "playerId": 1,
+        "length": 11,
+        "flags": 32,
+        "mode": 1,
+        "message": "-qwer",
+        "time": 69
+      },
+      {
+        "playerId": 5,
+        "length": 11,
+        "flags": 32,
+        "mode": 1,
+        "message": "-qwer",
+        "time": 87
+      },
+      {
+        "playerId": 7,
+        "length": 14,
+        "flags": 32,
+        "mode": 1,
+        "message": "crebvain",
+        "time": 93
+      },
+      {
+        "playerId": 7,
+        "length": 10,
+        "flags": 32,
+        "mode": 1,
+        "message": "slow",
+        "time": 127
+      },
+      {
+        "playerId": 7,
+        "length": 18,
+        "flags": 32,
+        "mode": 1,
+        "message": "killing camp",
+        "time": 130
+      },
+      {
+        "playerId": 1,
+        "length": 29,
+        "flags": 32,
+        "mode": 1,
+        "message": "gogo take fight at isen",
+        "time": 162
+      },
+      {
+        "playerId": 1,
+        "length": 10,
+        "flags": 32,
+        "mode": 1,
+        "message": "gray",
+        "time": 164
+      },
+      {
+        "playerId": 1,
+        "length": 10,
+        "flags": 32,
+        "mode": 1,
+        "message": "come",
+        "time": 165
+      },
+      {
+        "playerId": 7,
+        "length": 17,
+        "flags": 32,
+        "mode": 1,
+        "message": "dont engage",
+        "time": 209
+      },
+      {
+        "playerId": 13,
+        "length": 8,
+        "flags": 32,
+        "mode": 1,
+        "message": "go",
+        "time": 224
+      },
+      {
+        "playerId": 13,
+        "length": 13,
+        "flags": 32,
+        "mode": 1,
+        "message": "on grey",
+        "time": 225
+      },
+      {
+        "playerId": 7,
+        "length": 11,
+        "flags": 32,
+        "mode": 1,
+        "message": "cover",
+        "time": 255
+      },
+      {
+        "playerId": 12,
+        "length": 7,
+        "flags": 32,
+        "mode": 1,
+        "message": ".",
+        "time": 290
+      },
+      {
+        "playerId": 7,
+        "length": 14,
+        "flags": 32,
+        "mode": 1,
+        "message": "not good",
+        "time": 293
+      },
+      {
+        "playerId": 1,
+        "length": 14,
+        "flags": 32,
+        "mode": 0,
+        "message": "beeeacon",
+        "time": 398
+      },
+      {
+        "playerId": 1,
+        "length": 11,
+        "flags": 32,
+        "mode": 0,
+        "message": "bilbo",
+        "time": 407
+      },
+      {
+        "playerId": 1,
+        "length": 20,
+        "flags": 32,
+        "mode": 0,
+        "message": "ytou can do it",
+        "time": 409
+      },
+      {
+        "playerId": 7,
+        "length": 12,
+        "flags": 32,
+        "mode": 0,
+        "message": "shhhhh",
+        "time": 412
+      },
+      {
+        "playerId": 6,
+        "length": 8,
+        "flags": 32,
+        "mode": 1,
+        "message": "cd",
+        "time": 414
+      },
+      {
+        "playerId": 1,
+        "length": 8,
+        "flags": 32,
+        "mode": 0,
+        "message": "z3",
+        "time": 417
+      },
+      {
+        "playerId": 3,
+        "length": 12,
+        "flags": 32,
+        "mode": 1,
+        "message": "go dg?",
+        "time": 423
+      },
+      {
+        "playerId": 3,
+        "length": 18,
+        "flags": 32,
+        "mode": 1,
+        "message": "harad south?",
+        "time": 428
+      },
+      {
+        "playerId": 12,
+        "length": 11,
+        "flags": 32,
+        "mode": 1,
+        "message": "wood?",
+        "time": 431
+      },
+      {
+        "playerId": 1,
+        "length": 21,
+        "flags": 32,
+        "mode": 1,
+        "message": "ligo hard carry",
+        "time": 454
+      },
+      {
+        "playerId": 1,
+        "length": 14,
+        "flags": 32,
+        "mode": 1,
+        "message": "gray don",
+        "time": 468
+      },
+      {
+        "playerId": 1,
+        "length": 17,
+        "flags": 32,
+        "mode": 1,
+        "message": "waste units",
+        "time": 470
+      },
+      {
+        "playerId": 12,
+        "length": 21,
+        "flags": 32,
+        "mode": 0,
+        "message": "!@#$ing scammed",
+        "time": 472
+      },
+      {
+        "playerId": 12,
+        "length": 21,
+        "flags": 32,
+        "mode": 0,
+        "message": "fucking scammed",
+        "time": 473
+      },
+      {
+        "playerId": 12,
+        "length": 9,
+        "flags": 32,
+        "mode": 0,
+        "message": "lol",
+        "time": 477
+      },
+      {
+        "playerId": 12,
+        "length": 23,
+        "flags": 32,
+        "mode": 1,
+        "message": "finrod mercs here",
+        "time": 488
+      },
+      {
+        "playerId": 3,
+        "length": 11,
+        "flags": 32,
+        "mode": 1,
+        "message": "go dg",
+        "time": 507
+      },
+      {
+        "playerId": 12,
+        "length": 11,
+        "flags": 32,
+        "mode": 1,
+        "message": "wood?",
+        "time": 515
+      },
+      {
+        "playerId": 3,
+        "length": 23,
+        "flags": 32,
+        "mode": 1,
+        "message": "harad still south",
+        "time": 529
+      },
+      {
+        "playerId": 11,
+        "length": 10,
+        "flags": 32,
+        "mode": 1,
+        "message": "care",
+        "time": 531
+      },
+      {
+        "playerId": 3,
+        "length": 39,
+        "flags": 32,
+        "mode": 1,
+        "message": "need to go now or elsei have to b",
+        "time": 533
+      },
+      {
+        "playerId": 1,
+        "length": 10,
+        "flags": 32,
+        "mode": 1,
+        "message": "b lb",
+        "time": 534
+      },
+      {
+        "playerId": 1,
+        "length": 7,
+        "flags": 32,
+        "mode": 1,
+        "message": "b",
+        "time": 535
+      },
+      {
+        "playerId": 11,
+        "length": 20,
+        "flags": 32,
+        "mode": 1,
+        "message": "nvm they north",
+        "time": 542
+      },
+      {
+        "playerId": 11,
+        "length": 17,
+        "flags": 32,
+        "mode": 1,
+        "message": "finish loss",
+        "time": 545
+      },
+      {
+        "playerId": 1,
+        "length": 13,
+        "flags": 32,
+        "mode": 1,
+        "message": "gogo lb",
+        "time": 546
+      },
+      {
+        "playerId": 1,
+        "length": 17,
+        "flags": 32,
+        "mode": 1,
+        "message": "trade green",
+        "time": 554
+      },
+      {
+        "playerId": 7,
+        "length": 24,
+        "flags": 32,
+        "mode": 1,
+        "message": "dont block me teal",
+        "time": 572
+      },
+      {
+        "playerId": 12,
+        "length": 38,
+        "flags": 32,
+        "mode": 0,
+        "message": "honestly id have hosted old vers",
+        "time": 582
+      },
+      {
+        "playerId": 1,
+        "length": 23,
+        "flags": 32,
+        "mode": 1,
+        "message": "keepo on going lb",
+        "time": 586
+      },
+      {
+        "playerId": 13,
+        "length": 7,
+        "flags": 32,
+        "mode": 1,
+        "message": "b",
+        "time": 612
+      },
+      {
+        "playerId": 1,
+        "length": 7,
+        "flags": 32,
+        "mode": 1,
+        "message": "b",
+        "time": 642
+      },
+      {
+        "playerId": 1,
+        "length": 9,
+        "flags": 32,
+        "mode": 1,
+        "message": "run",
+        "time": 649
+      },
+      {
+        "playerId": 1,
+        "length": 7,
+        "flags": 32,
+        "mode": 1,
+        "message": "b",
+        "time": 711
+      },
+      {
+        "playerId": 11,
+        "length": 13,
+        "flags": 32,
+        "mode": 1,
+        "message": "wood me",
+        "time": 748
+      },
+      {
+        "playerId": 1,
+        "length": 20,
+        "flags": 32,
+        "mode": 1,
+        "message": "nice red lance",
+        "time": 933
+      },
+      {
+        "playerId": 1,
+        "length": 10,
+        "flags": 32,
+        "mode": 1,
+        "message": "fine",
+        "time": 1012
+      },
+      {
+        "playerId": 11,
+        "length": 8,
+        "flags": 32,
+        "mode": 1,
+        "message": "eh",
+        "time": 1019
+      },
+      {
+        "playerId": 11,
+        "length": 12,
+        "flags": 32,
+        "mode": 1,
+        "message": "to far",
+        "time": 1021
+      },
+      {
+        "playerId": 1,
+        "length": 26,
+        "flags": 32,
+        "mode": 1,
+        "message": "but he's really deep",
+        "time": 1026
+      },
+      {
+        "playerId": 1,
+        "length": 10,
+        "flags": 32,
+        "mode": 1,
+        "message": "care",
+        "time": 1053
+      },
+      {
+        "playerId": 1,
+        "length": 12,
+        "flags": 32,
+        "mode": 1,
+        "message": "or die",
+        "time": 1055
+      },
+      {
+        "playerId": 1,
+        "length": 17,
+        "flags": 32,
+        "mode": 1,
+        "message": "really dude",
+        "time": 1062
+      },
+      {
+        "playerId": 1,
+        "length": 11,
+        "flags": 32,
+        "mode": 1,
+        "message": "get b",
+        "time": 1073
+      },
+      {
+        "playerId": 4,
+        "length": 10,
+        "flags": 32,
+        "mode": 1,
+        "message": "fuck",
+        "time": 1083
+      },
+      {
+        "playerId": 1,
+        "length": 40,
+        "flags": 32,
+        "mode": 1,
+        "message": "you went straight in with no units",
+        "time": 1092
+      },
+      {
+        "playerId": 1,
+        "length": 15,
+        "flags": 32,
+        "mode": 1,
+        "message": "use these",
+        "time": 1098
+      },
+      {
+        "playerId": 4,
+        "length": 39,
+        "flags": 32,
+        "mode": 1,
+        "message": "they got stuck a bit i had 3waves",
+        "time": 1104
+      },
+      {
+        "playerId": 7,
+        "length": 24,
+        "flags": 32,
+        "mode": 1,
+        "message": "we need to link up",
+        "time": 1111
+      },
+      {
+        "playerId": 3,
+        "length": 27,
+        "flags": 32,
+        "mode": 1,
+        "message": "should i finsih harad",
+        "time": 1118
+      },
+      {
+        "playerId": 3,
+        "length": 13,
+        "flags": 32,
+        "mode": 1,
+        "message": "or come",
+        "time": 1119
+      },
+      {
+        "playerId": 1,
+        "length": 16,
+        "flags": 32,
+        "mode": 1,
+        "message": "close gate",
+        "time": 1137
+      },
+      {
+        "playerId": 11,
+        "length": 39,
+        "flags": 32,
+        "mode": 1,
+        "message": "need to take a fight soon i think",
+        "time": 1156
+      },
+      {
+        "playerId": 13,
+        "length": 14,
+        "flags": 32,
+        "mode": 1,
+        "message": "teal run",
+        "time": 1158
+      },
+      {
+        "playerId": 13,
+        "length": 12,
+        "flags": 32,
+        "mode": 1,
+        "message": "shipos",
+        "time": 1160
+      },
+      {
+        "playerId": 11,
+        "length": 28,
+        "flags": 32,
+        "mode": 1,
+        "message": "care we dont havae naz",
+        "time": 1180
+      },
+      {
+        "playerId": 11,
+        "length": 7,
+        "flags": 32,
+        "mode": 1,
+        "message": "b",
+        "time": 1188
+      },
+      {
+        "playerId": 11,
+        "length": 28,
+        "flags": 32,
+        "mode": 1,
+        "message": "while keso saves south",
+        "time": 1194
+      },
+      {
+        "playerId": 7,
+        "length": 15,
+        "flags": 32,
+        "mode": 1,
+        "message": "naz south",
+        "time": 1201
+      },
+      {
+        "playerId": 13,
+        "length": 12,
+        "flags": 32,
+        "mode": 1,
+        "message": "heroes",
+        "time": 1202
+      },
+      {
+        "playerId": 7,
+        "length": 15,
+        "flags": 32,
+        "mode": 1,
+        "message": "gogogogog",
+        "time": 1202
+      },
+      {
+        "playerId": 13,
+        "length": 9,
+        "flags": 32,
+        "mode": 1,
+        "message": "man",
+        "time": 1203
+      },
+      {
+        "playerId": 7,
+        "length": 11,
+        "flags": 32,
+        "mode": 1,
+        "message": "gogog",
+        "time": 1203
+      },
+      {
+        "playerId": 7,
+        "length": 9,
+        "flags": 32,
+        "mode": 1,
+        "message": "sam",
+        "time": 1219
+      },
+      {
+        "playerId": 7,
+        "length": 13,
+        "flags": 32,
+        "mode": 1,
+        "message": "go isen",
+        "time": 1226
+      },
+      {
+        "playerId": 13,
+        "length": 17,
+        "flags": 32,
+        "mode": 1,
+        "message": "yellow come",
+        "time": 1231
+      },
+      {
+        "playerId": 1,
+        "length": 9,
+        "flags": 32,
+        "mode": 1,
+        "message": "omw",
+        "time": 1241
+      },
+      {
+        "playerId": 1,
+        "length": 24,
+        "flags": 32,
+        "mode": 1,
+        "message": "sry was a bad move",
+        "time": 1245
+      },
+      {
+        "playerId": 11,
+        "length": 32,
+        "flags": 32,
+        "mode": 1,
+        "message": "i dont think they can isen",
+        "time": 1255
+      },
+      {
+        "playerId": 11,
+        "length": 14,
+        "flags": 32,
+        "mode": 1,
+        "message": "its fine",
+        "time": 1256
+      },
+      {
+        "playerId": 11,
+        "length": 27,
+        "flags": 32,
+        "mode": 1,
+        "message": "got good feed for you",
+        "time": 1263
+      },
+      {
+        "playerId": 6,
+        "length": 22,
+        "flags": 32,
+        "mode": 1,
+        "message": "get edo at least",
+        "time": 1263
+      },
+      {
+        "playerId": 11,
+        "length": 9,
+        "flags": 32,
+        "mode": 1,
+        "message": "yea",
+        "time": 1266
+      },
+      {
+        "playerId": 1,
+        "length": 52,
+        "flags": 32,
+        "mode": 1,
+        "message": "didn't think lb would suicide np lb you new :)",
+        "time": 1280
+      },
+      {
+        "playerId": 7,
+        "length": 14,
+        "flags": 32,
+        "mode": 1,
+        "message": "cant sky",
+        "time": 1280
+      },
+      {
+        "playerId": 7,
+        "length": 11,
+        "flags": 32,
+        "mode": 1,
+        "message": "alone",
+        "time": 1284
+      },
+      {
+        "playerId": 7,
+        "length": 17,
+        "flags": 32,
+        "mode": 1,
+        "message": "in the open",
+        "time": 1286
+      },
+      {
+        "playerId": 4,
+        "length": 61,
+        "flags": 32,
+        "mode": 1,
+        "message": "i kinda thought i had him but he just had the same idea",
+        "time": 1301
+      },
+      {
+        "playerId": 1,
+        "length": 29,
+        "flags": 32,
+        "mode": 1,
+        "message": "he had much more uniots",
+        "time": 1308
+      },
+      {
+        "playerId": 11,
+        "length": 25,
+        "flags": 32,
+        "mode": 1,
+        "message": "he has miore levels",
+        "time": 1311
+      },
+      {
+        "playerId": 12,
+        "length": 10,
+        "flags": 32,
+        "mode": 1,
+        "message": "blue",
+        "time": 1481
+      },
+      {
+        "playerId": 7,
+        "length": 9,
+        "flags": 32,
+        "mode": 1,
+        "message": "-ff",
+        "time": 1553
+      },
+      {
+        "playerId": 12,
+        "length": 9,
+        "flags": 32,
+        "mode": 1,
+        "message": "-ff",
+        "time": 1582
+      },
+      {
+        "playerId": 7,
+        "length": 9,
+        "flags": 32,
+        "mode": 1,
+        "message": "-ff",
+        "time": 1589
+      },
+      {
+        "playerId": 8,
+        "length": 9,
+        "flags": 32,
+        "mode": 1,
+        "message": "-ff",
+        "time": 1591
+      },
+      {
+        "playerId": 3,
+        "length": 9,
+        "flags": 32,
+        "mode": 1,
+        "message": "-ff",
+        "time": 1594
+      }
+    ]
+  },
+  "downloads": 0,
+  "isVoid": false,
+  "overridable": true,
+  "partial": true,
+  "id": 732468
+}

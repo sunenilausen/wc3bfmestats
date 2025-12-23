@@ -68,67 +68,65 @@
     </div>
   <% end %>
 
-  <div class="mt-4 flex flex-col xl:flex-row gap-6">
-    <div class="flex-1 min-w-0">
-      <strong class="block font-medium mb-1">Appearances:</strong>
-      <% good_appearances = match.appearances.select { |a| a.faction&.good? }.sort_by { |a| a.faction_id } %>
-      <% evil_appearances = match.appearances.select { |a| a.faction && !a.faction.good? }.sort_by { |a| a.faction_id } %>
-      <ul class="list-disc pl-5">
-        <li class="font-semibold mb-2">Forces of Middle Earth (<%= match.is_draw? ? "Draw" : (match.good_victory ? "Victory" : "Defeat") %>) </li>
-        <% if good_appearances.any? %>
-          <div class="overflow-x-auto">
-            <%= render partial: "matches/team_table", locals: { appearances: good_appearances, match: match } %>
-          </div>
-        <% else %>
-          <p class="text-gray-500 italic ml-4">No players</p>
-        <% end %>
-        <li class="font-semibold mb-2">Forces of Sauron (<%= match.is_draw? ? "Draw" : (match.good_victory ? "Defeat" : "Victory") %>) </li>
-        <% if evil_appearances.any? %>
-          <div class="overflow-x-auto">
-            <%= render partial: "matches/team_table", locals: { appearances: evil_appearances, match: match } %>
-          </div>
-        <% else %>
-          <p class="text-gray-500 italic ml-4">No players</p>
-        <% end %>
-      </ul>
-    </div>
-
-    <% if match.wc3stats_replay&.chatlog&.any? || match.wc3stats_replay&.events&.any? %>
-      <div class="xl:w-80 flex-shrink-0 space-y-4">
-        <% if match.wc3stats_replay&.chatlog&.any? %>
-          <div>
-            <strong class="block font-medium mb-2">Chat History:</strong>
-            <div class="bg-gray-50 rounded-md p-3 max-h-64 overflow-y-auto text-sm font-mono">
-              <% match.wc3stats_replay.chatlog.each do |msg| %>
-                <div class="mb-1">
-                  <span class="text-gray-500"><%= ChronicDuration.output(msg["time"], format: :short) %></span>
-                  <span class="font-semibold text-blue-700"><%= match.wc3stats_replay.player_name_by_id(msg["playerId"]) %>:</span>
-                  <span><%= msg["message"] %></span>
-                </div>
-              <% end %>
-            </div>
-          </div>
-        <% end %>
-
-        <% if match.wc3stats_replay&.events&.any? %>
-          <div>
-            <strong class="block font-medium mb-2">Event Log:</strong>
-            <div class="bg-gray-50 rounded-md p-3 max-h-64 overflow-y-auto text-sm font-mono">
-              <% match.wc3stats_replay.events.each do |event| %>
-                <div class="mb-1">
-                  <span class="text-gray-500"><%= ChronicDuration.output(event["time"], format: :short) %></span>
-                  <span class="<%= event["eventName"] == "heroDeath" ? "text-red-600" : "text-orange-600" %>">
-                    <%= event["eventName"] == "heroDeath" ? "Hero Death:" : "Base Destroyed:" %>
-                  </span>
-                  <span><%= match.wc3stats_replay.fix_encoding(event["args"]&.first&.gsub("\\", "")) %></span>
-                </div>
-              <% end %>
-            </div>
-          </div>
-        <% end %>
-      </div>
-    <% end %>
+  <div class="mt-4">
+    <strong class="block font-medium mb-1">Appearances:</strong>
+    <% good_appearances = match.appearances.select { |a| a.faction&.good? }.sort_by { |a| a.faction_id } %>
+    <% evil_appearances = match.appearances.select { |a| a.faction && !a.faction.good? }.sort_by { |a| a.faction_id } %>
+    <ul class="list-disc pl-5">
+      <li class="font-semibold mb-2">Forces of Middle Earth (<%= match.is_draw? ? "Draw" : (match.good_victory ? "Victory" : "Defeat") %>) </li>
+      <% if good_appearances.any? %>
+        <div class="overflow-x-auto">
+          <%= render partial: "matches/team_table", locals: { appearances: good_appearances, match: match } %>
+        </div>
+      <% else %>
+        <p class="text-gray-500 italic ml-4">No players</p>
+      <% end %>
+      <li class="font-semibold mb-2">Forces of Sauron (<%= match.is_draw? ? "Draw" : (match.good_victory ? "Defeat" : "Victory") %>) </li>
+      <% if evil_appearances.any? %>
+        <div class="overflow-x-auto">
+          <%= render partial: "matches/team_table", locals: { appearances: evil_appearances, match: match } %>
+        </div>
+      <% else %>
+        <p class="text-gray-500 italic ml-4">No players</p>
+      <% end %>
+    </ul>
   </div>
+
+  <% if match.wc3stats_replay&.chatlog&.any? || match.wc3stats_replay&.events&.any? %>
+    <div class="mt-4 flex flex-col md:flex-row gap-4">
+      <% if match.wc3stats_replay&.chatlog&.any? %>
+        <div class="flex-1">
+          <strong class="block font-medium mb-2">Chat History:</strong>
+          <div class="bg-gray-50 rounded-md p-3 max-h-64 overflow-y-auto text-sm font-mono">
+            <% match.wc3stats_replay.chatlog.each do |msg| %>
+              <div class="mb-1">
+                <span class="text-gray-500"><%= ChronicDuration.output(msg["time"], format: :short) %></span>
+                <span class="font-semibold text-blue-700"><%= match.wc3stats_replay.player_name_by_id(msg["playerId"]) %>:</span>
+                <span><%= msg["message"] %></span>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+
+      <% if match.wc3stats_replay&.events&.any? %>
+        <div class="flex-1">
+          <strong class="block font-medium mb-2">Event Log:</strong>
+          <div class="bg-gray-50 rounded-md p-3 max-h-64 overflow-y-auto text-sm font-mono">
+            <% match.wc3stats_replay.events.each do |event| %>
+              <div class="mb-1">
+                <span class="text-gray-500"><%= ChronicDuration.output(event["time"], format: :short) %></span>
+                <span class="<%= event["eventName"] == "heroDeath" ? "text-red-600" : "text-orange-600" %>">
+                  <%= event["eventName"] == "heroDeath" ? "Hero Death:" : "Base Destroyed:" %>
+                </span>
+                <span><%= match.wc3stats_replay.fix_encoding(event["args"]&.first&.gsub("\\", "")) %></span>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
 
   <div class="mt-6 pt-4 border-t border-gray-200">
     <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-500">

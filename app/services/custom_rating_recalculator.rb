@@ -284,7 +284,10 @@ class CustomRatingRecalculator
   def performance_score(appearance, match)
     # Get team appearances for contribution calculations
     team_appearances = match.appearances.select { |a| a.faction.good? == appearance.faction.good? }
-    weights = MlScoreRecalculator::WEIGHTS
+    # Use version-specific weights (4.6+ has different castle/base kill weights)
+    weights = MlScoreRecalculator.version_46_plus?(match.map_version) ?
+      MlScoreRecalculator::WEIGHTS_46_PLUS :
+      MlScoreRecalculator::WEIGHTS_PRE_46
 
     score = 0.0
 
@@ -316,6 +319,17 @@ class CustomRatingRecalculator
         max_contrib = appearance.castles_razed * MlScoreRecalculator::CASTLE_RAZE_CAP_PER_KILL
         cr_contrib = [ raw_contrib, max_contrib ].min
         score += (cr_contrib - 20.0) * weights[:castle_raze_contribution]
+      end
+    end
+
+    # Main base destroyed contribution (capped at 20% per main base)
+    if appearance.main_base_destroyed
+      team_main_bases = team_appearances.sum { |a| a.main_base_destroyed || 0 }
+      if team_main_bases > 0
+        raw_contrib = (appearance.main_base_destroyed.to_f / team_main_bases) * 100
+        max_contrib = appearance.main_base_destroyed * MlScoreRecalculator::MAIN_BASE_CAP_PER_KILL
+        mb_contrib = [ raw_contrib, max_contrib ].min
+        score += (mb_contrib - 20.0) * weights[:main_base_contribution]
       end
     end
 
@@ -481,6 +495,14 @@ class CustomRatingRecalculator
       team_castles = team_appearances.sum { |a| a.castles_razed || 0 }
       if team_castles > 0
         appearance.castle_raze_pct = (appearance.castles_razed.to_f / team_castles * 100).round(1)
+      end
+    end
+
+    # Main base destroyed contribution
+    if appearance.main_base_destroyed
+      team_main_bases = team_appearances.sum { |a| a.main_base_destroyed || 0 }
+      if team_main_bases > 0
+        appearance.main_base_pct = (appearance.main_base_destroyed.to_f / team_main_bases * 100).round(1)
       end
     end
 

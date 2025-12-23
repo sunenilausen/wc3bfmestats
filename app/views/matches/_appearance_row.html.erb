@@ -57,6 +57,9 @@
     <%= appearance.castles_razed || "-" %>
   </td>
   <td class="px-2 py-1">
+    <%= appearance.main_base_destroyed || 0 %>
+  </td>
+  <td class="px-2 py-1">
     <% if appearance.heroes_lost && appearance.heroes_total %>
       <%= appearance.heroes_lost %>/<%= appearance.heroes_total %>
     <% else %>

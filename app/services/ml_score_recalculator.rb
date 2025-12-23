@@ -2,21 +2,47 @@
 class MlScoreRecalculator
   # Hardcoded weights (manually tuned, not auto-trained)
   # Note: elo removed to make ML score independent of CR (CR is weighted separately in predictions)
-  WEIGHTS = {
+  # Pre-4.6 weights (no base kills available)
+  WEIGHTS_PRE_46 = {
     hero_kill_contribution: 0.06,
     unit_kill_contribution: 0.04,
     castle_raze_contribution: 0.02,
+    main_base_contribution: 0.0,     # Not available pre-4.6
     team_heal_contribution: 0.01,
     hero_uptime: 0.01
   }.freeze
 
+  # 4.6+ weights (base kills available, castle kills weighted less)
+  WEIGHTS_46_PLUS = {
+    hero_kill_contribution: 0.06,
+    unit_kill_contribution: 0.04,
+    castle_raze_contribution: 0.01,
+    main_base_contribution: 0.02,
+    team_heal_contribution: 0.01,
+    hero_uptime: 0.01
+  }.freeze
+
+  # Default weights for overall calculations (used when version not specified)
+  WEIGHTS = WEIGHTS_46_PLUS
+
+  # Check if map version is 4.6 or later
+  def self.version_46_plus?(map_version)
+    return false if map_version.blank?
+    # Parse version like "4.5e", "4.6", "4.6a" etc.
+    match = map_version.match(/^(\d+)\.(\d+)/)
+    return false unless match
+    major = match[1].to_i
+    minor = match[2].to_i
+    major > 4 || (major == 4 && minor >= 6)
+  end
+
   # Contribution caps per game (same as PlayerStatsCalculator)
   HERO_KILL_CAP_PER_KILL = 10.0
   CASTLE_RAZE_CAP_PER_KILL = 20.0
+  MAIN_BASE_CAP_PER_KILL = 20.0
   TEAM_HEAL_CAP_PER_GAME = 40.0
 
   def call
-    weights = WEIGHTS
     player_ids = Player.pluck(:id)
     return if player_ids.empty?
 
@@ -28,6 +54,9 @@ class MlScoreRecalculator
 
     # Batch query: team totals per match for kill contribution calculation
     match_ids = Match.where(ignored: false).pluck(:id)
+
+    # Get map versions for all matches to determine which weight set to use
+    match_versions = Match.where(ignored: false).pluck(:id, :map_version).to_h
 
     # Hero kills team totals (excluding ignored)
     hero_kill_totals = Appearance.joins(:faction)
@@ -70,6 +99,19 @@ class MlScoreRecalculator
       castle_totals_by_match[match_id][is_good] = cr.to_i
     end
 
+    # Batch query: main base destroyed team totals
+    main_base_team_totals = Appearance.joins(:faction)
+      .where(match_id: match_ids)
+      .where.not(main_base_destroyed: nil)
+      .group(:match_id, "factions.good")
+      .pluck(:match_id, Arel.sql("factions.good"), Arel.sql("SUM(main_base_destroyed)"))
+
+    main_base_totals_by_match = {}
+    main_base_team_totals.each do |match_id, is_good, mb|
+      main_base_totals_by_match[match_id] ||= {}
+      main_base_totals_by_match[match_id][is_good] = mb.to_i
+    end
+
     # Batch query: team heal team totals
     team_heal_totals = Appearance.joins(:faction)
       .where(match_id: match_ids)
@@ -104,6 +146,12 @@ class MlScoreRecalculator
       .where.not(castles_razed: nil)
       .pluck(:player_id, :match_id, "factions.good", :castles_razed)
 
+    # Get main base destroyed appearances separately (4.6+ only)
+    main_base_appearances = Appearance.joins(:match, :faction)
+      .where(matches: { ignored: false })
+      .where.not(main_base_destroyed: nil)
+      .pluck(:player_id, :match_id, "factions.good", :main_base_destroyed)
+
     # Get team heal appearances separately
     team_heal_appearances = Appearance.joins(:match, :faction)
       .where(matches: { ignored: false })
@@ -112,7 +160,13 @@ class MlScoreRecalculator
       .pluck(:player_id, :match_id, "factions.good", :team_heal)
 
     # Calculate average kill contributions per player
-    player_contributions = Hash.new { |h, k| h[k] = { hk_contribs: [], uk_contribs: [], cr_contribs: [], th_contribs: [], enemy_elo_diffs: [] } }
+    # Track castle raze separately for pre-4.6 and 4.6+ (different weights)
+    player_contributions = Hash.new { |h, k| h[k] = {
+      hk_contribs: [], uk_contribs: [],
+      cr_contribs_pre46: [], cr_contribs_46plus: [],  # Castle raze by version
+      mb_contribs: [],  # Main base (4.6+ only)
+      th_contribs: [], enemy_elo_diffs: []
+    } }
 
     hero_kill_appearances.each do |player_id, match_id, is_good, hk|
       team_total = hero_kill_totals_by_match.dig(match_id, is_good)
@@ -138,7 +192,24 @@ class MlScoreRecalculator
       # Cap at 20% per castle razed
       raw_contrib = (cr.to_f / team_total * 100)
       max_contrib = cr * CASTLE_RAZE_CAP_PER_KILL
-      player_contributions[player_id][:cr_contribs] << [ raw_contrib, max_contrib ].min
+      capped_contrib = [ raw_contrib, max_contrib ].min
+
+      # Track separately by version for different weights
+      if MlScoreRecalculator.version_46_plus?(match_versions[match_id])
+        player_contributions[player_id][:cr_contribs_46plus] << capped_contrib
+      else
+        player_contributions[player_id][:cr_contribs_pre46] << capped_contrib
+      end
+    end
+
+    main_base_appearances.each do |player_id, match_id, is_good, mb|
+      team_total = main_base_totals_by_match.dig(match_id, is_good)
+      next unless team_total && team_total > 0
+
+      # Cap at 20% per main base destroyed (same as castle raze)
+      raw_contrib = (mb.to_f / team_total * 100)
+      max_contrib = mb * MAIN_BASE_CAP_PER_KILL
+      player_contributions[player_id][:mb_contribs] << [ raw_contrib, max_contrib ].min
     end
 
     team_heal_appearances.each do |player_id, match_id, is_good, th|
@@ -180,18 +251,29 @@ class MlScoreRecalculator
       contribs = player_contributions[player.id]
       avg_hk = contribs[:hk_contribs].any? ? (contribs[:hk_contribs].sum / contribs[:hk_contribs].size) : 20.0
       avg_uk = contribs[:uk_contribs].any? ? (contribs[:uk_contribs].sum / contribs[:uk_contribs].size) : 20.0
-      avg_cr = contribs[:cr_contribs].any? ? (contribs[:cr_contribs].sum / contribs[:cr_contribs].size) : 20.0
+      # Castle raze: separate averages for pre-4.6 and 4.6+ (different weights)
+      avg_cr_pre46 = contribs[:cr_contribs_pre46].any? ? (contribs[:cr_contribs_pre46].sum / contribs[:cr_contribs_pre46].size) : 20.0
+      avg_cr_46plus = contribs[:cr_contribs_46plus].any? ? (contribs[:cr_contribs_46plus].sum / contribs[:cr_contribs_46plus].size) : 20.0
+      avg_mb = contribs[:mb_contribs].any? ? (contribs[:mb_contribs].sum / contribs[:mb_contribs].size) : 20.0
       avg_th = contribs[:th_contribs].any? ? (contribs[:th_contribs].sum / contribs[:th_contribs].size) : 20.0
 
       es = event_stats[player.id] || {}
       hero_uptime = es[:hero_uptime] || 80.0
 
       raw_score = 0.0
-      raw_score += weights[:hero_kill_contribution] * (avg_hk - 20.0)
-      raw_score += weights[:unit_kill_contribution] * (avg_uk - 20.0)
-      raw_score += weights[:castle_raze_contribution] * (avg_cr - 20.0)
-      raw_score += weights[:team_heal_contribution] * (avg_th - 20.0)
-      raw_score += weights[:hero_uptime] * (hero_uptime - 80.0)
+      raw_score += WEIGHTS_PRE_46[:hero_kill_contribution] * (avg_hk - 20.0)
+      raw_score += WEIGHTS_PRE_46[:unit_kill_contribution] * (avg_uk - 20.0)
+      # Castle raze: apply version-specific weights
+      if contribs[:cr_contribs_pre46].any?
+        raw_score += WEIGHTS_PRE_46[:castle_raze_contribution] * (avg_cr_pre46 - 20.0)
+      end
+      if contribs[:cr_contribs_46plus].any?
+        raw_score += WEIGHTS_46_PLUS[:castle_raze_contribution] * (avg_cr_46plus - 20.0)
+      end
+      # Main base: only 4.6+ (weight is 0 in pre-4.6 anyway)
+      raw_score += WEIGHTS_46_PLUS[:main_base_contribution] * (avg_mb - 20.0)
+      raw_score += WEIGHTS_PRE_46[:team_heal_contribution] * (avg_th - 20.0)
+      raw_score += WEIGHTS_PRE_46[:hero_uptime] * (hero_uptime - 80.0)
 
       sigmoid_value = 1.0 / (1.0 + Math.exp(-raw_score.clamp(-500, 500) * 0.5))
       ml_score = sigmoid_value * 100

@@ -34,6 +34,8 @@ class PlayerStatsCalculator
       unit_kill_contributions: [],
       castle_raze_contributions: [],
       castles_razed_values: [],
+      main_base_contributions: [],
+      main_base_destroyed_values: [],
       heal_contributions: [],
       team_heal_contributions: [],
       contribution_ranks: [],
@@ -61,6 +63,8 @@ class PlayerStatsCalculator
       unit_kill_contributions: [],
       castle_raze_contributions: [],
       castles_razed_values: [],
+      main_base_contributions: [],
+      main_base_destroyed_values: [],
       heal_contributions: [],
       team_heal_contributions: [],
       contribution_ranks: []
@@ -110,6 +114,9 @@ class PlayerStatsCalculator
 
     # Castles razed contribution
     process_castle_stats(appearance, team_appearances, stats, faction_id)
+
+    # Main base destroyed contribution
+    process_main_base_stats(appearance, team_appearances, stats, faction_id)
 
     # Healing contribution
     process_heal_stats(appearance, team_appearances, stats, faction_id)
@@ -193,6 +200,8 @@ class PlayerStatsCalculator
   HERO_KILL_CAP_PER_KILL = 10.0
   # Cap castle raze contribution at 20% per castle razed for avg stats
   CASTLE_RAZE_CAP_PER_KILL = 20.0
+  # Cap main base destroyed contribution at 20% per main base for avg stats
+  MAIN_BASE_CAP_PER_KILL = 20.0
   # Cap team heal contribution at 40% per game for avg stats
   TEAM_HEAL_CAP_PER_GAME = 40.0
 
@@ -328,6 +337,37 @@ class PlayerStatsCalculator
     end
   end
 
+  def process_main_base_stats(appearance, team_appearances, stats, faction_id)
+    return unless appearance.main_base_destroyed.present?
+
+    faction_stats = stats[:faction_stats][faction_id]
+    stats[:main_base_destroyed_values] << appearance.main_base_destroyed
+    faction_stats[:main_base_destroyed_values] << appearance.main_base_destroyed
+
+    # Use stored percentage if available, but apply cap for player avg stats
+    if appearance.main_base_pct
+      # Cap at 20% per main base destroyed
+      max_contribution = appearance.main_base_destroyed * MAIN_BASE_CAP_PER_KILL
+      capped_contribution = [ appearance.main_base_pct, max_contribution ].min
+      stats[:main_base_contributions] << capped_contribution
+      faction_stats[:main_base_contributions] << capped_contribution
+    else
+      # Fallback: calculate if not stored
+      team_with_main_bases = team_appearances.select { |a| a.main_base_destroyed.present? }
+      if team_with_main_bases.any?
+        team_total = team_with_main_bases.sum(&:main_base_destroyed)
+        if team_total > 0
+          raw_contribution = (appearance.main_base_destroyed.to_f / team_total * 100)
+          # Cap at 20% per main base destroyed
+          max_contribution = appearance.main_base_destroyed * MAIN_BASE_CAP_PER_KILL
+          capped_contribution = [ raw_contribution, max_contribution ].min
+          stats[:main_base_contributions] << capped_contribution
+          faction_stats[:main_base_contributions] << capped_contribution
+        end
+      end
+    end
+  end
+
   def process_heal_stats(appearance, team_appearances, stats, faction_id)
     faction_stats = stats[:faction_stats][faction_id]
 
@@ -392,7 +432,10 @@ class PlayerStatsCalculator
 
   # Performance score calculation (uses same weights as MlScoreRecalculator)
   def performance_score(appearance, team_appearances, match)
-    weights = MlScoreRecalculator::WEIGHTS
+    # Use version-specific weights (4.6+ has different castle/base kill weights)
+    weights = MlScoreRecalculator.version_46_plus?(match.map_version) ?
+      MlScoreRecalculator::WEIGHTS_46_PLUS :
+      MlScoreRecalculator::WEIGHTS_PRE_46
     score = 0.0
 
     # Hero kill contribution (capped at 10% per hero killed)
@@ -495,6 +538,8 @@ class PlayerStatsCalculator
     stats[:avg_unit_kill_contribution] = average(stats[:unit_kill_contributions]).round(1)
     stats[:avg_castle_raze_contribution] = average(stats[:castle_raze_contributions]).round(1)
     stats[:avg_castles_razed] = average(stats[:castles_razed_values]).round(2)
+    stats[:avg_main_base_contribution] = average(stats[:main_base_contributions]).round(1)
+    stats[:avg_main_base_destroyed] = average(stats[:main_base_destroyed_values]).round(2)
     stats[:avg_heal_contribution] = average(stats[:heal_contributions]).round(1)
     stats[:avg_team_heal_contribution] = average(stats[:team_heal_contributions]).round(1)
     stats[:avg_contribution_rank] = average(stats[:contribution_ranks]).round(2)
@@ -506,6 +551,8 @@ class PlayerStatsCalculator
       fs[:avg_unit_kill_contribution] = average(fs[:unit_kill_contributions]).round(1)
       fs[:avg_castle_raze_contribution] = average(fs[:castle_raze_contributions]).round(1)
       fs[:avg_castles_razed] = average(fs[:castles_razed_values]).round(2)
+      fs[:avg_main_base_contribution] = average(fs[:main_base_contributions]).round(1)
+      fs[:avg_main_base_destroyed] = average(fs[:main_base_destroyed_values]).round(2)
       fs[:avg_heal_contribution] = average(fs[:heal_contributions]).round(1)
       fs[:avg_team_heal_contribution] = average(fs[:team_heal_contributions]).round(1)
       fs[:avg_contribution_rank] = average(fs[:contribution_ranks]).round(2)

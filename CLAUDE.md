@@ -10,7 +10,7 @@ This is a Rails 8.1 application for tracking Warcraft 3 Battle for Middle Earth 
 
 The application uses a join-table architecture for many-to-many relationships:
 
-- **Match**: Represents a game with `uploaded_at` (earliest wc3stats upload date), `seconds` (duration), `good_victory` (boolean), and ordering fields (`major_version`, `build_version`, `map_version`, `row_order`)
+- **Match**: Represents a game with `uploaded_at` (earliest wc3stats upload date), `seconds` (duration), `good_victory` (boolean), `is_draw` (boolean), and ordering fields (`major_version`, `build_version`, `map_version`, `row_order`)
 - **Player**: Battle.net user with `nickname`, `battletag`, `elo_rating`, `elo_rating_seed`, and Glicko-2 fields
 - **Faction**: One of 10 BfME factions (Gondor, Rohan, Mordor, etc.) with a `color`, `good` boolean, `heroes` array, and `bases` array
 - **Appearance**: Join table linking Player + Faction + Match, storing `hero_kills`, `unit_kills`, `elo_rating`, `elo_rating_change`, and ignore flags
@@ -97,6 +97,17 @@ Note: Hero kill contribution is capped at 20% per hero killed **only for perform
 - On match create (MatchesController#create)
 - On match update (MatchesController#update)
 - Via rake task: `bin/rails wc3stats:sync`
+
+### Draws
+
+When players type `-draw` in game, the match ends as a draw. Draw handling:
+
+- **Detection:** `Wc3statsReplay#is_draw?` checks if any player has `"drawer"` in their flags array
+- **Match field:** `is_draw` boolean on Match model (default false)
+- **Rating impact:** Zero rating change for all players in draw matches
+- **Games count:** Draws still increment `custom_rating_games_played`
+- **UI display:** Shows "Draw" badge and "(Draw)" instead of Victory/Defeat
+- **Prediction accuracy:** Draws show "(draw)" instead of correct/upset
 
 ### Performance Score (PERF / ml_score)
 

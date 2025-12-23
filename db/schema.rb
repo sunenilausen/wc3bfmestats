@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_12_09_203655) do
+ActiveRecord::Schema[8.1].define(version: 2025_12_23_134828) do
   create_table "ahoy_events", force: :cascade do |t|
     t.string "name"
     t.text "properties"
@@ -140,6 +140,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_09_203655) do
     t.datetime "created_at", null: false
     t.boolean "good_victory"
     t.boolean "ignored", default: false, null: false
+    t.boolean "is_draw", default: false, null: false
     t.integer "major_version"
     t.string "map_version"
     t.decimal "predicted_evil_avg_rating"

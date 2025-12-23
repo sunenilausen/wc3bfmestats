@@ -8,6 +8,9 @@
     <% if match.ignored? %>
       <span class="ml-2 px-2 py-0.5 bg-red-100 text-red-700 text-sm rounded">Ignored</span>
     <% end %>
+    <% if match.is_draw? %>
+      <span class="ml-2 px-2 py-0.5 bg-gray-200 text-gray-700 text-sm rounded">Draw</span>
+    <% end %>
     <% if match.victory_overridden? %>
       <span class="ml-2 px-2 py-0.5 bg-yellow-100 text-yellow-700 text-sm rounded">Victory Overridden</span>
     <% end %>
@@ -39,7 +42,9 @@
         <span class="ml-2 font-semibold <%= good_favored ? 'text-green-600' : 'text-red-600' %>">
           <%= good_favored ? 'Good' : 'Evil' %> <%= [good_pct, evil_pct].max.round(1) %>%
         </span>
-        <% if match.good_victory != nil %>
+        <% if match.is_draw? %>
+          <span class="ml-1 text-sm text-gray-500">(draw)</span>
+        <% elsif match.good_victory != nil %>
           <span class="ml-1 text-sm <%= prediction_correct ? 'text-green-600' : 'text-red-600' %>">
             (<%= prediction_correct ? 'correct' : 'upset' %>)
           </span>
@@ -51,7 +56,9 @@
           <span class="ml-2 font-semibold <%= cr_good_favored ? 'text-green-600' : 'text-red-600' %>">
             <%= cr_good_favored ? 'Good' : 'Evil' %> <%= [cr_good_pct, cr_evil_pct].max.round(1) %>%
           </span>
-          <% if match.good_victory != nil %>
+          <% if match.is_draw? %>
+            <span class="ml-1 text-sm text-gray-500">(draw)</span>
+          <% elsif match.good_victory != nil %>
             <span class="ml-1 text-sm <%= cr_prediction_correct ? 'text-green-600' : 'text-red-600' %>">
               (<%= cr_prediction_correct ? 'correct' : 'upset' %>)
             </span>
@@ -67,7 +74,7 @@
       <% good_appearances = match.appearances.select { |a| a.faction&.good? }.sort_by { |a| a.faction_id } %>
       <% evil_appearances = match.appearances.select { |a| a.faction && !a.faction.good? }.sort_by { |a| a.faction_id } %>
       <ul class="list-disc pl-5">
-        <li class="font-semibold mb-2">Forces of Middle Earth (<%= match.good_victory ? "Victory" : "Defeat" %>) </li>
+        <li class="font-semibold mb-2">Forces of Middle Earth (<%= match.is_draw? ? "Draw" : (match.good_victory ? "Victory" : "Defeat") %>) </li>
         <% if good_appearances.any? %>
           <div class="overflow-x-auto">
             <%= render partial: "matches/team_table", locals: { appearances: good_appearances, match: match } %>
@@ -75,7 +82,7 @@
         <% else %>
           <p class="text-gray-500 italic ml-4">No players</p>
         <% end %>
-        <li class="font-semibold mb-2">Forces of Sauron (<%= match.good_victory ? "Defeat" : "Victory" %>) </li>
+        <li class="font-semibold mb-2">Forces of Sauron (<%= match.is_draw? ? "Draw" : (match.good_victory ? "Defeat" : "Victory") %>) </li>
         <% if evil_appearances.any? %>
           <div class="overflow-x-auto">
             <%= render partial: "matches/team_table", locals: { appearances: evil_appearances, match: match } %>

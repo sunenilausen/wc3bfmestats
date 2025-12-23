@@ -173,6 +173,12 @@ class CustomRatingRecalculator
     # Store prediction based on team ratings (before updating ratings)
     store_match_prediction(match, good_avg, evil_avg)
 
+    # For draws, record appearance data but no rating changes
+    if match.is_draw?
+      store_draw_appearances(match, good_appearances, evil_appearances)
+      return
+    end
+
     # Calculate performance scores and rank players within each team
     good_ranked = rank_by_performance(good_appearances, match)
     evil_ranked = rank_by_performance(evil_appearances, match)
@@ -712,5 +718,35 @@ class CustomRatingRecalculator
 
     stats[:games_played] += 1
     stats[:faction_games][appearance.faction_id] += 1
+  end
+
+  # Store appearance data for draws without rating changes
+  def store_draw_appearances(match, good_appearances, evil_appearances)
+    match.appearances.each do |appearance|
+      player = appearance.player
+      next unless player
+
+      is_good = appearance.faction.good?
+      team_appearances = is_good ? good_appearances : evil_appearances
+
+      # Store current rating with zero change
+      appearance.custom_rating = player.custom_rating
+      appearance.custom_rating_change = 0
+
+      # Store contribution data (for display purposes)
+      store_contribution_percentages(appearance, team_appearances)
+      store_kill_stats(appearance, team_appearances)
+      store_hero_base_losses(appearance, match)
+      store_historical_stats(appearance)
+
+      # Increment games played (draws still count as games)
+      player.custom_rating_games_played = player.custom_rating_games_played.to_i + 1
+
+      player.save!
+      appearance.save!
+
+      # Update running stats
+      update_player_running_stats(appearance, team_appearances, match)
+    end
   end
 end

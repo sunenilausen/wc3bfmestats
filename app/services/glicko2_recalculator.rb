@@ -61,6 +61,20 @@ class Glicko2Recalculator
 
     return if good_appearances.empty? || evil_appearances.empty?
 
+    # For draws, store current ratings with zero change (no rating updates)
+    if match.is_draw?
+      match.appearances.each do |appearance|
+        player = appearance.player
+        next unless player
+
+        appearance.glicko2_rating = player.glicko2_rating
+        appearance.glicko2_rating_deviation = player.glicko2_rating_deviation
+        appearance.glicko2_rating_change = 0
+        appearance.save!
+      end
+      return
+    end
+
     # Calculate team averages (in Glicko-2 scale)
     good_avg_mu = to_glicko2_scale(average_rating(good_appearances))
     good_avg_phi = to_glicko2_rd(average_rd(good_appearances))

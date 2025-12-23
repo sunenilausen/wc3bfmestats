@@ -683,9 +683,9 @@
           <% appearances.each do |appearance| %>
             <% match = appearance.match %>
             <% faction = appearance.faction %>
-            <% player_won = (faction.good? && match.good_victory?) || (!faction.good? && !match.good_victory?) %>
+            <% player_won = !match.is_draw? && ((faction.good? && match.good_victory?) || (!faction.good? && !match.good_victory?)) %>
             <% match_date = (match.uploaded_at || match.created_at).strftime('%Y-%m-%d') %>
-            <tr class="<%= player_won ? 'bg-green-50' : 'bg-red-50' %>">
+            <tr class="<%= match.is_draw? ? 'bg-gray-100' : (player_won ? 'bg-green-50' : 'bg-red-50') %>">
               <td class="px-2 py-1 whitespace-nowrap">
                 <%= link_to match_date, match_path(match), class: "text-blue-600 hover:underline" %>
               </td>
@@ -696,7 +696,9 @@
                 </span>
               </td>
               <td class="px-2 py-1 text-center whitespace-nowrap">
-                <% if player_won %>
+                <% if match.is_draw? %>
+                  <span class="text-gray-600 font-medium">Draw</span>
+                <% elsif player_won %>
                   <span class="text-green-600 font-medium">Win</span>
                 <% else %>
                   <span class="text-red-600 font-medium">Loss</span>

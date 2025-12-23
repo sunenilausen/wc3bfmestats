@@ -103,6 +103,11 @@ class Wc3statsReplay < ApplicationRecord
     winners.any? { |p| p["team"] == 0 }
   end
 
+  # Determine if the game ended in a draw (players typed -draw)
+  def is_draw?
+    players.any? { |p| p["flags"]&.include?("drawer") }
+  end
+
   def player_by_name(name)
     players.find { |p| p["name"] == name }
   end

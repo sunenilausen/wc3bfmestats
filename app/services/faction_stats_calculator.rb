@@ -4,12 +4,13 @@ class FactionStatsCalculator
   MVP_UNIT_KILL_BOOST_FACTIONS = [ "Minas Morgul", "Fellowship" ].freeze
   MVP_UNIT_KILL_BOOST = 1.5
 
-  attr_reader :faction, :map_version, :map_versions
+  attr_reader :faction, :map_version, :map_versions, :limit
 
-  def initialize(faction, map_version: nil, map_versions: nil)
+  def initialize(faction, map_version: nil, map_versions: nil, limit: nil)
     @faction = faction
     @map_version = map_version
     @map_versions = map_versions
+    @limit = limit
   end
 
   def compute
@@ -22,6 +23,11 @@ class FactionStatsCalculator
       appearances = appearances.where(matches: { map_version: map_version })
     elsif map_versions.present?
       appearances = appearances.where(matches: { map_version: map_versions })
+    end
+
+    # Apply limit if specified (most recent games first)
+    if limit.present? && limit > 0
+      appearances = appearances.merge(Match.reverse_chronological).limit(limit)
     end
 
     stats = {

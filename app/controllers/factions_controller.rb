@@ -26,14 +26,17 @@ class FactionsController < ApplicationController
         .reverse
     end
 
-    # Parse version filter (format: "from:4.5e" or "only:4.5e")
+    # Parse version filter (format: "from:4.5e", "only:4.5e", or "last:100")
     @map_version = nil
     @map_version_until = nil
+    @last_n_games = nil
     if @version_filter.present?
       if @version_filter.start_with?("only:")
         @map_version = @version_filter.sub("only:", "")
       elsif @version_filter.start_with?("from:")
         @map_version_until = @version_filter.sub("from:", "")
+      elsif @version_filter.start_with?("last:")
+        @last_n_games = @version_filter.sub("last:", "").to_i
       end
     end
 
@@ -55,13 +58,14 @@ class FactionsController < ApplicationController
 
     # Determine map_versions parameter for calculators
     calculator_map_versions = (@map_version.present? || @map_version_until.present?) ? @filtered_map_versions : nil
+    calculator_limit = @last_n_games.present? && @last_n_games > 0 ? @last_n_games : nil
 
     @stats = Rails.cache.fetch(cache_key + [ "basic" ]) do
-      FactionStatsCalculator.new(@faction, map_versions: calculator_map_versions).compute
+      FactionStatsCalculator.new(@faction, map_versions: calculator_map_versions, limit: calculator_limit).compute
     end
 
     event_stats = Rails.cache.fetch(cache_key + [ "events" ]) do
-      FactionEventStatsCalculator.new(@faction, map_versions: calculator_map_versions).compute
+      FactionEventStatsCalculator.new(@faction, map_versions: calculator_map_versions, limit: calculator_limit).compute
     end
 
     @hero_stats = event_stats[:hero_stats]

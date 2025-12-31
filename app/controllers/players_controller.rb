@@ -97,14 +97,17 @@ class PlayersController < ApplicationController
         .reverse
     end
 
-    # Parse version filter (format: "from:4.5e" or "only:4.5e")
+    # Parse version filter (format: "from:4.5e", "only:4.5e", or "last:100")
     @map_version = nil
     @map_version_until = nil
+    @last_n_games = nil
     if @version_filter.present?
       if @version_filter.start_with?("only:")
         @map_version = @version_filter.sub("only:", "")
       elsif @version_filter.start_with?("from:")
         @map_version_until = @version_filter.sub("from:", "")
+      elsif @version_filter.start_with?("last:")
+        @last_n_games = @version_filter.sub("last:", "").to_i
       end
     end
 
@@ -133,6 +136,11 @@ class PlayersController < ApplicationController
     # Filter by map versions if specified
     if @map_version.present? || @map_version_until.present?
       base_scope = base_scope.where(matches: { map_version: @filtered_map_versions })
+    end
+
+    # Filter by last N games if specified
+    if @last_n_games.present? && @last_n_games > 0
+      base_scope = base_scope.limit(@last_n_games)
     end
 
     @appearances = base_scope

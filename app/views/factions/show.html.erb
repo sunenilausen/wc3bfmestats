@@ -19,6 +19,8 @@
         <label for="version_filter" class="text-sm text-gray-600">Stats:</label>
         <select name="version_filter" id="version_filter" onchange="this.form.submit()" class="rounded-md border border-gray-300 px-3 py-1.5 text-sm">
           <option value="">All versions</option>
+          <option value="last:100" <%= "selected" if @version_filter == "last:100" %>>Last 100 games</option>
+          <option value="last:50" <%= "selected" if @version_filter == "last:50" %>>Last 50 games</option>
           <% @available_map_versions.each do |version| %>
             <option value="from:<%= version %>" <%= "selected" if @version_filter == "from:#{version}" %>>from <%= version %></option>
           <% end %>
@@ -32,7 +34,12 @@
     <% end %>
   </div>
 
-  <% if @map_version.present? %>
+  <% if @last_n_games.present? && @last_n_games > 0 %>
+    <div class="mb-4 px-3 py-2 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-700">
+      Showing stats for <strong>last <%= @last_n_games %> games</strong> (<%= @stats[:total_games] %> games)
+      &mdash; <%= link_to "Show all games", faction_path(@faction), class: "underline hover:no-underline" %>
+    </div>
+  <% elsif @map_version.present? %>
     <div class="mb-4 px-3 py-2 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-700">
       Showing stats for <strong><%= @map_version %></strong> only (<%= @stats[:total_games] %> games)
       &mdash; <%= link_to "Show all versions", faction_path(@faction), class: "underline hover:no-underline" %>

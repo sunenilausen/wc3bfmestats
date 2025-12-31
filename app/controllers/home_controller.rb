@@ -36,20 +36,34 @@ class HomeController < ApplicationController
 
     # Default to newest map version if not specified
     # If map_version param exists (even if empty), use it; otherwise default to newest
-    @map_version = if params.key?(:map_version)
+    @version_filter = if params.key?(:map_version)
       params[:map_version].presence  # nil if "All versions" selected
     else
       @available_map_versions.first  # default to newest on first visit
     end
 
-    @underdog_stats = calculate_underdog_stats(@map_version)
-    @ml_prediction_stats = calculate_ml_prediction_stats(@map_version)
-    @recent_prediction_stats = calculate_recent_prediction_stats
-    @recent_cr_stats = calculate_recent_cr_stats
-    @good_vs_evil_stats = calculate_good_vs_evil_stats(@map_version)
-    @balanced_games_stats = calculate_balanced_games_stats(@map_version)
-    @prediction_accuracy_by_confidence = calculate_prediction_accuracy_by_confidence(@map_version)
-    @avg_match_time = calculate_avg_match_time(@map_version)
+    # Parse filter (can be "last:100", "from:4.5e", or single version like "4.6")
+    @map_version = nil
+    @map_versions = nil
+    @last_n_games = nil
+    if @version_filter.present?
+      if @version_filter.start_with?("last:")
+        @last_n_games = @version_filter.sub("last:", "").to_i
+      elsif @version_filter.start_with?("from:")
+        from_version = @version_filter.sub("from:", "")
+        until_index = @available_map_versions.index(from_version)
+        @map_versions = until_index ? @available_map_versions[0..until_index] : @available_map_versions
+      else
+        @map_version = @version_filter
+      end
+    end
+
+    @underdog_stats = calculate_underdog_stats(@map_version, @last_n_games, @map_versions)
+    @ml_prediction_stats = calculate_ml_prediction_stats(@map_version, @last_n_games, @map_versions)
+    @good_vs_evil_stats = calculate_good_vs_evil_stats(@map_version, @last_n_games, @map_versions)
+    @balanced_games_stats = calculate_balanced_games_stats(@map_version, @last_n_games, @map_versions)
+    @prediction_accuracy_by_confidence = calculate_prediction_accuracy_by_confidence(@map_version, @last_n_games, @map_versions)
+    @avg_match_time = calculate_avg_match_time(@map_version, @last_n_games, @map_versions)
     @matches_count = Match.where(ignored: false).count
     # Players who have played at least one valid (non-ignored) match
     @players_count = Player.joins(:matches).where(matches: { ignored: false }).distinct.count
@@ -60,9 +74,11 @@ class HomeController < ApplicationController
 
   private
 
-  def calculate_underdog_stats(map_version = nil)
+  def calculate_underdog_stats(map_version = nil, limit = nil, map_versions = nil)
     matches_with_data = Match.includes(appearances: :faction).where(ignored: false).where.not(good_victory: nil)
     matches_with_data = matches_with_data.where(map_version: map_version) if map_version.present?
+    matches_with_data = matches_with_data.where(map_version: map_versions) if map_versions.present?
+    matches_with_data = matches_with_data.reverse_chronological.limit(limit) if limit.present? && limit > 0
 
     underdog_wins = 0
     favorite_wins = 0
@@ -111,12 +127,21 @@ class HomeController < ApplicationController
     }
   end
 
-  def calculate_good_vs_evil_stats(map_version = nil)
+  def calculate_good_vs_evil_stats(map_version = nil, limit = nil, map_versions = nil)
     matches_with_result = Match.where(ignored: false).where.not(good_victory: nil)
     matches_with_result = matches_with_result.where(map_version: map_version) if map_version.present?
+    matches_with_result = matches_with_result.where(map_version: map_versions) if map_versions.present?
+    matches_with_result = matches_with_result.reverse_chronological.limit(limit) if limit.present? && limit > 0
 
-    total = matches_with_result.count
-    good_wins = matches_with_result.where(good_victory: true).count
+    # When using limit, we need to load records first since .count after .where doesn't respect limit
+    if limit.present? && limit > 0
+      loaded = matches_with_result.to_a
+      total = loaded.size
+      good_wins = loaded.count { |m| m.good_victory }
+    else
+      total = matches_with_result.count
+      good_wins = matches_with_result.where(good_victory: true).count
+    end
     evil_wins = total - good_wins
 
     {
@@ -128,14 +153,24 @@ class HomeController < ApplicationController
     }
   end
 
-  def calculate_avg_match_time(map_version = nil)
+  def calculate_avg_match_time(map_version = nil, limit = nil, map_versions = nil)
     matches = Match.where(ignored: false).where.not(seconds: nil)
     matches = matches.where(map_version: map_version) if map_version.present?
+    matches = matches.where(map_version: map_versions) if map_versions.present?
+    matches = matches.reverse_chronological.limit(limit) if limit.present? && limit > 0
 
-    count = matches.count
-    return { avg_seconds: 0, avg_formatted: "-", count: 0 } if count.zero?
+    # When using limit, load records first since .average doesn't respect limit
+    if limit.present? && limit > 0
+      loaded = matches.pluck(:seconds)
+      count = loaded.size
+      return { avg_seconds: 0, avg_formatted: "-", count: 0 } if count.zero?
+      avg_seconds = (loaded.sum.to_f / count).round
+    else
+      count = matches.count
+      return { avg_seconds: 0, avg_formatted: "-", count: 0 } if count.zero?
+      avg_seconds = matches.average(:seconds).to_f.round
+    end
 
-    avg_seconds = matches.average(:seconds).to_f.round
     minutes = avg_seconds / 60
     formatted = "#{minutes.round}m"
 
@@ -146,11 +181,13 @@ class HomeController < ApplicationController
     }
   end
 
-  def calculate_ml_prediction_stats(map_version = nil)
+  def calculate_ml_prediction_stats(map_version = nil, limit = nil, map_versions = nil)
     matches = Match.where(ignored: false)
                    .where.not(good_victory: nil)
                    .where.not(predicted_good_win_pct: nil)
     matches = matches.where(map_version: map_version) if map_version.present?
+    matches = matches.where(map_version: map_versions) if map_versions.present?
+    matches = matches.reverse_chronological.limit(limit) if limit.present? && limit > 0
 
     correct_predictions = 0
     underdog_wins = 0
@@ -197,120 +234,14 @@ class HomeController < ApplicationController
     }
   end
 
-  def calculate_recent_prediction_stats
-    # Get last 100 matches in chronological order (most recent)
-    matches = Match.where(ignored: false)
-                   .where.not(good_victory: nil)
-                   .where.not(predicted_good_win_pct: nil)
-                   .reverse_chronological
-                   .limit(100)
-
-    correct_predictions = 0
-    underdog_wins = 0
-    favorite_wins = 0
-    total_matches = 0
-    underdog_matches = 0
-    favorite_matches = 0
-
-    matches.each do |match|
-      total_matches += 1
-
-      good_pct = match.predicted_good_win_pct.to_f
-      good_favored = good_pct >= 50
-      prediction_correct = (good_favored && match.good_victory) || (!good_favored && !match.good_victory)
-
-      correct_predictions += 1 if prediction_correct
-
-      # Track underdog wins (<40% predicted win chance)
-      if good_pct < 45 || good_pct > 55
-        if good_pct < 45
-          underdog_matches += 1
-          underdog_wins += 1 if match.good_victory
-          favorite_matches += 1
-          favorite_wins += 1 unless match.good_victory
-        else # good_pct > 60
-          favorite_matches += 1
-          favorite_wins += 1 if match.good_victory
-          underdog_matches += 1
-          underdog_wins += 1 unless match.good_victory
-        end
-      end
-    end
-
-    {
-      correct_predictions: correct_predictions,
-      total_matches: total_matches,
-      accuracy: total_matches > 0 ? (correct_predictions.to_f / total_matches * 100).round(1) : 0,
-      underdog_wins: underdog_wins,
-      underdog_matches: underdog_matches,
-      underdog_win_rate: underdog_matches > 0 ? (underdog_wins.to_f / underdog_matches * 100).round(1) : 0,
-      favorite_wins: favorite_wins,
-      favorite_matches: favorite_matches,
-      favorite_win_rate: favorite_matches > 0 ? (favorite_wins.to_f / favorite_matches * 100).round(1) : 0
-    }
-  end
-
-  def calculate_recent_cr_stats
-    # Get last 100 matches based on CR (custom rating) prediction
-    matches = Match.includes(appearances: :faction)
-                   .where(ignored: false)
-                   .where.not(good_victory: nil)
-                   .reverse_chronological
-                   .limit(100)
-
-    underdog_wins = 0
-    favorite_wins = 0
-    underdog_matches = 0
-    favorite_matches = 0
-
-    matches.each do |match|
-      good_appearances = match.appearances.select { |a| a.faction&.good? }
-      evil_appearances = match.appearances.select { |a| a.faction && !a.faction.good? }
-
-      good_crs = good_appearances.map(&:custom_rating).compact
-      evil_crs = evil_appearances.map(&:custom_rating).compact
-
-      next if good_crs.empty? || evil_crs.empty?
-
-      good_avg = good_crs.sum.to_f / good_crs.size
-      evil_avg = evil_crs.sum.to_f / evil_crs.size
-
-      # Convert CR difference to win probability (same formula as LobbyWinPredictor)
-      cr_diff = good_avg - evil_avg
-      good_pct = (1.0 / (1 + Math.exp(-cr_diff / 150.0)) * 100)
-
-      # Track underdog wins (<40% predicted win chance)
-      if good_pct < 45 || good_pct > 55
-        if good_pct < 45
-          underdog_matches += 1
-          underdog_wins += 1 if match.good_victory
-          favorite_matches += 1
-          favorite_wins += 1 unless match.good_victory
-        else # good_pct > 60
-          favorite_matches += 1
-          favorite_wins += 1 if match.good_victory
-          underdog_matches += 1
-          underdog_wins += 1 unless match.good_victory
-        end
-      end
-    end
-
-    {
-      underdog_wins: underdog_wins,
-      underdog_matches: underdog_matches,
-      underdog_win_rate: underdog_matches > 0 ? (underdog_wins.to_f / underdog_matches * 100).round(1) : 0,
-      favorite_wins: favorite_wins,
-      favorite_matches: favorite_matches,
-      favorite_win_rate: favorite_matches > 0 ? (favorite_wins.to_f / favorite_matches * 100).round(1) : 0
-    }
-  end
-
-  def calculate_prediction_accuracy_by_confidence(map_version = nil)
+  def calculate_prediction_accuracy_by_confidence(map_version = nil, limit = nil, map_versions = nil)
     matches = Match.includes(appearances: :faction)
                    .where(ignored: false)
                    .where.not(good_victory: nil)
                    .where.not(predicted_good_win_pct: nil)
     matches = matches.where(map_version: map_version) if map_version.present?
+    matches = matches.where(map_version: map_versions) if map_versions.present?
+    matches = matches.reverse_chronological.limit(limit) if limit.present? && limit > 0
 
     # Buckets in 5% increments from 50% to 100%
     buckets = {}
@@ -370,10 +301,12 @@ class HomeController < ApplicationController
 
   # Calculate how many games are "balanced" (neither team heavily favored)
   # A balanced game is one where prediction is 45-55%
-  def calculate_balanced_games_stats(map_version = nil)
+  def calculate_balanced_games_stats(map_version = nil, limit = nil, map_versions = nil)
     matches = Match.includes(appearances: :faction)
                    .where(ignored: false)
     matches = matches.where(map_version: map_version) if map_version.present?
+    matches = matches.where(map_version: map_versions) if map_versions.present?
+    matches = matches.reverse_chronological.limit(limit) if limit.present? && limit > 0
 
     total_matches = 0
     balanced_cr_ml = 0

@@ -20,64 +20,24 @@
   </div>
   <% end %>
 
-  <%# Recent prediction stats - not dependent on map version %>
-  <% if @recent_prediction_stats[:total_matches] > 0 || @recent_cr_stats[:underdog_matches] > 0 %>
-  <div class="mt-4">
-    <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-1">Last 100 Matches</h2>
-    <p class="text-xs text-gray-400 mb-3">Underdog win rate = &lt;45% predicted, Favorite win rate = &gt;55% predicted</p>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      <% if @recent_cr_stats[:underdog_matches] > 0 %>
-      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Underdog Win Rate (CR)</h2>
-        <p class="mt-2 text-3xl font-bold text-purple-600"><%= @recent_cr_stats[:underdog_win_rate] %>%</p>
-        <p class="mt-1 text-sm text-gray-500">
-          <%= @recent_cr_stats[:underdog_wins] %> of <%= @recent_cr_stats[:underdog_matches] %> matches
-        </p>
-      </div>
-      <% end %>
-
-      <% if @recent_cr_stats[:favorite_matches] > 0 %>
-      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Favorite Win Rate (CR)</h2>
-        <p class="mt-2 text-3xl font-bold text-orange-600"><%= @recent_cr_stats[:favorite_win_rate] %>%</p>
-        <p class="mt-1 text-sm text-gray-500">
-          <%= @recent_cr_stats[:favorite_wins] %> of <%= @recent_cr_stats[:favorite_matches] %> matches
-        </p>
-      </div>
-      <% end %>
-
-      <% if @recent_prediction_stats[:underdog_matches] > 0 %>
-      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Underdog Win Rate (CR+)</h2>
-        <p class="mt-2 text-3xl font-bold text-purple-600"><%= @recent_prediction_stats[:underdog_win_rate] %>%</p>
-        <p class="mt-1 text-sm text-gray-500">
-          <%= @recent_prediction_stats[:underdog_wins] %> of <%= @recent_prediction_stats[:underdog_matches] %> matches
-        </p>
-      </div>
-      <% end %>
-
-      <% if @recent_prediction_stats[:favorite_matches] > 0 %>
-      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Favorite Win Rate (CR+)</h2>
-        <p class="mt-2 text-3xl font-bold text-orange-600"><%= @recent_prediction_stats[:favorite_win_rate] %>%</p>
-        <p class="mt-1 text-sm text-gray-500">
-          <%= @recent_prediction_stats[:favorite_wins] %> of <%= @recent_prediction_stats[:favorite_matches] %> matches
-        </p>
-      </div>
-      <% end %>
-    </div>
-  </div>
-  <% end %>
-
   <%# Stats that depend on map_version param - outside cache %>
   <div class="mt-6">
     <div class="flex items-center justify-between mb-3">
       <%= form_with url: statistics_path, method: :get, local: true, class: "flex items-center gap-2" do %>
-        <span class="text-sm text-gray-500">Map version:</span>
-        <%= select_tag :map_version,
-          options_for_select([["All versions", ""]] + @available_map_versions.map { |v| [v, v] }, @map_version),
-          class: "text-sm border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50",
-          onchange: "this.form.submit()" %>
+        <span class="text-sm text-gray-500">Stats:</span>
+        <select name="map_version" class="text-sm border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50" onchange="this.form.submit()">
+          <option value="" <%= "selected" if @version_filter.blank? %>>All versions</option>
+          <option value="last:100" <%= "selected" if @version_filter == "last:100" %>>Last 100 games</option>
+          <option value="last:50" <%= "selected" if @version_filter == "last:50" %>>Last 50 games</option>
+          <% @available_map_versions.each do |version| %>
+            <option value="from:<%= version %>" <%= "selected" if @version_filter == "from:#{version}" %>>from <%= version %></option>
+          <% end %>
+          <optgroup label="Single version">
+            <% @available_map_versions.each do |version| %>
+              <option value="<%= version %>" <%= "selected" if @version_filter == version %>>only <%= version %></option>
+            <% end %>
+          </optgroup>
+        </select>
       <% end %>
       <p class="text-xs text-gray-400">Underdog win rate = &lt;45% predicted, Favorite win rate = &gt;55% predicted</p>
     </div>

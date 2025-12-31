@@ -4,8 +4,8 @@ class MlScoreRecalculator
   # Note: elo removed to make ML score independent of CR (CR is weighted separately in predictions)
   # Pre-4.6 weights (no base kills available)
   WEIGHTS_PRE_46 = {
-    hero_kill_contribution: 0.06,
-    unit_kill_contribution: 0.04,
+    hero_kill_contribution: 0.05,
+    unit_kill_contribution: 0.05,
     castle_raze_contribution: 0.02,
     main_base_contribution: 0.0,     # Not available pre-4.6
     team_heal_contribution: 0.01,
@@ -14,8 +14,8 @@ class MlScoreRecalculator
 
   # 4.6+ weights (base kills available, castle kills weighted less)
   WEIGHTS_46_PLUS = {
-    hero_kill_contribution: 0.06,
-    unit_kill_contribution: 0.04,
+    hero_kill_contribution: 0.05,
+    unit_kill_contribution: 0.05,
     castle_raze_contribution: 0.01,
     main_base_contribution: 0.02,
     team_heal_contribution: 0.01,

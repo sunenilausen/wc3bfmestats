@@ -93,6 +93,9 @@ Note: Hero kill contribution is capped at 20% per hero killed **only for perform
 - **MVP bonus** (winning team only): +1 for having both top unit kills AND top hero kills on team (shown as ★)
   - Minas Morgul and Fellowship get their unit kills multiplied by 1.5x for MVP calculation (support faction adjustment)
 
+- **Ring Drop bonus** (Fellowship only): +1 for triggering the Ring Drop event (destroying the ring)
+  - **Ring Powered bonus**: Additional +1 if at least 2 of the 3 main Evil bases (Barad-Dur, Morannon, Minas Morgul) are alive at ring drop time (tooltip shows "+2, 2+ evil bases alive")
+
 ### When Ratings are Recalculated
 - On match create (MatchesController#create)
 - On match update (MatchesController#update)

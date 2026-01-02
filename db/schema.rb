@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_01_02_103259) do
+ActiveRecord::Schema[8.1].define(version: 2026_01_02_143736) do
   create_table "ahoy_events", force: :cascade do |t|
     t.string "name"
     t.text "properties"
@@ -72,6 +72,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_02_103259) do
     t.float "glicko2_rating"
     t.float "glicko2_rating_change"
     t.float "glicko2_rating_deviation"
+    t.boolean "has_ring_drop", default: false, null: false
+    t.boolean "has_ring_powered_drop", default: false, null: false
     t.float "heal_pct"
     t.float "hero_kill_pct"
     t.integer "hero_kills"

@@ -103,6 +103,9 @@
       <% if appearance.is_mvp? %>
         <span class="text-yellow-500" title="MVP: Top unit kills and hero kills">★</span>
       <% end %>
+      <% if appearance.has_ring_drop? %>
+        <span class="text-yellow-600" title="Ring Drop: Destroyed the One Ring (<%= appearance.has_ring_powered_drop? ? '+2, 2+ evil bases alive' : '+1' %>)">💍</span>
+      <% end %>
     <% end %>
   </td>
   <td class="px-2 py-1">

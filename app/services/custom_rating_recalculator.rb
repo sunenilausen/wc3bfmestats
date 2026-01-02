@@ -154,6 +154,16 @@ class CustomRatingRecalculator
   CONTRIBUTION_BONUS_WIN = [ 2, 1, 1, 0, -1 ]   # 1st, 2nd, 3rd, 4th, 5th (winners)
   CONTRIBUTION_BONUS_LOSS = [ 1, 1, 0, -1, -1 ] # 1st, 2nd, 3rd, 4th, 5th (losers)
 
+  # Ring Drop bonus for Fellowship
+  RING_DROP_BONUS = 1
+  RING_DROP_POWERED_BONUS = 1  # Extra +1 if 2+ evil main bases are alive
+  RING_DROP_EVENT = "Ring Drop"
+  FELLOWSHIP_FACTION = "Fellowship"
+
+  # Evil main bases to check for Ring Powered bonus
+  # If 2+ of these are alive at ring drop time, Fellowship gets +1 extra
+  RING_POWERED_BASES = [ "Barad-Dur", "Morannon", "Minas Morgul" ].freeze
+
   def calculate_and_update_ratings(match)
     return if match.appearances.empty?
 
@@ -247,15 +257,22 @@ class CustomRatingRecalculator
         is_mvp = mvp_bonus > 0
       end
 
-      total_change = base_change + new_player_bonus + contribution_bonus + mvp_bonus
+      # Ring Drop bonus: +1 for Fellowship when Ring Drop event occurs
+      # Additional +1 if 2+ evil main bases are alive at ring drop time
+      ring_drop_bonus, has_ring_powered_drop = calculate_ring_drop_bonus(appearance, match)
+      has_ring_drop = ring_drop_bonus > 0
+
+      total_change = base_change + new_player_bonus + contribution_bonus + mvp_bonus + ring_drop_bonus
 
       appearance.custom_rating = player.custom_rating
       appearance.custom_rating_change = total_change
 
       # Store contribution/performance data for faster queries
       appearance.contribution_rank = rank_index + 1
-      appearance.contribution_bonus = contribution_bonus + mvp_bonus
+      appearance.contribution_bonus = contribution_bonus + mvp_bonus + ring_drop_bonus
       appearance.is_mvp = is_mvp
+      appearance.has_ring_drop = has_ring_drop
+      appearance.has_ring_powered_drop = has_ring_powered_drop
       appearance.performance_score = perf_score.round(2)
 
       # Store historical rank and PERF scores at time of match
@@ -463,6 +480,65 @@ class CustomRatingRecalculator
 
     # Must have top hero kills AND strictly more than second place
     (appearance.hero_kills == max_hero_kills && max_hero_kills > second_hero_kills) ? 1 : 0
+  end
+
+  # Ring Drop bonus: +1 for Fellowship player when Ring Drop event occurs
+  # Additional +1 if 2+ of Barad-Dur, Morannon, Minas Morgul are alive at ring drop time
+  # Returns [bonus_amount, is_powered]
+  def calculate_ring_drop_bonus(appearance, match)
+    return [ 0, false ] unless appearance.faction&.name == FELLOWSHIP_FACTION
+
+    replay = match.wc3stats_replay
+    return [ 0, false ] unless replay&.events&.any?
+
+    # Find Ring Drop event and its time
+    ring_drop_event = replay.events.find do |e|
+      e["eventName"] == "eventsTriggered" &&
+        fix_encoding(replay, e["args"]&.first) == RING_DROP_EVENT
+    end
+
+    return [ 0, false ] unless ring_drop_event
+
+    ring_drop_time = ring_drop_event["time"] || 0
+
+    # Check how many evil main bases are alive at ring drop time
+    bases_alive = count_evil_bases_alive_at(replay, ring_drop_time, match)
+    is_powered = bases_alive >= 2
+
+    bonus = RING_DROP_BONUS
+    bonus += RING_DROP_POWERED_BONUS if is_powered
+
+    [ bonus, is_powered ]
+  end
+
+  # Count how many of the 3 main evil bases (Barad-Dur, Morannon, Minas Morgul) are alive at given time
+  # Check 2 seconds before ring drop to handle events that occur at same timestamp in unpredictable order
+  RING_DROP_TIME_BUFFER = 2
+
+  def count_evil_bases_alive_at(replay, time, match)
+    match_length = replay.game_length || match.seconds
+    return 3 unless match_length && match_length > 0
+
+    # Check 2 seconds before ring drop time to handle same-timestamp events
+    check_time = time - RING_DROP_TIME_BUFFER
+
+    # Get all base death events up to the check time (excluding ring events)
+    base_death_events = replay.events.select do |e|
+      e["eventName"] != "heroDeath" &&
+        !Faction::RING_EVENTS.include?(fix_encoding(replay, e["args"]&.first)) &&
+        e["time"] && e["time"] <= check_time
+    end
+
+    # Count how many of the key evil bases have NOT died by this time
+    bases_alive = 0
+    RING_POWERED_BASES.each do |base_name|
+      base_died = base_death_events.any? do |event|
+        fix_encoding(replay, event["args"]&.first) == base_name
+      end
+      bases_alive += 1 unless base_died
+    end
+
+    bases_alive
   end
 
   # Calculate match experience factor (0.0 to 1.0) based on all players' games played
@@ -807,6 +883,11 @@ class CustomRatingRecalculator
         is_mvp = mvp_bonus > 0
       end
 
+      # Ring Drop bonus: +1 for Fellowship when Ring Drop event occurs
+      # Additional +1 if 2+ evil main bases are alive at ring drop time
+      ring_drop_bonus, has_ring_powered_drop = calculate_ring_drop_bonus(appearance, match)
+      has_ring_drop = ring_drop_bonus > 0
+
       # Determine final rating change based on early leaver status
       # Early leaver matches: leaver gets 0, everyone else gets 30% reduced change
       if appearance.is_early_leaver?
@@ -816,19 +897,21 @@ class CustomRatingRecalculator
         # Winners get 70% of normal rating change (30% less)
         reduced_base_change = (base_change * 0.7).round
         reduced_new_player_bonus = (new_player_bonus * 0.7).round
-        total_change = reduced_base_change + reduced_new_player_bonus + contribution_bonus + mvp_bonus
+        total_change = reduced_base_change + reduced_new_player_bonus + contribution_bonus + mvp_bonus + ring_drop_bonus
       else
         # Losers get 70% of normal loss (30% less, base_change is negative)
         reduced_base_change = (base_change * 0.7).round
-        total_change = reduced_base_change + contribution_bonus
+        total_change = reduced_base_change + contribution_bonus + ring_drop_bonus
       end
 
       # Store rating data
       appearance.custom_rating = player.custom_rating
       appearance.custom_rating_change = total_change
       appearance.contribution_rank = rank_index + 1
-      appearance.contribution_bonus = contribution_bonus + mvp_bonus
+      appearance.contribution_bonus = contribution_bonus + mvp_bonus + ring_drop_bonus
       appearance.is_mvp = is_mvp
+      appearance.has_ring_drop = has_ring_drop
+      appearance.has_ring_powered_drop = has_ring_powered_drop
       appearance.performance_score = perf_score.round(2)
 
       store_historical_stats(appearance)

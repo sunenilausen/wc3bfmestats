@@ -30,6 +30,7 @@ class PlayerStatsCalculator
       times_top_hero_kills: 0,
       times_top_unit_kills: 0,
       times_mvp: 0,
+      times_ring_drop: 0,
       hero_kill_contributions: [],
       unit_kill_contributions: [],
       castle_raze_contributions: [],
@@ -59,6 +60,7 @@ class PlayerStatsCalculator
       times_top_hero_kills: 0,
       times_top_unit_kills: 0,
       times_mvp: 0,
+      times_ring_drop: 0,
       hero_kill_contributions: [],
       unit_kill_contributions: [],
       castle_raze_contributions: [],
@@ -303,6 +305,12 @@ class PlayerStatsCalculator
     if appearance.is_mvp?
       stats[:times_mvp] += 1
       faction_stats[:times_mvp] += 1
+    end
+
+    # Ring Drop: use stored has_ring_drop field (set by CustomRatingRecalculator)
+    if appearance.has_ring_drop?
+      stats[:times_ring_drop] += 1
+      faction_stats[:times_ring_drop] += 1
     end
   end
 

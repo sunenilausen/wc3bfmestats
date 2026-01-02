@@ -358,6 +358,14 @@
               <% end %>
             </td>
           </tr>
+          <% if stats[:times_ring_drop] && stats[:times_ring_drop] > 0 %>
+            <tr>
+              <td class="py-0.5"><span class="text-yellow-600">💍</span> Ring Drop</td>
+              <td class="text-right py-0.5">
+                <%= stats[:times_ring_drop] %>x
+              </td>
+            </tr>
+          <% end %>
           <tr>
             <td class="py-0.5">Avg Hero Kill Contrib</td>
             <td class="text-right py-0.5"><%= stats[:avg_hero_kill_contribution] %>%</td>
@@ -748,6 +756,7 @@
                 <% if appearance.contribution_rank %>
                   <span class="<%= appearance.contribution_rank <= 2 ? 'text-green-600' : (appearance.contribution_rank >= 4 ? 'text-red-600' : '') %>">#<%= appearance.contribution_rank %></span>
                   <% if appearance.is_mvp? %><span class="text-yellow-500" title="MVP: Top hero kills AND top unit kills">★</span><% end %>
+                  <% if appearance.has_ring_drop? %><span class="text-yellow-600" title="Ring Drop: Destroyed the One Ring (<%= appearance.has_ring_powered_drop? ? '+2, 2+ evil bases alive' : '+1' %>)">💍</span><% end %>
                 <% else %>
                   -
                 <% end %>

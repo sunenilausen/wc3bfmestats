@@ -163,7 +163,13 @@ class Wc3statsReplay < ApplicationRecord
   end
 
   def chatlog
-    body&.dig("data", "chatlog") || []
+    raw_chatlog = body&.dig("data", "chatlog") || []
+    raw_chatlog.map do |msg|
+      msg.merge(
+        "message" => fix_encoding(msg["message"]),
+        "playerName" => fix_encoding(msg["playerName"])
+      )
+    end
   end
 
   def events

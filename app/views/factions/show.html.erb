@@ -523,6 +523,48 @@
     </div>
   <% end %>
 
+  <%# Ringbearer Statistics (4.6+ only) %>
+  <% if @ringbearer_stats.present? %>
+    <h2 class="text-xl font-bold mb-3">Ringbearer Events <span class="text-sm font-normal text-gray-500">(4.6+)</span></h2>
+    <div class="bg-gray-50 rounded-md p-3 mb-6">
+      <div class="mb-3">
+        <p class="text-sm text-gray-600">
+          A hero from this faction claimed the One Ring in
+          <span class="font-medium text-gray-900"><%= @ringbearer_stats[:occurrences] %></span>
+          out of
+          <span class="font-medium text-gray-900"><%= @ringbearer_stats[:total_games] %></span>
+          games
+          <span class="text-gray-500">(<%= @ringbearer_stats[:occurrence_rate] %>%)</span>
+          <% if @ringbearer_stats[:avg_time] %>
+            at an average time of
+            <span class="font-medium text-gray-900"><%= ChronicDuration.output(@ringbearer_stats[:avg_time], format: :short) %></span>
+          <% end %>
+        </p>
+      </div>
+      <% if @ringbearer_stats[:heroes].any? %>
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-gray-200">
+              <th class="text-left py-2 font-semibold text-gray-700">Hero</th>
+              <th class="text-right py-2 font-semibold text-gray-700">Times</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @ringbearer_stats[:heroes].each do |hero_name, count| %>
+              <tr class="border-b border-gray-100 last:border-b-0">
+                <td class="py-2"><%= hero_name %></td>
+                <td class="text-right py-2">
+                  <span class="font-medium"><%= count %></span>
+                  <span class="text-gray-400 text-xs">(<%= (@ringbearer_stats[:occurrences] > 0 ? (count.to_f / @ringbearer_stats[:occurrences] * 100).round(1) : 0) %>%)</span>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% end %>
+    </div>
+  <% end %>
+
   <div class="flex gap-2">
     <% if can? :update, @faction %>
       <%= link_to "Edit", edit_faction_path(@faction), class: "rounded-md px-3 py-2 bg-gray-100 hover:bg-gray-50 text-sm font-medium" %>

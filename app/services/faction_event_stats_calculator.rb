@@ -8,6 +8,91 @@ class FactionEventStatsCalculator
     "Mordor" => "Sauron gets the ring"
   }.freeze
 
+  # Hero first names mapped to factions (for "[Hero] uses the ring" events in 4.6+)
+  # These are extracted from hero full names to match the event format
+  RINGBEARER_HERO_TO_FACTION = {
+    # Gondor
+    "Faramir" => "Gondor",
+    "Denethor" => "Gondor",
+    "Beregond" => "Gondor",
+    "Anborn" => "Gondor",
+    "Hirluin" => "Gondor",
+    # Rohan
+    "Théoden" => "Rohan",
+    "Eómer" => "Rohan",
+    "Eowyn" => "Rohan",
+    "Gamling" => "Rohan",
+    "Grimbold" => "Rohan",
+    # Dol Amroth
+    "Imrahil" => "Dol Amroth",
+    "Forlong" => "Dol Amroth",
+    "Duinhir" => "Dol Amroth",
+    "Corinir" => "Dol Amroth",
+    # Fellowship
+    "Gandalf" => "Fellowship",
+    "Aragorn" => "Fellowship",
+    "Boromir" => "Fellowship",
+    "Frodo" => "Fellowship",
+    "Samwise" => "Fellowship",
+    "Sam" => "Fellowship",
+    "Meriadoc" => "Fellowship",
+    "Merry" => "Fellowship",
+    "Peregrin" => "Fellowship",
+    "Pippin" => "Fellowship",
+    "Legolas" => "Fellowship",
+    "Gimli" => "Fellowship",
+    # Fangorn
+    "Treebeard" => "Fangorn",
+    "Galadriel" => "Fangorn",
+    "Celeborn" => "Fangorn",
+    "Haldir" => "Fangorn",
+    # Isengard (Saruman has special event)
+    "Saruman" => "Isengard",
+    "Grima" => "Isengard",
+    "Lurtz" => "Isengard",
+    "Úgluk" => "Isengard",
+    "Ugluk" => "Isengard",
+    "Sharkû" => "Isengard",
+    "Sharku" => "Isengard",
+    # Easterlings
+    "Ovatha" => "Easterlings",
+    "Gwaer" => "Easterlings",
+    "Kurgath" => "Easterlings",
+    "Zuldân" => "Easterlings",
+    "Zuldan" => "Easterlings",
+    # Harad
+    "Suladân" => "Harad",
+    "Suladan" => "Harad",
+    "Carycyn" => "Harad",
+    "Husâjek" => "Harad",
+    "Husajek" => "Harad",
+    "Owynvan" => "Harad",
+    # Minas Morgul (Nazgul - using common names)
+    "Er-Murâzor" => "Minas Morgul",
+    "Witch-King" => "Minas Morgul",
+    "Adûnaphel" => "Minas Morgul",
+    "Akhôrahil" => "Minas Morgul",
+    "Dwar" => "Minas Morgul",
+    "Hoarmûrath" => "Minas Morgul",
+    "Jí Indûr" => "Minas Morgul",
+    "Ji Indur" => "Minas Morgul",
+    "Ren" => "Minas Morgul",
+    "Khamûl" => "Minas Morgul",
+    "Khamul" => "Minas Morgul",
+    "Ûvatha" => "Minas Morgul",
+    "Uvatha" => "Minas Morgul",
+    # Mordor
+    "Sauron" => "Mordor",
+    "Mouth" => "Mordor",
+    "Gothmog" => "Mordor",
+    "Shagrat" => "Mordor",
+    "Bâdruík" => "Mordor",
+    "Badruik" => "Mordor"
+  }.freeze
+
+  # Minimum map version for ringbearer events (they were added in 4.6)
+  RINGBEARER_MIN_VERSION = "4.6"
+
   # Extra heroes mapped to their original hero form
   EXTRA_HERO_MAPPING = {
     "Sauron the Great" => nil, # Sauron has no base form, exclude from stats
@@ -57,6 +142,11 @@ class FactionEventStatsCalculator
     all_heroes_lost_times = []
     all_heroes_lost_twice_times = [] # For Minas Morgul
     total_games = 0
+
+    # Ringbearer tracking (4.6+ only)
+    ringbearer_occurrences = []  # Times when a hero from this faction became ringbearer
+    ringbearer_heroes = Hash.new(0)  # Count per hero
+    ringbearer_games = 0  # Games that are 4.6+
 
     # Uptime tracking
     total_hero_seconds_alive = 0
@@ -247,6 +337,35 @@ class FactionEventStatsCalculator
           end
         end
       end
+
+      # Process ringbearer events (4.6+ only)
+      if version_at_least?(replay.map_version, RINGBEARER_MIN_VERSION)
+        ringbearer_games += 1
+
+        # Find "[Hero] uses the ring" and "Saruman takes the ring for himself" events
+        ringbearer_events_in_match = replay.events.select do |e|
+          next false unless e["eventName"] == "eventsTriggered"
+          event_text = fix_encoding(replay, e["args"]&.first)
+          next false unless event_text
+
+          # Match "[Hero] uses the ring" or "Saruman takes the ring for himself"
+          event_text.match?(/uses the ring\z/i) || event_text == "Saruman takes the ring for himself"
+        end
+
+        ringbearer_events_in_match.each do |event|
+          event_text = fix_encoding(replay, event["args"]&.first)
+          hero_name = extract_ringbearer_hero(event_text)
+          next unless hero_name
+
+          # Check if this hero belongs to the current faction
+          hero_faction = RINGBEARER_HERO_TO_FACTION[hero_name]
+          next unless hero_faction == faction.name
+
+          event_time = event["time"]
+          ringbearer_occurrences << event_time if event_time
+          ringbearer_heroes[hero_name] += 1
+        end
+      end
     end
 
     # Build results
@@ -256,6 +375,7 @@ class FactionEventStatsCalculator
       hero_stats: build_hero_results(display_hero_names, hero_stats),
       hero_loss_stats: build_hero_loss_results(core_hero_names, total_games, all_heroes_lost_times, all_heroes_lost_twice_times),
       ring_event_stats: build_ring_results(ring_event, total_games, ring_occurrences, sauron_deaths_after_ring),
+      ringbearer_stats: build_ringbearer_results(ringbearer_games, ringbearer_occurrences, ringbearer_heroes),
       hero_uptime: total_hero_seconds_possible > 0 ? (total_hero_seconds_alive.to_f / total_hero_seconds_possible * 100).round(1) : 0,
       base_uptime: total_base_seconds_possible > 0 ? (total_base_seconds_alive.to_f / total_base_seconds_possible * 100).round(1) : 0,
       hero_kills: total_hero_kills,
@@ -394,5 +514,57 @@ class FactionEventStatsCalculator
   def fix_encoding(replay, str)
     return str if str.nil?
     replay.fix_encoding(str.gsub("\\", ""))
+  end
+
+  def build_ringbearer_results(total_games, occurrences, heroes)
+    return nil if total_games == 0
+
+    occurrence_count = occurrences.size
+    return nil if occurrence_count == 0
+
+    # Sort heroes by count (descending)
+    sorted_heroes = heroes.sort_by { |_, count| -count }.to_h
+
+    {
+      total_games: total_games,
+      occurrences: occurrence_count,
+      occurrence_rate: (occurrence_count.to_f / total_games * 100).round(1),
+      avg_time: occurrences.any? ? (occurrences.sum.to_f / occurrence_count).round : nil,
+      heroes: sorted_heroes
+    }
+  end
+
+  # Compare version strings (e.g., "4.6" >= "4.6", "4.5e" < "4.6")
+  def version_at_least?(version, min_version)
+    return false if version.nil? || min_version.nil?
+
+    # Extract numeric parts (e.g., "4.5e" -> [4, 5], "4.6" -> [4, 6])
+    v_parts = version.scan(/\d+/).map(&:to_i)
+    min_parts = min_version.scan(/\d+/).map(&:to_i)
+
+    # Compare each part
+    max_length = [ v_parts.length, min_parts.length ].max
+    max_length.times do |i|
+      v = v_parts[i] || 0
+      m = min_parts[i] || 0
+      return true if v > m
+      return false if v < m
+    end
+
+    true # Equal versions
+  end
+
+  # Extract hero name from ringbearer event text
+  # "[Hero] uses the ring" -> "Hero"
+  # "Saruman takes the ring for himself" -> "Saruman"
+  def extract_ringbearer_hero(event_text)
+    return nil if event_text.nil?
+
+    if event_text == "Saruman takes the ring for himself"
+      "Saruman"
+    elsif event_text.match?(/uses the ring\z/i)
+      # Extract hero name before " uses the ring"
+      event_text.sub(/ uses the ring\z/i, "").strip
+    end
   end
 end

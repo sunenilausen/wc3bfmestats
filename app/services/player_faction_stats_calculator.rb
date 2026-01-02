@@ -118,14 +118,14 @@ class PlayerFactionStatsCalculator
     hero_kill_totals = Appearance.joins(:faction)
       .where(match_id: match_ids)
       .where.not(hero_kills: nil)
-      .where(ignore_hero_kills: [false, nil])
+      .where(ignore_hero_kills: [ false, nil ])
       .group(:match_id, "factions.good")
       .sum(:hero_kills)
 
     unit_kill_totals = Appearance.joins(:faction)
       .where(match_id: match_ids)
       .where.not(unit_kills: nil)
-      .where(ignore_unit_kills: [false, nil])
+      .where(ignore_unit_kills: [ false, nil ])
       .group(:match_id, "factions.good")
       .sum(:unit_kills)
 
@@ -146,21 +146,21 @@ class PlayerFactionStatsCalculator
     player_faction_contribs = Hash.new { |h, k| h[k] = { hk: [], uk: [], cr: [], th: [] } }
 
     appearances_data.each do |player_id, faction_id, match_id, hk, uk, cr, th, ignore_hk, ignore_uk, is_good|
-      key = [player_id, faction_id]
+      key = [ player_id, faction_id ]
 
       # Hero kills (capped at 10% per kill)
       if hk && !ignore_hk
-        team_total = hero_kill_totals[[match_id, is_good]] || 0
+        team_total = hero_kill_totals[[ match_id, is_good ]] || 0
         if team_total > 0
           raw_contrib = (hk.to_f / team_total * 100)
           max_contrib = hk * MlScoreRecalculator::HERO_KILL_CAP_PER_KILL
-          player_faction_contribs[key][:hk] << [raw_contrib, max_contrib].min
+          player_faction_contribs[key][:hk] << [ raw_contrib, max_contrib ].min
         end
       end
 
       # Unit kills (no cap)
       if uk && !ignore_uk
-        team_total = unit_kill_totals[[match_id, is_good]] || 0
+        team_total = unit_kill_totals[[ match_id, is_good ]] || 0
         if team_total > 0
           player_faction_contribs[key][:uk] << (uk.to_f / team_total * 100)
         end
@@ -168,20 +168,20 @@ class PlayerFactionStatsCalculator
 
       # Castle raze (capped at 20% per castle)
       if cr
-        team_total = castle_totals[[match_id, is_good]] || 0
+        team_total = castle_totals[[ match_id, is_good ]] || 0
         if team_total > 0
           raw_contrib = (cr.to_f / team_total * 100)
           max_contrib = cr * MlScoreRecalculator::CASTLE_RAZE_CAP_PER_KILL
-          player_faction_contribs[key][:cr] << [raw_contrib, max_contrib].min
+          player_faction_contribs[key][:cr] << [ raw_contrib, max_contrib ].min
         end
       end
 
       # Team heal (capped at 40%)
       if th && th > 0
-        team_total = team_heal_totals[[match_id, is_good]] || 0
+        team_total = team_heal_totals[[ match_id, is_good ]] || 0
         if team_total > 0
           raw_contrib = (th.to_f / team_total * 100)
-          player_faction_contribs[key][:th] << [raw_contrib, MlScoreRecalculator::TEAM_HEAL_CAP_PER_GAME].min
+          player_faction_contribs[key][:th] << [ raw_contrib, MlScoreRecalculator::TEAM_HEAL_CAP_PER_GAME ].min
         end
       end
     end
@@ -189,7 +189,7 @@ class PlayerFactionStatsCalculator
     # First pass: calculate raw faction scores
     faction_raw_scores = {}
     PlayerFactionStat.where("games_played >= ?", MIN_GAMES_FOR_RANKING).find_each do |stat|
-      key = [stat.player_id, stat.faction_id]
+      key = [ stat.player_id, stat.faction_id ]
       contribs = player_faction_contribs[key]
 
       next unless contribs

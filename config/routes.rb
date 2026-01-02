@@ -12,6 +12,7 @@ Rails.application.routes.draw do
     end
     member do
       post :refetch
+      post :toggle_reviewed
     end
   end
   resources :factions, except: [ :new, :create, :destroy ]
@@ -26,10 +27,10 @@ Rails.application.routes.draw do
     end
     get "analytics", to: "analytics#index", as: :analytics
     get "suspicious_matches", to: "suspicious_matches#index", as: :suspicious_matches
-    post "suspicious_matches/:id/review", to: "suspicious_matches#review", as: :review_suspicious_match
   end
 
   devise_for :users
+  post "dev_sign_in", to: "dev_sessions#create", as: :dev_sign_in if Rails.env.development? || Rails.env.test?
   get "home/index"
   get "statistics", to: "home#statistics", as: :statistics
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html

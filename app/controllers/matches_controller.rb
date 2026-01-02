@@ -1,7 +1,7 @@
 class MatchesController < ApplicationController
-  load_and_authorize_resource except: %i[index show new create sync edit update destroy refetch]
-  before_action :set_match, only: %i[show edit update destroy]
-  authorize_resource only: %i[new create show edit update destroy]
+  load_and_authorize_resource except: %i[index show new create sync edit update destroy refetch toggle_reviewed]
+  before_action :set_match, only: %i[show edit update destroy toggle_reviewed]
+  authorize_resource only: %i[new create show edit update destroy toggle_reviewed]
   before_action :authorize_admin!, only: [ :sync ]
 
   # GET /matches or /matches.json
@@ -103,7 +103,6 @@ class MatchesController < ApplicationController
 
     respond_to do |format|
       if @match.save
-        # Recalculate ratings in background (cancels any pending recalculations)
         RatingRecalculationJob.enqueue_and_cancel_pending
 
         format.html { redirect_to @match, notice: "Match was successfully updated. Ratings are being recalculated.", status: :see_other }
@@ -177,6 +176,11 @@ class MatchesController < ApplicationController
       Rails.logger.error "Refetch: Failed to fetch replay: #{replay_fetcher.errors.join(', ')}"
       redirect_to matches_path, alert: "Failed to refetch replay: #{replay_fetcher.errors.first}"
     end
+  end
+
+  def toggle_reviewed
+    @match.update!(reviewed: !@match.reviewed)
+    redirect_to @match, notice: @match.reviewed? ? "Match marked as reviewed." : "Match unmarked as reviewed."
   end
 
   private

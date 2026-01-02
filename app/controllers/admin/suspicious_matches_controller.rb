@@ -12,12 +12,6 @@ module Admin
       @suspicious_matches = SuspiciousMatchFinder.new(limit: limit).call
     end
 
-    def review
-      match = Match.find(params[:id])
-      match.update!(reviewed: true)
-      redirect_to admin_suspicious_matches_path, notice: "Match marked as reviewed"
-    end
-
     private
 
     def authorize_admin

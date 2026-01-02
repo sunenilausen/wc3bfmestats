@@ -6,7 +6,7 @@ class PredictionAccuracyCache
   # Returns accuracy data for all buckets
   # { "50-55" => { accuracy: 52.3, total: 45 }, "55-60" => { accuracy: 58.1, total: 38 }, ... }
   def self.all
-    Rails.cache.fetch([CACHE_KEY, StatsCacheKey.key]) do
+    Rails.cache.fetch([ CACHE_KEY, StatsCacheKey.key ]) do
       calculate_accuracy_by_bucket
     end
   end
@@ -49,7 +49,7 @@ class PredictionAccuracyCache
 
     matches.find_each do |match|
       good_pct = match.predicted_good_win_pct.to_f
-      confidence_pct = [good_pct, 100 - good_pct].max
+      confidence_pct = [ good_pct, 100 - good_pct ].max
       good_favored = good_pct >= 50
       prediction_correct = (good_favored && match.good_victory) || (!good_favored && !match.good_victory)
 

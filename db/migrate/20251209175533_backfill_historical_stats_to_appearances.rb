@@ -16,11 +16,10 @@ class BackfillHistoricalStatsToAppearances < ActiveRecord::Migration[8.1]
     total = Match.where(ignored: false).count
     processed = 0
 
-    Match.includes(appearances: [:player, :faction])
+    Match.includes(appearances: [ :player, :faction ])
          .where(ignored: false)
          .chronological
          .find_each do |match|
-
       match.appearances.each do |appearance|
         next unless appearance.player_id && appearance.faction_id
 

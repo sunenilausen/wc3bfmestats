@@ -42,7 +42,6 @@ class LobbiesController < ApplicationController
     @overall_avg_ranks = cached_stats[:overall_avg_ranks]
     @faction_rank_data = cached_stats[:faction_rank_data]
     @faction_perf_stats = cached_stats[:faction_perf_stats]
-
   end
 
   # GET /lobbies/new - creates lobby instantly with previous match players

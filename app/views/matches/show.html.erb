@@ -39,4 +39,7 @@
   <% if current_user&.admin? && @match.wc3stats_replay.present? %>
     <%= button_to "Refetch from wc3stats", refetch_match_path(@match), method: :post, form_class: "sm:inline-block mt-2 sm:mt-0 sm:ml-2", class: "w-full rounded-md px-3.5 py-2.5 text-white bg-blue-600 hover:bg-blue-500 font-medium cursor-pointer" %>
   <% end %>
+  <% if can? :update, @match %>
+    <%= button_to @match.reviewed? ? "Unmark reviewed" : "Mark reviewed", toggle_reviewed_match_path(@match), method: :post, form_class: "sm:inline-block mt-2 sm:mt-0 sm:ml-2", class: "w-full rounded-md px-3.5 py-2.5 text-white #{@match.reviewed? ? 'bg-green-600 hover:bg-green-500' : 'bg-gray-600 hover:bg-gray-500'} font-medium cursor-pointer" %>
+  <% end %>
 </div>

@@ -83,7 +83,7 @@ class ApmBackfillerTest < ActiveSupport::TestCase
     player = Player.create!(
       nickname: "AltTest",
       battletag: "AltTest#5678",
-      alternative_battletags: ["OldTag#1234"]
+      alternative_battletags: [ "OldTag#1234" ]
     )
     replay = Wc3statsReplay.create!(
       wc3stats_replay_id: 999997,

@@ -118,7 +118,12 @@ class Wc3statsReplay < ApplicationRecord
   # Returns array of player data for players who left within first 3 minutes
   # Only the first leaver(s) count - others who left after get a pass
   def early_leavers
-    game_players = players.reject { |p| p["isObserver"] }
+    # Exclude observers: isObserver flag, team 2, or players without winner/loser flags
+    game_players = players.reject { |p|
+      p["isObserver"] ||
+        p["team"] == 2 ||
+        (p["flags"] & [ "winner", "loser" ]).empty?
+    }
     return [] if game_players.empty?
 
     # Find players who left early (within 180 seconds)

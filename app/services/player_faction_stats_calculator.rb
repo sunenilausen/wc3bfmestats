@@ -33,9 +33,9 @@ class PlayerFactionStatsCalculator
     # Clear existing stats
     PlayerFactionStat.delete_all
 
-    # Get all appearances with their performance scores
+    # Get all appearances with their performance scores (exclude early leaver matches)
     appearances_data = Appearance.joins(:match, :faction, :player)
-      .where(matches: { ignored: false })
+      .where(matches: { ignored: false, has_early_leaver: false })
       .where.not(performance_score: nil)
       .pluck(:player_id, :faction_id, :performance_score, "matches.good_victory", "factions.good")
 
@@ -106,14 +106,14 @@ class PlayerFactionStatsCalculator
   def calculate_faction_scores_batch
     weights = MlScoreRecalculator::WEIGHTS
 
-    # Get all appearances grouped by player_id and faction_id
+    # Get all appearances grouped by player_id and faction_id (exclude early leaver matches)
     appearances_data = Appearance.joins(:match, :faction)
-      .where(matches: { ignored: false })
+      .where(matches: { ignored: false, has_early_leaver: false })
       .pluck(:player_id, :faction_id, :match_id, :hero_kills, :unit_kills, :castles_razed, :team_heal,
              :ignore_hero_kills, :ignore_unit_kills, "factions.good")
 
     # Get team totals per match per team
-    match_ids = Match.where(ignored: false).pluck(:id)
+    match_ids = Match.where(ignored: false, has_early_leaver: false).pluck(:id)
 
     hero_kill_totals = Appearance.joins(:faction)
       .where(match_id: match_ids)

@@ -64,6 +64,7 @@ module Wc3stats
         seconds: wc3stats_replay.game_length,
         good_victory: determine_good_victory,
         is_draw: wc3stats_replay.is_draw?,
+        has_early_leaver: wc3stats_replay.has_early_leaver?,
         major_version: wc3stats_replay.major_version,
         build_version: wc3stats_replay.build_version,
         map_version: wc3stats_replay.map_version,
@@ -93,6 +94,9 @@ module Wc3stats
     end
 
     def create_appearances(match)
+      # Get early leaver battletags for this match
+      early_leaver_tags = wc3stats_replay.early_leaver_battletags
+
       active_players.each do |player_data|
         slot = player_data["slot"]
         faction_name = SLOT_TO_FACTION[slot]
@@ -108,6 +112,12 @@ module Wc3stats
         team_heal = player_data.dig("variables", "teamHeal")
         total_heal = (self_heal || 0) + (team_heal || 0) if self_heal || team_heal
 
+        # Check if this player is an early leaver
+        battletag = player_data["name"]
+        fixed_battletag = fix_encoding(battletag) if battletag
+        is_early_leaver = early_leaver_tags.include?(battletag) ||
+                          (fixed_battletag && early_leaver_tags.include?(fixed_battletag))
+
         match.appearances.create!(
           player: player,
           faction: faction,
@@ -119,7 +129,8 @@ module Wc3stats
           team_heal: team_heal,
           total_heal: total_heal,
           stay_pct: player_data["stayPercent"],
-          apm: player_data["apm"]
+          apm: player_data["apm"],
+          is_early_leaver: is_early_leaver
         )
       end
     end

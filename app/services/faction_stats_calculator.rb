@@ -16,7 +16,7 @@ class FactionStatsCalculator
   def compute
     appearances = faction.appearances
       .joins(:match)
-      .where(matches: { ignored: false })
+      .where(matches: { ignored: false, has_early_leaver: false })
       .includes(:player, :faction, match: [ :wc3stats_replay, { appearances: :faction } ])
 
     if map_version.present?

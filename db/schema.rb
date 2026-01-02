@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_12_23_142257) do
+ActiveRecord::Schema[8.1].define(version: 2026_01_02_103259) do
   create_table "ahoy_events", force: :cascade do |t|
     t.string "name"
     t.text "properties"
@@ -79,6 +79,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_23_142257) do
     t.integer "heroes_total"
     t.boolean "ignore_hero_kills", default: false, null: false
     t.boolean "ignore_unit_kills", default: false, null: false
+    t.boolean "is_early_leaver", default: false, null: false
     t.boolean "is_mvp", default: false
     t.integer "main_base_destroyed"
     t.decimal "main_base_pct"
@@ -141,6 +142,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_23_142257) do
     t.integer "build_version"
     t.datetime "created_at", null: false
     t.boolean "good_victory"
+    t.boolean "has_early_leaver", default: false, null: false
     t.boolean "ignored", default: false, null: false
     t.boolean "is_draw", default: false, null: false
     t.integer "major_version"

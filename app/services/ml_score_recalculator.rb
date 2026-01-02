@@ -46,17 +46,17 @@ class MlScoreRecalculator
     player_ids = Player.pluck(:id)
     return if player_ids.empty?
 
-    # Batch query: games played per player
+    # Batch query: games played per player (exclude early leaver matches for stats)
     games_played = Appearance.joins(:match)
-      .where(matches: { ignored: false })
+      .where(matches: { ignored: false, has_early_leaver: false })
       .group(:player_id)
       .count
 
     # Batch query: team totals per match for kill contribution calculation
-    match_ids = Match.where(ignored: false).pluck(:id)
+    match_ids = Match.where(ignored: false, has_early_leaver: false).pluck(:id)
 
     # Get map versions for all matches to determine which weight set to use
-    match_versions = Match.where(ignored: false).pluck(:id, :map_version).to_h
+    match_versions = Match.where(ignored: false, has_early_leaver: false).pluck(:id, :map_version).to_h
 
     # Hero kills team totals (excluding ignored)
     hero_kill_totals = Appearance.joins(:faction)
@@ -126,35 +126,35 @@ class MlScoreRecalculator
       team_heal_by_match[match_id][is_good] = th.to_i
     end
 
-    # Get hero kill appearances (excluding ignored)
+    # Get hero kill appearances (excluding ignored and early leaver)
     hero_kill_appearances = Appearance.joins(:match, :faction)
-      .where(matches: { ignored: false })
+      .where(matches: { ignored: false, has_early_leaver: false })
       .where.not(hero_kills: nil)
       .where(ignore_hero_kills: [ false, nil ])
       .pluck(:player_id, :match_id, "factions.good", :hero_kills)
 
-    # Get unit kill appearances (excluding ignored)
+    # Get unit kill appearances (excluding ignored and early leaver)
     unit_kill_appearances = Appearance.joins(:match, :faction)
-      .where(matches: { ignored: false })
+      .where(matches: { ignored: false, has_early_leaver: false })
       .where.not(unit_kills: nil)
       .where(ignore_unit_kills: [ false, nil ])
       .pluck(:player_id, :match_id, "factions.good", :unit_kills)
 
     # Get castle raze appearances separately (may have different nulls)
     castle_appearances = Appearance.joins(:match, :faction)
-      .where(matches: { ignored: false })
+      .where(matches: { ignored: false, has_early_leaver: false })
       .where.not(castles_razed: nil)
       .pluck(:player_id, :match_id, "factions.good", :castles_razed)
 
     # Get main base destroyed appearances separately (4.6+ only)
     main_base_appearances = Appearance.joins(:match, :faction)
-      .where(matches: { ignored: false })
+      .where(matches: { ignored: false, has_early_leaver: false })
       .where.not(main_base_destroyed: nil)
       .pluck(:player_id, :match_id, "factions.good", :main_base_destroyed)
 
     # Get team heal appearances separately
     team_heal_appearances = Appearance.joins(:match, :faction)
-      .where(matches: { ignored: false })
+      .where(matches: { ignored: false, has_early_leaver: false })
       .where.not(team_heal: nil)
       .where("team_heal > 0")
       .pluck(:player_id, :match_id, "factions.good", :team_heal)
@@ -223,7 +223,7 @@ class MlScoreRecalculator
 
     # Batch query: Custom ratings per match for enemy CR diff calculation
     cr_appearances = Appearance.joins(:match, :faction)
-      .where(matches: { ignored: false })
+      .where(matches: { ignored: false, has_early_leaver: false })
       .where.not(custom_rating: nil)
       .pluck(:player_id, :match_id, "factions.good", :custom_rating)
 

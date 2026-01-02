@@ -75,6 +75,14 @@ class Glicko2Recalculator
       return
     end
 
+    # For early leaver matches, special handling:
+    # - Early leaver gets 0 rating change
+    # - All other players get 30% reduced rating change
+    if match.has_early_leaver?
+      store_early_leaver_appearances(match, good_appearances, evil_appearances)
+      return
+    end
+
     # Calculate team averages (in Glicko-2 scale)
     good_avg_mu = to_glicko2_scale(average_rating(good_appearances))
     good_avg_phi = to_glicko2_rd(average_rd(good_appearances))
@@ -190,5 +198,61 @@ class Glicko2Recalculator
     rds = appearances.map { |a| a.player&.glicko2_rating_deviation }.compact
     return DEFAULT_RD if rds.empty?
     rds.sum / rds.size.to_f
+  end
+
+  # Handle early leaver matches:
+  # - Early leaver gets 0 rating change (no RD/volatility update)
+  # - All other players get 70% of normal rating change (30% less)
+  def store_early_leaver_appearances(match, good_appearances, evil_appearances)
+    # Calculate team averages (in Glicko-2 scale)
+    good_avg_mu = to_glicko2_scale(average_rating(good_appearances))
+    good_avg_phi = to_glicko2_rd(average_rd(good_appearances))
+    evil_avg_mu = to_glicko2_scale(average_rating(evil_appearances))
+    evil_avg_phi = to_glicko2_rd(average_rd(evil_appearances))
+
+    # Process each player
+    match.appearances.each do |appearance|
+      player = appearance.player
+      next unless player
+
+      is_good = appearance.faction.good?
+      won = (is_good && match.good_victory?) || (!is_good && !match.good_victory?)
+      score = won ? 1.0 : 0.0
+
+      # Store current rating snapshot
+      appearance.glicko2_rating = player.glicko2_rating
+      appearance.glicko2_rating_deviation = player.glicko2_rating_deviation
+
+      if appearance.is_early_leaver?
+        # Early leaver gets 0 rating change
+        appearance.glicko2_rating_change = 0
+      else
+        # Calculate normal rating change
+        mu = to_glicko2_scale(player.glicko2_rating)
+        phi = to_glicko2_rd(player.glicko2_rating_deviation)
+        sigma = player.glicko2_volatility
+
+        opp_mu = is_good ? evil_avg_mu : good_avg_mu
+        opp_phi = is_good ? evil_avg_phi : good_avg_phi
+
+        new_mu, new_phi, new_sigma = update_rating(mu, phi, sigma, opp_mu, opp_phi, score)
+
+        new_rating = from_glicko2_scale(new_mu)
+        new_rd = from_glicko2_rd(new_phi)
+        rating_change = new_rating - player.glicko2_rating
+
+        # Both winners and losers get 70% of normal rating change (30% less)
+        reduced_change = (rating_change * 0.7).round(2)
+        appearance.glicko2_rating_change = reduced_change
+        player.glicko2_rating += reduced_change
+        # Still update RD and volatility normally
+        player.glicko2_rating_deviation = new_rd
+        player.glicko2_volatility = new_sigma
+      end
+    end
+
+    # Save all appearances and players
+    match.appearances.each(&:save!)
+    match.appearances.map(&:player).compact.uniq.each(&:save!)
   end
 end

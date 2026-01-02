@@ -108,6 +108,35 @@ class Wc3statsReplay < ApplicationRecord
     players.any? { |p| p["flags"]&.include?("drawer") }
   end
 
+  # Early leave detection (player left within first 3 minutes)
+  EARLY_LEAVE_THRESHOLD = 180  # 3 minutes in seconds
+
+  def has_early_leaver?
+    early_leavers.any?
+  end
+
+  # Returns array of player data for players who left within first 3 minutes
+  # Only the first leaver(s) count - others who left after get a pass
+  def early_leavers
+    game_players = players.reject { |p| p["isObserver"] }
+    return [] if game_players.empty?
+
+    # Find players who left early (within 180 seconds)
+    players_with_early_leave = game_players.select { |p|
+      p["leftAt"].present? && p["leftAt"] <= EARLY_LEAVE_THRESHOLD
+    }
+    return [] if players_with_early_leave.empty?
+
+    # Only the first leaver(s) count as early leavers
+    first_leave_time = players_with_early_leave.map { |p| p["leftAt"] }.min
+    players_with_early_leave.select { |p| p["leftAt"] == first_leave_time }
+  end
+
+  # Returns battletags of early leavers
+  def early_leaver_battletags
+    early_leavers.map { |p| p["name"] }
+  end
+
   def player_by_name(name)
     players.find { |p| p["name"] == name }
   end

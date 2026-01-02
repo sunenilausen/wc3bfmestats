@@ -11,6 +11,9 @@
     <% if match.is_draw? %>
       <span class="ml-2 px-2 py-0.5 bg-gray-200 text-gray-700 text-sm rounded">Draw</span>
     <% end %>
+    <% if match.has_early_leaver? %>
+      <span class="ml-2 px-2 py-0.5 bg-orange-100 text-orange-700 text-sm rounded">Early Leaver</span>
+    <% end %>
     <% if match.victory_overridden? %>
       <span class="ml-2 px-2 py-0.5 bg-yellow-100 text-yellow-700 text-sm rounded">Victory Overridden</span>
     <% end %>

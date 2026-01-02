@@ -179,6 +179,14 @@ class CustomRatingRecalculator
       return
     end
 
+    # For early leaver matches, special handling:
+    # - Early leaver gets 0 rating change
+    # - All other players get 30% reduced rating change
+    if match.has_early_leaver?
+      store_early_leaver_appearances(match, good_appearances, evil_appearances, skip_contribution_bonus)
+      return
+    end
+
     # Calculate performance scores and rank players within each team
     good_ranked = rank_by_performance(good_appearances, match)
     evil_ranked = rank_by_performance(evil_appearances, match)
@@ -740,6 +748,112 @@ class CustomRatingRecalculator
 
     stats[:games_played] += 1
     stats[:faction_games][appearance.faction_id] += 1
+  end
+
+  # Store appearance data for early leaver matches
+  # - Early leaver gets 0 rating change (even if won)
+  # - All other players get 70% of normal rating change (30% less)
+  def store_early_leaver_appearances(match, good_appearances, evil_appearances, skip_contribution_bonus)
+    # Calculate performance rankings for contribution bonuses
+    good_ranked = rank_by_performance(good_appearances, match)
+    evil_ranked = rank_by_performance(evil_appearances, match)
+
+    # Calculate match experience factor
+    match_experience = calculate_match_experience(match.appearances)
+
+    # Calculate team averages
+    good_avg = good_appearances.sum { |a| a.player&.custom_rating || DEFAULT_RATING } / good_appearances.size.to_f
+    evil_avg = evil_appearances.sum { |a| a.player&.custom_rating || DEFAULT_RATING } / evil_appearances.size.to_f
+
+    match.appearances.each do |appearance|
+      player = appearance.player
+      next unless player&.custom_rating
+
+      is_good = appearance.faction.good?
+      won = (is_good && match.good_victory?) || (!is_good && !match.good_victory?)
+      team_appearances = is_good ? good_appearances : evil_appearances
+      ranked_team = is_good ? good_ranked : evil_ranked
+      opponent_avg = is_good ? evil_avg : good_avg
+      own_team_avg = is_good ? good_avg : evil_avg
+
+      # Calculate what the normal rating change would be
+      player_effective = (INDIVIDUAL_WEIGHT * player.custom_rating) + (TEAM_WEIGHT * own_team_avg)
+      expected = 1.0 / (1.0 + 10**((opponent_avg - player_effective) / 400.0))
+      actual = won ? 1 : 0
+
+      k_factor = k_factor_for_player(player)
+      base_change = (k_factor * (actual - expected)).round
+      base_change = (base_change * match_experience).round
+
+      # Calculate bonuses (same as normal)
+      new_player_bonus = 0
+      if won && player.custom_rating_bonus_wins.to_i > 0
+        new_player_bonus = bonus_for_win(player.custom_rating_bonus_wins, player.custom_rating)
+      end
+
+      rank_entry = ranked_team.find { |r| r[:appearance].id == appearance.id }
+      rank_index = ranked_team.index { |r| r[:appearance].id == appearance.id } || (ranked_team.size - 1)
+      perf_score = rank_entry ? rank_entry[:score] : 0.0
+
+      contribution_bonus = 0
+      unless skip_contribution_bonus
+        contribution_bonus = calculate_contribution_bonus(rank_index, won)
+      end
+
+      mvp_bonus = 0
+      is_mvp = false
+      if won
+        mvp_bonus = calculate_mvp_bonus(appearance, team_appearances)
+        is_mvp = mvp_bonus > 0
+      end
+
+      # Determine final rating change based on early leaver status
+      # Early leaver matches: leaver gets 0, everyone else gets 30% reduced change
+      if appearance.is_early_leaver?
+        # Early leaver gets 0 rating change, no bonuses
+        total_change = 0
+      elsif won
+        # Winners get 70% of normal rating change (30% less)
+        reduced_base_change = (base_change * 0.7).round
+        reduced_new_player_bonus = (new_player_bonus * 0.7).round
+        total_change = reduced_base_change + reduced_new_player_bonus + contribution_bonus + mvp_bonus
+      else
+        # Losers get 70% of normal loss (30% less, base_change is negative)
+        reduced_base_change = (base_change * 0.7).round
+        total_change = reduced_base_change + contribution_bonus
+      end
+
+      # Store rating data
+      appearance.custom_rating = player.custom_rating
+      appearance.custom_rating_change = total_change
+      appearance.contribution_rank = rank_index + 1
+      appearance.contribution_bonus = contribution_bonus + mvp_bonus
+      appearance.is_mvp = is_mvp
+      appearance.performance_score = perf_score.round(2)
+
+      store_historical_stats(appearance)
+      store_contribution_percentages(appearance, team_appearances)
+      store_kill_stats(appearance, team_appearances)
+      store_hero_base_losses(appearance, match)
+
+      player.custom_rating += total_change
+      player.custom_rating_games_played = player.custom_rating_games_played.to_i + 1
+
+      # Mark if player reaches 2000 (permanent low K)
+      if player.custom_rating >= RATING_FOR_PERMANENT_LOW_K && !player.custom_rating_reached_2000?
+        player.custom_rating_reached_2000 = true
+      end
+
+      # Decrement bonus wins if they won and had bonus wins remaining (only for non-early-leavers)
+      if won && player.custom_rating_bonus_wins.to_i > 0 && !appearance.is_early_leaver?
+        player.custom_rating_bonus_wins -= 1
+      end
+
+      player.save!
+      appearance.save!
+
+      update_player_running_stats(appearance, team_appearances, match)
+    end
   end
 
   # Store appearance data for draws without rating changes

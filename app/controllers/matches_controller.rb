@@ -194,7 +194,7 @@ class MatchesController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def match_params
-      params.expect(match: [ :uploaded_at, :seconds, :good_victory, :is_draw, :ignored, appearances_attributes: [ :id, :hero_kills, :player_id, :unit_kills ] ])
+      params.expect(match: [ :uploaded_at, :seconds, :good_victory, :is_draw, :has_early_leaver, :ignored, appearances_attributes: [ :id, :hero_kills, :player_id, :unit_kills ] ])
     end
 
     def preload_rank_data

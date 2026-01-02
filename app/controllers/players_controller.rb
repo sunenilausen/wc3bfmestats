@@ -125,11 +125,11 @@ class PlayersController < ApplicationController
       @available_map_versions
     end
 
-    # Preload all data needed for stats computation (exclude ignored matches)
+    # Preload all data needed for stats computation (exclude ignored and early leaver matches)
     # Order by reverse chronological (newest first) using same ordering as matches index
     base_scope = @player.appearances
       .joins(:match)
-      .where(matches: { ignored: false })
+      .where(matches: { ignored: false, has_early_leaver: false })
       .includes(:faction, :match, match: { appearances: :faction, wc3stats_replay: {} })
       .merge(Match.reverse_chronological)
 

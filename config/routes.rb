@@ -26,6 +26,7 @@ Rails.application.routes.draw do
     end
     get "analytics", to: "analytics#index", as: :analytics
     get "suspicious_matches", to: "suspicious_matches#index", as: :suspicious_matches
+    post "suspicious_matches/:id/review", to: "suspicious_matches#review", as: :review_suspicious_match
   end
 
   devise_for :users

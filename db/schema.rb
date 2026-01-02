@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_01_02_143736) do
+ActiveRecord::Schema[8.1].define(version: 2026_01_02_150633) do
   create_table "ahoy_events", force: :cascade do |t|
     t.string "name"
     t.text "properties"
@@ -154,6 +154,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_02_143736) do
     t.decimal "predicted_good_avg_rating"
     t.decimal "predicted_good_score"
     t.decimal "predicted_good_win_pct"
+    t.boolean "reviewed", default: false, null: false
     t.integer "row_order"
     t.integer "seconds"
     t.datetime "updated_at", null: false

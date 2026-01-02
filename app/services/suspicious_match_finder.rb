@@ -17,8 +17,9 @@ class SuspiciousMatchFinder
 
   Result = Struct.new(:match, :reasons, keyword_init: true)
 
-  def initialize(scope: Match.where(ignored: false))
+  def initialize(scope: Match.where(ignored: false, reviewed: false), limit: nil)
     @scope = scope
+    @limit = limit
   end
 
   def call
@@ -26,7 +27,10 @@ class SuspiciousMatchFinder
 
     @scope.includes(:appearances, :wc3stats_replay).find_each do |match|
       reasons = analyze_match(match)
-      suspicious_matches << Result.new(match: match, reasons: reasons) if reasons.any?
+      if reasons.any?
+        suspicious_matches << Result.new(match: match, reasons: reasons)
+        break if @limit && suspicious_matches.size >= @limit
+      end
     end
 
     suspicious_matches.sort_by { |r| -r.reasons.size }

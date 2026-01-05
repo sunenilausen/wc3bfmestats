@@ -60,6 +60,14 @@ class MatchesController < ApplicationController
 
   # GET /matches/1/edit
   def edit
+    # Build missing appearances for matches without full player data (e.g., ignored matches)
+    if @match.appearances.empty? && @match.wc3stats_replay.present?
+      build_appearances_from_replay
+    elsif @match.appearances.empty?
+      Faction.order(:id).each do |faction|
+        @match.appearances.build(faction: faction)
+      end
+    end
   end
 
   # POST /matches or /matches.json
@@ -95,9 +103,15 @@ class MatchesController < ApplicationController
     @match.seconds = ChronicDuration.parse(params[:match][:seconds]) if params[:match][:seconds].present?
 
     params[:match][:appearances_attributes].each_value do |appearance_attrs|
-      appearance = @match.appearances.find { |a| a.id == appearance_attrs[:id].to_i }
-      if appearance
-        appearance.assign_attributes(appearance_attrs.permit(:hero_kills, :player_id, :unit_kills, :faction_id))
+      permitted = appearance_attrs.permit(:id, :hero_kills, :player_id, :unit_kills, :faction_id)
+
+      if permitted[:id].present?
+        # Update existing appearance
+        appearance = @match.appearances.find { |a| a.id == permitted[:id].to_i }
+        appearance&.assign_attributes(permitted.except(:id))
+      elsif permitted[:faction_id].present?
+        # Create new appearance
+        @match.appearances.build(permitted.except(:id))
       end
     end
 
@@ -188,6 +202,34 @@ class MatchesController < ApplicationController
   def authorize_admin!
     unless current_user&.admin?
       redirect_to matches_path, alert: "You are not authorized to perform this action."
+    end
+  end
+
+  def build_appearances_from_replay
+    replay = @match.wc3stats_replay
+    slot_to_faction = Wc3stats::MatchBuilder::SLOT_TO_FACTION
+
+    # Build appearances for each faction, pre-filling player from replay data
+    Faction.order(:id).each do |faction|
+      # Find the slot for this faction
+      slot = slot_to_faction.key(faction.name)
+      player_data = replay.players.find { |p| p["slot"] == slot } if slot
+
+      # Find or create the player
+      player = nil
+      if player_data
+        battletag = player_data["name"]
+        # Try both raw and encoding-fixed versions (for Korean/Unicode names)
+        player = Player.find_by(battletag: battletag) ||
+                 Player.find_by(battletag: replay.fix_encoding(battletag))
+      end
+
+      @match.appearances.build(
+        faction: faction,
+        player: player,
+        unit_kills: player_data&.dig("variables", "unitKills"),
+        hero_kills: player_data&.dig("variables", "heroKills")
+      )
     end
   end
 

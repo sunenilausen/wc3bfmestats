@@ -1,4 +1,4 @@
-<% appearances.each do |appearance| %>
+<% (appearances || []).each do |appearance| %>
     <%= f.simple_fields_for :appearances, appearance || appearance.build do |af| %>
         <tr class="nested-fields" data-team="<%= team_number %>">
             <td class="px-4 py-2 whitespace-nowrap">
@@ -35,7 +35,7 @@
     <td class="px-4 py-2 font-bold" colspan="1">Average CR</td>
     <td class="px-4 py-2" colspan="3">
         <span data-average-cr-target="value">
-            <%= appearances.any? ? (appearances.map { |a| a.player&.custom_rating.to_i }.sum / appearances.size) : 0 %>
+            <%= (appearances || []).any? ? ((appearances || []).map { |a| a.player&.custom_rating.to_i }.sum / appearances.size) : 0 %>
         </span>
     </td>
 </tr>

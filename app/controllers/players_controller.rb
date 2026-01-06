@@ -144,15 +144,37 @@ class PlayersController < ApplicationController
       PlayerEventStatsCalculator.new(@player, map_versions: (@map_version.present? || @map_version_until.present?) ? @filtered_map_versions : nil).compute
     end
 
-    # Compute ranks (cached with global key since they depend on all players)
-    @ranks = Rails.cache.fetch([ "player_stats", @player.id, StatsCacheKey.key, "ranks" ]) do
-      {
-        cr_rank: @player.cr_rank,
-        ml_rank: @player.ml_rank,
-        cr_total: Player.ranked_player_count_by_cr,
-        ml_total: Player.ranked_player_count_by_ml
-      }
+    # Use prebuilt global rank caches (built by CachePrebuildJob)
+    cr_ranks = Rails.cache.fetch([ "cr_ranks", StatsCacheKey.key ]) do
+      ranks = {}
+      Player.joins(:matches)
+        .where(matches: { ignored: false })
+        .where.not(players: { custom_rating: nil })
+        .distinct
+        .order(custom_rating: :desc)
+        .pluck(:id)
+        .each_with_index { |id, idx| ranks[id] = idx + 1 }
+      ranks
     end
+
+    ml_ranks = Rails.cache.fetch([ "ml_ranks", StatsCacheKey.key ]) do
+      ranks = {}
+      Player.joins(:matches)
+        .where(matches: { ignored: false })
+        .where.not(players: { ml_score: nil })
+        .distinct
+        .order(ml_score: :desc)
+        .pluck(:id)
+        .each_with_index { |id, idx| ranks[id] = idx + 1 }
+      ranks
+    end
+
+    @ranks = {
+      cr_rank: cr_ranks[@player.id],
+      ml_rank: ml_ranks[@player.id],
+      cr_total: cr_ranks.size,
+      ml_total: ml_ranks.size
+    }
 
     # Cache faction data (rarely changes)
     @good_factions = Rails.cache.fetch("good_factions", expires_in: 1.day) do

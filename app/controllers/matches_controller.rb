@@ -89,7 +89,7 @@ class MatchesController < ApplicationController
     respond_to do |format|
       if @match.save
         # Recalculate ratings in background (cancels any pending recalculations)
-        RatingRecalculationJob.enqueue_and_cancel_pending
+        RatingRecalculationJob.enqueue_and_cancel_pending(@match.id)
 
         # Retrain prediction model if enough new matches
         PredictionWeight.retrain_if_needed!
@@ -123,7 +123,7 @@ class MatchesController < ApplicationController
 
     respond_to do |format|
       if @match.save
-        RatingRecalculationJob.enqueue_and_cancel_pending
+        RatingRecalculationJob.enqueue_and_cancel_pending(@match.id)
 
         format.html { redirect_to @match, notice: "Match was successfully updated. Ratings are being recalculated.", status: :see_other }
         format.json { render :show, status: :ok, location: @match }
@@ -186,7 +186,7 @@ class MatchesController < ApplicationController
       if new_match
         Rails.logger.info "Refetch: Successfully rebuilt match #{new_match.id}"
         # Recalculate ratings
-        RatingRecalculationJob.enqueue_and_cancel_pending
+        RatingRecalculationJob.enqueue_and_cancel_pending(new_match.id)
         redirect_to new_match, notice: "Match refetched successfully (replay ##{replay_id}). Ratings are being recalculated."
       else
         Rails.logger.error "Refetch: Replay saved but no match created"

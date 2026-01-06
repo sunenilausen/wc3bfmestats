@@ -4,12 +4,13 @@ class RatingRecalculationJob < ApplicationJob
   queue_as :default
 
   # Cancel any pending rating recalculation jobs before enqueuing a new one
-  def self.enqueue_and_cancel_pending
+  # @param match_id [Integer, nil] Optional match ID to prebuild cache for after recalculation
+  def self.enqueue_and_cancel_pending(match_id = nil)
     cancel_pending_jobs
-    perform_later
+    perform_later(match_id)
   end
 
-  def perform
+  def perform(match_id = nil)
     Rails.logger.info "RatingRecalculationJob: Starting full rating recalculation"
 
     Rails.logger.info "RatingRecalculationJob: Backfilling APM data"
@@ -24,6 +25,19 @@ class RatingRecalculationJob < ApplicationJob
 
     Rails.logger.info "RatingRecalculationJob: Recalculating stay/leave percentages"
     StayLeaveRecalculator.new.call
+
+    # Prebuild caches for the affected match and participants
+    if match_id
+      Rails.logger.info "RatingRecalculationJob: Prebuilding caches for match ##{match_id}"
+      CachePrebuildJob.perform_later(match_id)
+    else
+      # If no specific match, prebuild for the most recent match
+      recent_match = Match.where(ignored: false).order(updated_at: :desc).first
+      if recent_match
+        Rails.logger.info "RatingRecalculationJob: Prebuilding caches for most recent match ##{recent_match.id}"
+        CachePrebuildJob.perform_later(recent_match.id)
+      end
+    end
 
     Rails.logger.info "RatingRecalculationJob: Completed"
   end

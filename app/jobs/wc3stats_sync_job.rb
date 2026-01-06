@@ -76,8 +76,14 @@ class Wc3statsSyncJob < ApplicationJob
   end
 
   def post_import_tasks
+    # Track matches before building to find new ones
+    matches_before = Match.pluck(:id).to_set
+
     # Build matches from replays
     build_matches
+
+    # Find newly created matches
+    @new_match_ids = Match.pluck(:id).to_set - matches_before
 
     # Mark invalid matches as ignored
     mark_invalid_matches
@@ -105,6 +111,9 @@ class Wc3statsSyncJob < ApplicationJob
 
     # Calculate stay/leave percentages
     recalculate_stay_leave
+
+    # Prebuild caches for new matches
+    prebuild_caches
   end
 
   def set_ignore_kill_flags
@@ -365,6 +374,21 @@ class Wc3statsSyncJob < ApplicationJob
     end
     if backfiller.errors.any?
       Rails.logger.warn "Wc3statsSyncJob: APM backfill errors: #{backfiller.errors.count}"
+    end
+  end
+
+  def prebuild_caches
+    return if @new_match_ids.blank?
+
+    # Filter to only non-ignored matches
+    valid_match_ids = Match.where(id: @new_match_ids.to_a, ignored: false).pluck(:id)
+    return if valid_match_ids.empty?
+
+    Rails.logger.info "Wc3statsSyncJob: Prebuilding caches for #{valid_match_ids.size} new match(es)"
+
+    # Queue cache prebuild jobs for each new match
+    valid_match_ids.each do |match_id|
+      CachePrebuildJob.perform_later(match_id)
     end
   end
 end

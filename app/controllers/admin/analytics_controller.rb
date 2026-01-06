@@ -33,6 +33,9 @@ module Admin
       @top_browsers = Ahoy::Visit.where("started_at >= ?", @start_date).group(:browser).order("count_all DESC").limit(10).count
       @top_devices = Ahoy::Visit.where("started_at >= ?", @start_date).group(:device_type).order("count_all DESC").limit(10).count
       @top_referrers = Ahoy::Visit.where("started_at >= ?", @start_date).where.not(referring_domain: [ nil, "" ]).group(:referring_domain).order("count_all DESC").limit(10).count
+
+      # Page load time analytics
+      @page_load_stats = compute_page_load_stats(@start_date)
     end
 
     private
@@ -122,6 +125,63 @@ module Admin
         unique_visits = player_unique_visits[identifier].size
         [ player, { visits: visits, unique_visits: unique_visits } ]
       end.to_h
+    end
+
+    def compute_page_load_stats(start_date)
+      events = Ahoy::Event
+        .where(name: "Page View")
+        .where("time >= ?", start_date)
+
+      durations = []
+      page_durations = Hash.new { |h, k| h[k] = [] }
+
+      events.find_each do |event|
+        props = event.properties
+        duration = props["duration_ms"]
+        next unless duration.is_a?(Numeric) && duration > 0
+
+        durations << duration
+
+        controller = props["controller"]
+        action = props["action"]
+        page_name = controller.present? ? "#{controller}##{action}" : "unknown"
+        page_durations[page_name] << duration
+      end
+
+      return nil if durations.empty?
+
+      sorted = durations.sort
+      count = sorted.size
+
+      # Overall stats
+      overall = {
+        count: count,
+        avg: (sorted.sum / count.to_f).round(1),
+        median: percentile(sorted, 50),
+        p95: percentile(sorted, 95),
+        min: sorted.first.round(1),
+        max: sorted.last.round(1)
+      }
+
+      # Per-page stats (top 10 slowest by average)
+      per_page = page_durations.map do |page, times|
+        sorted_times = times.sort
+        {
+          page: page,
+          count: times.size,
+          avg: (sorted_times.sum / times.size.to_f).round(1),
+          median: percentile(sorted_times, 50),
+          p95: percentile(sorted_times, 95)
+        }
+      end.sort_by { |s| -s[:avg] }.first(10)
+
+      { overall: overall, per_page: per_page }
+    end
+
+    def percentile(sorted_array, pct)
+      return nil if sorted_array.empty?
+      index = (pct / 100.0 * (sorted_array.size - 1)).round
+      sorted_array[index].round(1)
     end
   end
 end

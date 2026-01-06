@@ -8,13 +8,19 @@ class MatchesController < ApplicationController
   def index
     @per_page = 50
     @page = [ params[:page].to_i, 1 ].max
+    is_admin = current_user&.admin?
 
-    # Only show ignored matches to admins
-    base_scope = current_user&.admin? ? Match : Match.where(ignored: false)
-
-    @total_count = base_scope.count
+    # Cache total count (separate for admin vs non-admin)
+    count_cache_key = [ "matches_count", is_admin, StatsCacheKey.key ]
+    @total_count = Rails.cache.fetch(count_cache_key) do
+      is_admin ? Match.count : Match.where(ignored: false).count
+    end
     @total_pages = (@total_count.to_f / @per_page).ceil
 
+    # Only show ignored matches to admins
+    base_scope = is_admin ? Match : Match.where(ignored: false)
+
+    # Use select to only load needed columns, preload associations separately
     @matches = base_scope.includes(appearances: [ :player, :faction ])
 
     case params[:sort]

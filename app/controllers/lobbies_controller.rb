@@ -210,6 +210,8 @@ class LobbiesController < ApplicationController
       @faction_rank_stats = cached[:faction_rank_stats]
       @faction_perf_stats = cached[:faction_perf_stats]
       @players_search_data = cached[:players_search_data]
+      # Pre-index players_search_data by id for O(1) lookups in views
+      @players_search_data_by_id = cached[:players_search_data].index_by { |p| p[:id] }
       @recent_players = cached[:recent_players]
       @player_faction_stats = cached[:player_faction_stats]
       @faction_totals = cached[:faction_totals]
@@ -220,29 +222,34 @@ class LobbiesController < ApplicationController
 
       # Get all wins (good team + good_victory OR evil team + evil_victory)
       wins_good = Appearance.joins(:match, :faction)
-        .where(factions: { good: true }, matches: { good_victory: true })
+        .where(factions: { good: true }, matches: { good_victory: true, ignored: false })
         .group(:player_id).count
 
       wins_evil = Appearance.joins(:match, :faction)
-        .where(factions: { good: false }, matches: { good_victory: false })
+        .where(factions: { good: false }, matches: { good_victory: false, ignored: false })
         .group(:player_id).count
 
-      # Get total matches per player
-      total_matches = Appearance.group(:player_id).count
+      # Get total matches per player (only non-ignored)
+      total_matches = Appearance.joins(:match)
+        .where(matches: { ignored: false })
+        .group(:player_id).count
 
-      Player.pluck(:id).each do |player_id|
+      # Only iterate players with matches (not ALL players)
+      total_matches.each do |player_id, total|
         wins = (wins_good[player_id] || 0) + (wins_evil[player_id] || 0)
-        total = total_matches[player_id] || 0
         player_stats[player_id] = { wins: wins, losses: total - wins }
       end
 
       # Precompute faction-specific W/L for all players
       faction_stats = {}
       faction_wins = Appearance.joins(:match, :faction)
+        .where(matches: { ignored: false })
         .where("(factions.good = ? AND matches.good_victory = ?) OR (factions.good = ? AND matches.good_victory = ?)", true, true, false, false)
         .group(:player_id, :faction_id).count
 
-      faction_totals = Appearance.group(:player_id, :faction_id).count
+      faction_totals = Appearance.joins(:match)
+        .where(matches: { ignored: false })
+        .group(:player_id, :faction_id).count
 
       faction_totals.each do |(player_id, faction_id), total|
         faction_stats[[ player_id, faction_id ]] = {

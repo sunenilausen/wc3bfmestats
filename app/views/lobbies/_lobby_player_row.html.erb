@@ -28,7 +28,7 @@
         <% @players_for_select.each do |player| %>
           <% stats = @player_stats[player.id] || { wins: 0, losses: 0 } %>
           <% games = stats[:wins] + stats[:losses] %>
-          <% player_data = @players_search_data&.find { |p| p[:id] == player.id } %>
+          <% player_data = @players_search_data_by_id&.dig(player.id) %>
           <option value="<%= player.id %>"
                   data-custom-rating="<%= player.custom_rating&.round || 1300 %>"
                   data-ml-score="<%= player.ml_score&.round || 50 %>"
@@ -166,7 +166,7 @@
     <% if lp.player %>
       <%# Get overall avg rank %>
       <% if editable %>
-        <% avg_rank_val = @players_search_data&.find { |p| p[:id] == lp.player_id }&.dig(:avgRank) %>
+        <% avg_rank_val = @players_search_data_by_id&.dig(lp.player_id, :avgRank) %>
         <% fac_data = @faction_rank_stats&.dig([lp.player_id, lp.faction_id]) %>
       <% else %>
         <% avg_rank_val = overall_avg_ranks[lp.player_id] if defined?(overall_avg_ranks) %>

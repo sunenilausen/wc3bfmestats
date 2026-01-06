@@ -16,9 +16,9 @@
 <%# Calculate overall and faction-specific rank averages %>
 <% rank_data = editable ? (@faction_rank_stats || {}) : (@faction_rank_data || {}) %>
 <% overall_ranks_data = @overall_avg_ranks || {} %>
-<% if editable && defined?(@players_search_data) %>
-  <% good_overall_ranks = good_with_players.map { |lp| @players_search_data&.find { |p| p[:id] == lp.player_id }&.dig(:avgRank) }.compact %>
-  <% evil_overall_ranks = evil_with_players.map { |lp| @players_search_data&.find { |p| p[:id] == lp.player_id }&.dig(:avgRank) }.compact %>
+<% if editable && defined?(@players_search_data_by_id) %>
+  <% good_overall_ranks = good_with_players.map { |lp| @players_search_data_by_id&.dig(lp.player_id, :avgRank) }.compact %>
+  <% evil_overall_ranks = evil_with_players.map { |lp| @players_search_data_by_id&.dig(lp.player_id, :avgRank) }.compact %>
 <% else %>
   <% good_overall_ranks = good_with_players.map { |lp| overall_ranks_data[lp.player_id] }.compact %>
   <% evil_overall_ranks = evil_with_players.map { |lp| overall_ranks_data[lp.player_id] }.compact %>

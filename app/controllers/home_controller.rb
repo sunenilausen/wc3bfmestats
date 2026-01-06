@@ -1,19 +1,34 @@
 class HomeController < ApplicationController
   def index
-    @matches_count = Match.where(ignored: false).count
-    # Players who have played at least one valid (non-ignored) match
-    @players_count = Player.joins(:matches).where(matches: { ignored: false }).distinct.count
-    # Players who have never played a valid match (only observed or only played ignored matches)
-    players_with_valid_matches = Player.joins(:matches).where(matches: { ignored: false }).distinct.pluck(:id)
-    @observers_count = Player.where.not(id: players_with_valid_matches).count
+    # Cache all home page counts together
+    home_counts = Rails.cache.fetch([ "home_counts", StatsCacheKey.key ]) do
+      compute_home_counts
+    end
 
-    # Most recent lobbies and matches
-    @recent_lobbies = Lobby.order(updated_at: :desc).limit(2)
-    @recent_matches = Match.where(ignored: false).order(uploaded_at: :desc).includes(appearances: [ :player, :faction ]).limit(3)
+    @matches_count = home_counts[:matches_count]
+    @players_count = home_counts[:players_count]
+    @observers_count = home_counts[:observers_count]
 
-    # User's most recent lobby (based on session)
+    # Cache recent lobbies separately (changes more frequently)
+    @recent_lobbies = Rails.cache.fetch([ "home_recent_lobbies", Lobby.maximum(:updated_at) ], expires_in: 1.minute) do
+      Lobby.order(updated_at: :desc).limit(2).includes(lobby_players: [ :faction, :player ]).to_a
+    end
+
+    # Cache recent matches (changes less frequently)
+    @recent_matches = Rails.cache.fetch([ "home_recent_matches", StatsCacheKey.key ]) do
+      Match.where(ignored: false)
+        .order(uploaded_at: :desc)
+        .includes(appearances: [ :player, :faction ])
+        .limit(3)
+        .to_a
+    end
+
+    # User's most recent lobby (based on session) - not cached, user-specific
     if session[:lobby_token].present?
-      @my_lobby = Lobby.where(session_token: session[:lobby_token]).order(updated_at: :desc).first
+      @my_lobby = Lobby.where(session_token: session[:lobby_token])
+        .order(updated_at: :desc)
+        .includes(lobby_players: [ :faction, :player ])
+        .first
     end
   end
 
@@ -73,6 +88,24 @@ class HomeController < ApplicationController
   end
 
   private
+
+  def compute_home_counts
+    matches_count = Match.where(ignored: false).count
+
+    # Use a single query to get player IDs with valid matches
+    players_with_matches = Player.joins(:matches)
+      .where(matches: { ignored: false })
+      .distinct
+
+    players_count = players_with_matches.count
+    observers_count = Player.count - players_count
+
+    {
+      matches_count: matches_count,
+      players_count: players_count,
+      observers_count: observers_count
+    }
+  end
 
   def calculate_underdog_stats(map_version = nil, limit = nil, map_versions = nil)
     matches_with_data = Match.includes(appearances: :faction).where(ignored: false).where.not(good_victory: nil)

@@ -25,6 +25,9 @@ class CachePrebuildJob < ApplicationJob
     # Prebuild global rank caches (used by all player pages)
     prebuild_rank_caches
 
+    # Prebuild home page caches
+    prebuild_home_caches
+
     Rails.logger.info "CachePrebuildJob: Completed cache prebuild for match ##{match_id}"
   end
 
@@ -181,5 +184,36 @@ class CachePrebuildJob < ApplicationJob
     Rails.logger.info "CachePrebuildJob: Prebuilt global rank caches"
   rescue => e
     Rails.logger.warn "CachePrebuildJob: Error prebuilding rank caches: #{e.message}"
+  end
+
+  def prebuild_home_caches
+    # Prebuild home page counts
+    Rails.cache.fetch([ "home_counts", StatsCacheKey.key ]) do
+      matches_count = Match.where(ignored: false).count
+      players_with_matches = Player.joins(:matches)
+        .where(matches: { ignored: false })
+        .distinct
+      players_count = players_with_matches.count
+      observers_count = Player.count - players_count
+
+      {
+        matches_count: matches_count,
+        players_count: players_count,
+        observers_count: observers_count
+      }
+    end
+
+    # Prebuild recent matches
+    Rails.cache.fetch([ "home_recent_matches", StatsCacheKey.key ]) do
+      Match.where(ignored: false)
+        .order(uploaded_at: :desc)
+        .includes(appearances: [ :player, :faction ])
+        .limit(3)
+        .to_a
+    end
+
+    Rails.logger.info "CachePrebuildJob: Prebuilt home page caches"
+  rescue => e
+    Rails.logger.warn "CachePrebuildJob: Error prebuilding home caches: #{e.message}"
   end
 end

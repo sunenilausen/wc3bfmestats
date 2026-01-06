@@ -36,7 +36,6 @@
     </div>
   </div>
 
-  <% cache ["home_stats", StatsCacheKey.key] do %>
   <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
     <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
       <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Matches</h2>
@@ -53,7 +52,6 @@
       <p class="mt-2 text-3xl font-bold text-blue-600"><%= @observers_count %></p>
     </div>
   </div>
-  <% end %>
 
   <div class="mt-4 text-center">
     <%= link_to "View Detailed Statistics", statistics_path, class: "text-blue-600 hover:text-blue-800 font-medium" %>
@@ -72,7 +70,7 @@
       </div>
       <div class="p-3 text-xs">
         <div class="space-y-0.5">
-          <% @my_lobby.lobby_players.includes(:faction, :player).select { |lp| lp.faction&.good? }.each do |lp| %>
+          <% @my_lobby.lobby_players.select { |lp| lp.faction&.good? }.each do |lp| %>
             <div class="flex justify-between items-center">
               <span class="flex items-center gap-1">
                 <span class="w-2 h-2 rounded-full" style="background-color: <%= lp.faction.color_hex %>"></span>
@@ -81,7 +79,7 @@
               <span class="text-gray-500"><%= lp.faction&.name %></span>
             </div>
           <% end %>
-          <% @my_lobby.lobby_players.includes(:faction, :player).select { |lp| lp.faction && !lp.faction.good? }.each do |lp| %>
+          <% @my_lobby.lobby_players.select { |lp| lp.faction && !lp.faction.good? }.each do |lp| %>
             <div class="flex justify-between items-center">
               <span class="flex items-center gap-1">
                 <span class="w-2 h-2 rounded-full" style="background-color: <%= lp.faction.color_hex %>"></span>
@@ -96,7 +94,6 @@
   </div>
   <% end %>
 
-  <% cache ["home_recent", StatsCacheKey.key, @recent_lobbies.maximum(:updated_at), @recent_matches.maximum(:uploaded_at)] do %>
   <%# Recent Lobbies %>
   <div class="mt-8">
     <h2 class="text-lg font-semibold text-gray-900 mb-3">Recent Lobbies</h2>
@@ -110,7 +107,7 @@
             </div>
             <div class="p-3 text-xs">
               <div class="space-y-0.5">
-                <% lobby.lobby_players.includes(:faction, :player).select { |lp| lp.faction&.good? }.each do |lp| %>
+                <% lobby.lobby_players.select { |lp| lp.faction&.good? }.each do |lp| %>
                   <div class="flex justify-between items-center">
                     <span class="flex items-center gap-1">
                       <span class="w-2 h-2 rounded-full" style="background-color: <%= lp.faction.color_hex %>"></span>
@@ -119,7 +116,7 @@
                     <span class="text-gray-500"><%= lp.faction&.name %></span>
                   </div>
                 <% end %>
-                <% lobby.lobby_players.includes(:faction, :player).select { |lp| lp.faction && !lp.faction.good? }.each do |lp| %>
+                <% lobby.lobby_players.select { |lp| lp.faction && !lp.faction.good? }.each do |lp| %>
                   <div class="flex justify-between items-center">
                     <span class="flex items-center gap-1">
                       <span class="w-2 h-2 rounded-full" style="background-color: <%= lp.faction.color_hex %>"></span>
@@ -183,5 +180,4 @@
       <p class="text-gray-500 text-center py-4">No matches yet</p>
     <% end %>
   </div>
-  <% end %>
 </div>

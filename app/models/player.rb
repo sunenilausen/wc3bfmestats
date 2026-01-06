@@ -12,10 +12,18 @@ class Player < ApplicationRecord
   end
 
   # Find by battletag, nickname, or id (battletag first, then nickname, then id)
+  # Also handles URL-encoded battletags (e.g., %23 for #) which can get double-encoded by browsers
   def self.find_by_battletag_or_id(param)
-    find_by(battletag: param) ||
-      where("LOWER(nickname) = ?", param.to_s.downcase).first ||
-      find_by(id: param)
+    return nil if param.blank?
+
+    param_str = param.to_s
+
+    # Try direct lookup first
+    find_by(battletag: param_str) ||
+      where("LOWER(nickname) = ?", param_str.downcase).first ||
+      find_by(id: param_str) ||
+      # If not found and param contains URL-encoded chars, try decoding
+      (param_str.include?("%") && find_by(battletag: CGI.unescape(param_str)))
   end
 
   # Find player by battletag, checking both primary battletag and alternative_battletags

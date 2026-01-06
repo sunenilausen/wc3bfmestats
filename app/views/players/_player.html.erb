@@ -675,7 +675,11 @@
   <% end %>
 
   <h2 class="text-2xl font-bold mb-3">Match History</h2>
-  <%= turbo_frame_tag "match_history", src: match_history_player_path(player, version_filter: @version_filter), loading: :lazy do %>
+  <%= turbo_frame_tag "match_history",
+        data: {
+          controller: "deferred-frame",
+          deferred_frame_url_value: match_history_player_path(player, version_filter: @version_filter)
+        } do %>
     <div class="text-center py-8 text-gray-500">
       <span class="inline-block animate-spin mr-2">&#8635;</span>
       Loading match history...

@@ -1,5 +1,5 @@
 class PlayersController < ApplicationController
-  load_and_authorize_resource except: %i[index show edit update destroy]
+  load_and_authorize_resource except: %i[index show edit update destroy match_history]
   before_action :set_player, only: %i[show edit update destroy]
   authorize_resource only: %i[show edit update destroy]
 

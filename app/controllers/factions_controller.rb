@@ -54,7 +54,10 @@ class FactionsController < ApplicationController
       @available_map_versions
     end
 
-    cache_key = [ "faction_stats", @faction.id, @version_filter, StatsCacheKey.key ]
+    # Use faction-specific cache key - only invalidate when this faction's matches change
+    faction_last_match = @faction.appearances.joins(:match).maximum("matches.updated_at")
+    faction_cache_version = faction_last_match&.to_i || 0
+    cache_key = [ "faction_stats", @faction.id, @version_filter, faction_cache_version ]
 
     # Determine map_versions parameter for calculators
     calculator_map_versions = (@map_version.present? || @map_version_until.present?) ? @filtered_map_versions : nil

@@ -526,10 +526,10 @@
   <% if stats[:faction_stats].any? %>
     <h2 class="text-2xl font-bold mb-3">Faction Stats</h2>
 
-    <% good_factions = Faction.where(good: true).order(:id) %>
-    <% evil_factions = Faction.where(good: false).order(:id) %>
-    <% player_faction_stats = player.player_faction_stats.includes(:faction).index_by(&:faction_id) %>
-    <% faction_totals = PlayerFactionStat.where.not(faction_score: nil).group(:faction_id).count %>
+    <% good_factions = defined?(@good_factions) ? @good_factions : Faction.where(good: true).order(:id) %>
+    <% evil_factions = defined?(@evil_factions) ? @evil_factions : Faction.where(good: false).order(:id) %>
+    <% player_faction_stats = defined?(@player_faction_stats) ? @player_faction_stats : player.player_faction_stats.includes(:faction).index_by(&:faction_id) %>
+    <% faction_totals = defined?(@faction_totals) ? @faction_totals : PlayerFactionStat.where.not(faction_score: nil).group(:faction_id).count %>
 
     <div class="space-y-6">
       <div>

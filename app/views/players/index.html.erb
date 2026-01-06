@@ -89,8 +89,8 @@
                   <span class="text-xs text-blue-500" title="Bonus wins remaining">(+<%= player.custom_rating_bonus_wins %>)</span>
                 <% end %>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-gray-900"><%= player.matches.size %></td>
-              <td class="px-6 py-4 whitespace-nowrap text-gray-900"><%= @observation_counts[player.battletag] %></td>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-900"><%= @matches_played[player.id] || 0 %></td>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-900"><%= @observation_counts[player.battletag] || 0 %></td>
               <td class="px-6 py-4 whitespace-nowrap flex space-x-2">
                 <%= link_to "Show", player, class: "rounded-md px-3.5 py-2.5 bg-gray-100 hover:bg-gray-50 font-medium" %>
                 <% if can? :update, player %>

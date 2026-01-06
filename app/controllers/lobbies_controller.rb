@@ -1,10 +1,14 @@
+require "ostruct"
+
 class LobbiesController < ApplicationController
   before_action :set_lobby, only: %i[ show edit update balance ]
   before_action :ensure_lobby_owner, only: %i[ edit update balance ]
 
   # GET /lobbies or /lobbies.json
   def index
-    @lobbies = Lobby.includes(lobby_players: [ :faction, :player ]).order(updated_at: :desc)
+    @lobbies = Lobby.includes(lobby_players: [ :faction, :player ])
+                    .where("updated_at >= ?", 2.days.ago)
+                    .order(updated_at: :desc)
   end
 
   # GET /lobbies/1 or /lobbies/1.json
@@ -192,8 +196,27 @@ class LobbiesController < ApplicationController
     end
 
     def preload_player_stats
-      # Precompute wins for all players in 2 queries instead of N*2
-      @player_stats = {}
+      # Cache all player stats globally since they don't change per lobby
+      cache_key = [ "lobby_edit_player_stats", StatsCacheKey.key ]
+
+      cached = Rails.cache.fetch(cache_key, expires_in: 1.hour) do
+        compute_player_stats_for_edit
+      end
+
+      @player_stats = cached[:player_stats]
+      @faction_stats = cached[:faction_stats]
+      # Convert hashes to OpenStruct so view can call methods like .nickname
+      @players_for_select = cached[:players_for_select].map { |h| OpenStruct.new(h) }
+      @faction_rank_stats = cached[:faction_rank_stats]
+      @faction_perf_stats = cached[:faction_perf_stats]
+      @players_search_data = cached[:players_search_data]
+      @recent_players = cached[:recent_players]
+      @player_faction_stats = cached[:player_faction_stats]
+      @faction_totals = cached[:faction_totals]
+    end
+
+    def compute_player_stats_for_edit
+      player_stats = {}
 
       # Get all wins (good team + good_victory OR evil team + evil_victory)
       wins_good = Appearance.joins(:match, :faction)
@@ -210,11 +233,11 @@ class LobbiesController < ApplicationController
       Player.pluck(:id).each do |player_id|
         wins = (wins_good[player_id] || 0) + (wins_evil[player_id] || 0)
         total = total_matches[player_id] || 0
-        @player_stats[player_id] = { wins: wins, losses: total - wins }
+        player_stats[player_id] = { wins: wins, losses: total - wins }
       end
 
       # Precompute faction-specific W/L for all players
-      @faction_stats = {}
+      faction_stats = {}
       faction_wins = Appearance.joins(:match, :faction)
         .where("(factions.good = ? AND matches.good_victory = ?) OR (factions.good = ? AND matches.good_victory = ?)", true, true, false, false)
         .group(:player_id, :faction_id).count
@@ -222,13 +245,14 @@ class LobbiesController < ApplicationController
       faction_totals = Appearance.group(:player_id, :faction_id).count
 
       faction_totals.each do |(player_id, faction_id), total|
-        @faction_stats[[ player_id, faction_id ]] = {
+        faction_stats[[ player_id, faction_id ]] = {
           wins: faction_wins[[ player_id, faction_id ]] || 0,
           losses: total - (faction_wins[[ player_id, faction_id ]] || 0)
         }
       end
 
-      @players_for_select = Player.order(:nickname).select(:id, :nickname, :alternative_name, :ml_score, :custom_rating, :leave_pct, :games_left)
+      players_for_select = Player.order(:nickname).pluck(:id, :nickname, :alternative_name, :ml_score, :custom_rating, :leave_pct, :games_left)
+        .map { |id, nn, an, ml, cr, lp, gl| { id: id, nickname: nn, alternative_name: an, ml_score: ml, custom_rating: cr, leave_pct: lp, games_left: gl } }
 
       # Precompute average contribution ranks for all players
       avg_ranks = Appearance.joins(:match)
@@ -245,33 +269,33 @@ class LobbiesController < ApplicationController
         .group(:player_id, :faction_id)
         .pluck(:player_id, :faction_id, Arel.sql("AVG(contribution_rank)"), Arel.sql("COUNT(*)"))
 
-      @faction_rank_stats = {}
+      faction_rank_stats = {}
       faction_rank_data.each do |player_id, faction_id, avg_rank, count|
-        @faction_rank_stats[[ player_id, faction_id ]] = { avg: avg_rank.to_f, count: count }
+        faction_rank_stats[[ player_id, faction_id ]] = { avg: avg_rank.to_f, count: count }
       end
 
       # Precompute faction-specific performance scores from PlayerFactionStat
-      @faction_perf_stats = {}
+      faction_perf_stats = {}
       PlayerFactionStat.where.not(faction_score: nil).pluck(:player_id, :faction_id, :faction_score).each do |player_id, faction_id, score|
-        @faction_perf_stats[[ player_id, faction_id ]] = score.round
+        faction_perf_stats[[ player_id, faction_id ]] = score.round
       end
 
       # Build player search data with games played count and avg rank
-      @players_search_data = @players_for_select.map do |player|
-        stats = @player_stats[player.id] || { wins: 0, losses: 0 }
+      players_search_data = players_for_select.map do |player|
+        stats = player_stats[player[:id]] || { wins: 0, losses: 0 }
         games = stats[:wins] + stats[:losses]
         {
-          id: player.id,
-          nickname: player.nickname,
-          alternativeName: player.alternative_name,
-          customRating: player.custom_rating&.round || 1300,
-          mlScore: player.ml_score,
-          avgRank: avg_ranks[player.id]&.round(2) || 4.0,
+          id: player[:id],
+          nickname: player[:nickname],
+          alternativeName: player[:alternative_name],
+          customRating: player[:custom_rating]&.round || 1300,
+          mlScore: player[:ml_score],
+          avgRank: avg_ranks[player[:id]]&.round(2) || 4.0,
           wins: stats[:wins],
           losses: stats[:losses],
           games: games,
-          leavePct: player.leave_pct&.round || 0,
-          gamesLeft: player.games_left || 0
+          leavePct: player[:leave_pct]&.round || 0,
+          gamesLeft: player[:games_left] || 0
         }
       end.sort_by { |p| -p[:games] } # Sort by most games first
 
@@ -294,11 +318,11 @@ class LobbiesController < ApplicationController
                                    .pluck(:player_id, Arel.sql("MAX(matches.uploaded_at)"))
                                    .to_h
 
-      @recent_players = recent_player_ids.map do |player_id|
+      recent_players = recent_player_ids.map do |player_id|
         data = recent_players_data[player_id]
         next unless data
         id, nickname, alternative_name, ml_score, custom_rating = data
-        stats = @player_stats[id] || { wins: 0, losses: 0 }
+        stats = player_stats[id] || { wins: 0, losses: 0 }
         last_date = last_match_dates[id]
         formatted_date = if last_date.is_a?(String)
                            Time.parse(last_date).strftime("%b %d") rescue last_date[5, 5]
@@ -319,12 +343,22 @@ class LobbiesController < ApplicationController
       end.compact
 
       # Preload PlayerFactionStats for faction-specific ratings/scores
-      @player_faction_stats = PlayerFactionStat
-        .where(player_id: Player.pluck(:id))
-        .index_by { |pfs| [ pfs.player_id, pfs.faction_id ] }
+      player_faction_stats = PlayerFactionStat.all.index_by { |pfs| [ pfs.player_id, pfs.faction_id ] }
 
       # Get totals per faction for percentile calculation
-      @faction_totals = PlayerFactionStat.where.not(faction_score: nil).group(:faction_id).count
+      faction_totals_count = PlayerFactionStat.where.not(faction_score: nil).group(:faction_id).count
+
+      {
+        player_stats: player_stats,
+        faction_stats: faction_stats,
+        players_for_select: players_for_select,
+        faction_rank_stats: faction_rank_stats,
+        faction_perf_stats: faction_perf_stats,
+        players_search_data: players_search_data,
+        recent_players: recent_players,
+        player_faction_stats: player_faction_stats,
+        faction_totals: faction_totals_count
+      }
     end
 
     def preload_lobby_player_stats
@@ -438,8 +472,15 @@ class LobbiesController < ApplicationController
       @event_stats = {}
       return if player_ids.empty?
 
-      # Use batch calculator for all players at once (single pass through replays)
-      @event_stats = BatchPlayerEventStatsCalculator.new(player_ids).compute
+      # Use cached stats from Player model (populated by MlScoreRecalculator)
+      # This is much faster than running BatchPlayerEventStatsCalculator
+      Player.where(id: player_ids).pluck(:id, :hero_kd_ratio, :hero_uptime, :base_uptime).each do |id, kd, hu, bu|
+        @event_stats[id] = {
+          hero_kd_ratio: kd,
+          hero_uptime: hu || 80.0,
+          base_uptime: bu || 80.0
+        }
+      end
     end
 
     def compute_score_prediction

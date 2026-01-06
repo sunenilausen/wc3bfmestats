@@ -384,14 +384,25 @@ class MlScoreRecalculator
       end
     end
 
-    # Compute derived stats
+    # Compute derived stats and save to Player model
     result = {}
     stats.each do |player_id, s|
+      hero_kd = s[:hero_deaths] > 0 ? (s[:hero_kills].to_f / s[:hero_deaths]).round(2) : nil
+      hero_up = s[:hero_seconds_possible] > 0 ? (s[:hero_seconds_alive].to_f / s[:hero_seconds_possible] * 100).round(1) : 80.0
+      base_up = s[:base_seconds_possible] > 0 ? (s[:base_seconds_alive].to_f / s[:base_seconds_possible] * 100).round(1) : 80.0
+
       result[player_id] = {
-        hero_kd_ratio: s[:hero_deaths] > 0 ? (s[:hero_kills].to_f / s[:hero_deaths]).round(2) : nil,
-        hero_uptime: s[:hero_seconds_possible] > 0 ? (s[:hero_seconds_alive].to_f / s[:hero_seconds_possible] * 100).round(1) : 80.0,
-        base_uptime: s[:base_seconds_possible] > 0 ? (s[:base_seconds_alive].to_f / s[:base_seconds_possible] * 100).round(1) : 80.0
+        hero_kd_ratio: hero_kd,
+        hero_uptime: hero_up,
+        base_uptime: base_up
       }
+
+      # Save to Player model for caching
+      Player.where(id: player_id).update_all(
+        hero_kd_ratio: hero_kd,
+        hero_uptime: hero_up,
+        base_uptime: base_up
+      )
     end
     result
   end

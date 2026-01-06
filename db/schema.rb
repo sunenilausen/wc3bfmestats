@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_01_02_150633) do
+ActiveRecord::Schema[8.1].define(version: 2026_01_06_201040) do
   create_table "ahoy_events", force: :cascade do |t|
     t.string "name"
     t.text "properties"
@@ -91,6 +91,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_02_150633) do
     t.float "performance_score"
     t.integer "player_id", null: false
     t.integer "self_heal"
+    t.float "self_heal_pct"
     t.float "stay_pct"
     t.integer "team_heal"
     t.float "team_heal_pct"
@@ -185,6 +186,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_02_150633) do
   create_table "players", force: :cascade do |t|
     t.json "alternative_battletags", default: []
     t.string "alternative_name"
+    t.float "base_uptime"
     t.string "battlenet_name"
     t.integer "battlenet_number"
     t.string "battletag"
@@ -202,6 +204,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_02_150633) do
     t.float "glicko2_rating_deviation", default: 350.0
     t.float "glicko2_rating_seed"
     t.float "glicko2_volatility", default: 0.06
+    t.float "hero_kd_ratio"
+    t.float "hero_uptime"
     t.float "leave_pct", default: 0.0
     t.float "ml_score", default: 50.0
     t.string "nickname"

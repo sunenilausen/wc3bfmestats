@@ -102,12 +102,13 @@ class PlayersController < ApplicationController
       @available_map_versions
     end
 
-    # Preload all data needed for stats computation (exclude ignored and early leaver matches)
+    # Preload appearances with includes needed for PlayerStatsCalculator
+    # Note: match.appearances is needed for team/opponent stats
     # Order by reverse chronological (newest first) using same ordering as matches index
     base_scope = @player.appearances
       .joins(:match)
       .where(matches: { ignored: false, has_early_leaver: false })
-      .includes(:faction, :match, match: { appearances: :faction, wc3stats_replay: {} })
+      .includes(:faction, match: { appearances: :faction })
       .merge(Match.reverse_chronological)
 
     # Filter by map versions if specified
@@ -168,6 +169,94 @@ class PlayersController < ApplicationController
 
     # Preload player's faction stats
     @player_faction_stats = @player.player_faction_stats.includes(:faction).index_by(&:faction_id)
+
+    # Compute avg enemy/team CR efficiently with a single query
+    @avg_enemy_team_cr, @avg_team_cr = compute_team_cr_averages(@player, @appearances)
+  end
+
+  def compute_team_cr_averages(player, appearances)
+    return [ nil, nil ] if appearances.empty?
+
+    match_ids = appearances.map { |a| a.match_id }.uniq
+    return [ nil, nil ] if match_ids.empty?
+
+    # Get all appearances for these matches in one query
+    all_match_appearances = Appearance.where(match_id: match_ids)
+      .includes(:faction)
+      .where.not(custom_rating: nil)
+      .pluck(:match_id, :player_id, :faction_id, :custom_rating)
+
+    # Build lookup: match_id -> { good: [ratings], evil: [ratings] }
+    match_ratings = Hash.new { |h, k| h[k] = { good: [], evil: [] } }
+    faction_sides = Faction.pluck(:id, :good).to_h
+
+    all_match_appearances.each do |match_id, pid, faction_id, cr|
+      side = faction_sides[faction_id] ? :good : :evil
+      match_ratings[match_id][side] << { player_id: pid, cr: cr }
+    end
+
+    # Build player's side lookup from their appearances
+    player_sides = appearances.each_with_object({}) do |app, h|
+      h[app.match_id] = app.faction&.good? ? :good : :evil
+    end
+
+    enemy_crs = []
+    team_crs = []
+
+    appearances.each do |app|
+      player_side = player_sides[app.match_id]
+      next unless player_side
+
+      enemy_side = player_side == :good ? :evil : :good
+      ratings = match_ratings[app.match_id]
+
+      # Enemy team average
+      enemy_ratings = ratings[enemy_side].map { |r| r[:cr] }
+      enemy_crs << (enemy_ratings.sum / enemy_ratings.size.to_f) if enemy_ratings.any?
+
+      # Team average (excluding self)
+      team_ratings = ratings[player_side].reject { |r| r[:player_id] == player.id }.map { |r| r[:cr] }
+      team_crs << (team_ratings.sum / team_ratings.size.to_f) if team_ratings.any?
+    end
+
+    avg_enemy = enemy_crs.any? ? (enemy_crs.sum / enemy_crs.size).round : nil
+    avg_team = team_crs.any? ? (team_crs.sum / team_crs.size).round : nil
+
+    [ avg_enemy, avg_team ]
+  end
+
+  # GET /players/1/match_history (lazy loaded via Turbo Frame)
+  def match_history
+    @player = Player.find_by_battletag_or_id(params[:id])
+    raise ActiveRecord::RecordNotFound, "Player not found" unless @player
+
+    @version_filter = params[:version_filter]
+
+    # Build the same scope as show action
+    base_scope = @player.appearances
+      .joins(:match)
+      .where(matches: { ignored: false, has_early_leaver: false })
+      .includes(:faction, :match)
+      .merge(Match.reverse_chronological)
+
+    # Apply version filter
+    if @version_filter.present?
+      if @version_filter.start_with?("only:")
+        base_scope = base_scope.where(matches: { map_version: @version_filter.sub("only:", "") })
+      elsif @version_filter.start_with?("from:")
+        map_version_until = @version_filter.sub("from:", "")
+        available_versions = Match.where(ignored: false).where.not(map_version: nil).distinct.pluck(:map_version)
+          .sort_by { |v| m = v.match(/^(\d+)\.(\d+)([a-zA-Z]*)/); m ? [ m[1].to_i, m[2].to_i, m[3].to_s ] : [ 0, 0, v ] }.reverse
+        until_index = available_versions.index(map_version_until)
+        filtered_versions = until_index ? available_versions[0..until_index] : available_versions
+        base_scope = base_scope.where(matches: { map_version: filtered_versions })
+      elsif @version_filter.start_with?("last:")
+        base_scope = base_scope.limit(@version_filter.sub("last:", "").to_i)
+      end
+    end
+
+    @appearances = base_scope
+    render partial: "players/match_history", locals: { appearances: @appearances, player: @player }
   end
 
   # GET /players/new

@@ -56,27 +56,9 @@
     highest_custom = post_placement_ratings.any? ? post_placement_ratings.max : nil
     lowest_custom = post_placement_ratings.any? ? post_placement_ratings.min : nil
 
-    # Calculate average enemy team CR and average team CR
-    enemy_team_crs = []
-    team_crs = []
-    appearances.each do |app|
-      next unless app.faction
-      player_is_good = app.faction.good?
-      match_appearances = app.match.appearances
-      enemy_apps = match_appearances.select { |a| a.faction && a.faction.good? != player_is_good && a.custom_rating.present? }
-      if enemy_apps.any?
-        enemy_avg = enemy_apps.sum(&:custom_rating).to_f / enemy_apps.size
-        enemy_team_crs << enemy_avg
-      end
-      # Calculate team average (same side, excluding self)
-      team_apps = match_appearances.select { |a| a.faction && a.faction.good? == player_is_good && a.player_id != player.id && a.custom_rating.present? }
-      if team_apps.any?
-        team_avg = team_apps.sum(&:custom_rating).to_f / team_apps.size
-        team_crs << team_avg
-      end
-    end
-    avg_enemy_team_cr = enemy_team_crs.any? ? (enemy_team_crs.sum / enemy_team_crs.size).round : nil
-    avg_team_cr = team_crs.any? ? (team_crs.sum / team_crs.size).round : nil
+    # Use precomputed values from controller (efficient batch query)
+    avg_enemy_team_cr = defined?(@avg_enemy_team_cr) ? @avg_enemy_team_cr : nil
+    avg_team_cr = defined?(@avg_team_cr) ? @avg_team_cr : nil
   %>
 
   <%# Helper to convert percentile to bracket %>
@@ -693,127 +675,10 @@
   <% end %>
 
   <h2 class="text-2xl font-bold mb-3">Match History</h2>
-  <% if appearances.any? %>
-    <div class="overflow-x-auto">
-      <table class="w-full text-sm border border-gray-200 rounded">
-        <thead class="bg-gray-50">
-          <tr>
-            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Uploaded</th>
-            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Faction</th>
-            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase">Result</th>
-            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Stay percentage - how long the player stayed in the game">Stay</th>
-            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Contribution Rank (1=best)">Rank</th>
-            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Hero Kills">HK</th>
-            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Unit Kills">UK</th>
-            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Heroes Lost">HL</th>
-            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Bases Lost">BL</th>
-            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Castles Razed">CK</th>
-            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Custom rating change">CR+/-</th>
-            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Custom rating after match">CR</th>
-            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Actions Per Minute">APM</th>
-            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase">Duration</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-200">
-          <% appearances.each do |appearance| %>
-            <% match = appearance.match %>
-            <% faction = appearance.faction %>
-            <% player_won = !match.is_draw? && ((faction.good? && match.good_victory?) || (!faction.good? && !match.good_victory?)) %>
-            <% match_date = (match.uploaded_at || match.created_at).strftime('%Y-%m-%d') %>
-            <tr class="<%= match.is_draw? ? 'bg-gray-100' : (player_won ? 'bg-green-50' : 'bg-red-50') %>">
-              <td class="px-2 py-1 whitespace-nowrap">
-                <%= link_to match_date, match_path(match), class: "text-blue-600 hover:underline" %>
-              </td>
-              <td class="px-2 py-1 whitespace-nowrap">
-                <span class="inline-flex items-center gap-1">
-                  <span class="w-2.5 h-2.5 rounded-full" style="background-color: <%= faction.color_hex %>"></span>
-                  <%= faction.name %>
-                </span>
-              </td>
-              <td class="px-2 py-1 text-center whitespace-nowrap">
-                <% if match.is_draw? %>
-                  <span class="text-gray-600 font-medium">Draw</span>
-                <% elsif player_won %>
-                  <span class="text-green-600 font-medium">Win</span>
-                <% else %>
-                  <span class="text-red-600 font-medium">Loss</span>
-                <% end %>
-              </td>
-              <td class="px-2 py-1 text-center whitespace-nowrap">
-                <% if appearance.stay_pct.present? %>
-                  <% if appearance.stay_pct >= 100 %>
-                    <span class="text-green-600">100%</span>
-                  <% elsif appearance.stay_pct >= 90 %>
-                    <span class="text-yellow-600"><%= appearance.stay_pct.round %>%</span>
-                  <% else %>
-                    <span class="text-red-600"><%= appearance.stay_pct.round %>%</span>
-                  <% end %>
-                <% else %>
-                  -
-                <% end %>
-              </td>
-              <td class="px-2 py-1 text-center whitespace-nowrap">
-                <% if appearance.contribution_rank %>
-                  <span class="<%= appearance.contribution_rank <= 2 ? 'text-green-600' : (appearance.contribution_rank >= 4 ? 'text-red-600' : '') %>">#<%= appearance.contribution_rank %></span>
-                  <% if appearance.is_mvp? %><span class="text-yellow-500" title="MVP: Top hero kills AND top unit kills">★</span><% end %>
-                  <% if appearance.has_ring_drop? %><span class="text-yellow-600" title="Ring Drop: Destroyed the One Ring (<%= appearance.has_ring_powered_drop? ? '+2, 2+ evil bases alive' : '+1' %>)">💍</span><% end %>
-                <% else %>
-                  -
-                <% end %>
-              </td>
-              <td class="px-2 py-1 text-center whitespace-nowrap"><%= appearance.hero_kills || '-' %></td>
-              <td class="px-2 py-1 text-center whitespace-nowrap"><%= appearance.unit_kills || '-' %></td>
-              <td class="px-2 py-1 text-center whitespace-nowrap">
-                <% if appearance.heroes_lost && appearance.heroes_total %>
-                  <%= appearance.heroes_lost %>/<%= appearance.heroes_total %>
-                <% else %>
-                  <%= heroes_lost_for_appearance(appearance) || '-' %>
-                <% end %>
-              </td>
-              <td class="px-2 py-1 text-center whitespace-nowrap">
-                <% if appearance.bases_lost && appearance.bases_total %>
-                  <%= appearance.bases_lost %>/<%= appearance.bases_total %>
-                <% else %>
-                  <%= bases_lost_for_appearance(appearance) || '-' %>
-                <% end %>
-              </td>
-              <td class="px-2 py-1 text-center whitespace-nowrap"><%= appearance.castles_razed || '-' %></td>
-              <td class="px-2 py-1 text-center whitespace-nowrap">
-                <% if appearance.custom_rating_change %>
-                  <% if appearance.custom_rating_change > 0 %>
-                    <span class="text-green-600">+<%= appearance.custom_rating_change %></span>
-                  <% elsif appearance.custom_rating_change < 0 %>
-                    <span class="text-red-600"><%= appearance.custom_rating_change %></span>
-                  <% else %>
-                    <span class="text-gray-400">0</span>
-                  <% end %>
-                <% else %>
-                  -
-                <% end %>
-              </td>
-              <td class="px-2 py-1 text-center whitespace-nowrap">
-                <% if appearance.custom_rating && appearance.custom_rating_change %>
-                  <%= appearance.custom_rating + appearance.custom_rating_change %>
-                <% elsif appearance.custom_rating %>
-                  <%= appearance.custom_rating %>
-                <% else %>
-                  -
-                <% end %>
-              </td>
-              <td class="px-2 py-1 text-center whitespace-nowrap"><%= appearance.apm || '-' %></td>
-              <td class="px-2 py-1 text-center whitespace-nowrap text-gray-500">
-                <% if match.seconds %>
-                  <%= "#{match.seconds / 60}m" %>
-                <% else %>
-                  -
-                <% end %>
-              </td>
-            </tr>
-          <% end %>
-        </tbody>
-      </table>
+  <%= turbo_frame_tag "match_history", src: match_history_player_path(player, version_filter: @version_filter), loading: :lazy do %>
+    <div class="text-center py-8 text-gray-500">
+      <span class="inline-block animate-spin mr-2">&#8635;</span>
+      Loading match history...
     </div>
-  <% else %>
-    <div>No matches found.</div>
   <% end %>
 </div>

@@ -18,6 +18,9 @@ Rails.application.routes.draw do
   resources :factions, except: [ :new, :create, :destroy ]
   resources :players, constraints: { id: /[^\/]+/ } do
     resource :relationships, only: [ :show ], controller: "player_relationships"
+    member do
+      get :match_history
+    end
   end
 
   namespace :admin do

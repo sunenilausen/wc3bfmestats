@@ -91,7 +91,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_06_201040) do
     t.float "performance_score"
     t.integer "player_id", null: false
     t.integer "self_heal"
-    t.float "self_heal_pct"
     t.float "stay_pct"
     t.integer "team_heal"
     t.float "team_heal_pct"

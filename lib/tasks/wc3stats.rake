@@ -980,25 +980,34 @@ namespace :wc3stats do
     search_term = ENV.fetch("SEARCH", "BFME")
     limit = ENV["LIMIT"]&.to_i
     delay = ENV.fetch("DELAY", "0.5").to_f
+    skip_verified = ENV["SKIP_VERIFIED"].present?
 
     puts "=" * 60
     puts "WC3Stats Re-sync (Update Existing Replays)"
     puts "=" * 60
     puts "Search term: #{search_term}"
     puts "Limit: #{limit || 'None (all existing)'}"
+    puts "Skip verified: #{skip_verified ? 'Yes (skipping matches with verified filename dates)' : 'No'}"
     puts "=" * 60
     puts
     puts "This will:"
     puts "  1. Re-fetch replay data from wc3stats API"
-    puts "  2. Update uploaded_at based on filename date (if available)"
+    puts "  2. Update played_at based on filename date (if available)"
     puts "  3. Preserve all other match data (victory, ignored, etc.)"
     puts
 
     # Step 1: Get existing replay IDs
+    existing_replays = Wc3statsReplay.joins(:match)
+
+    # Skip replays where played_at already differs from uploaded_at (verified from filename)
+    if skip_verified
+      existing_replays = existing_replays.where("matches.played_at = matches.uploaded_at OR matches.played_at IS NULL")
+    end
+
     existing_replays = if limit
-      Wc3statsReplay.joins(:match).order("matches.uploaded_at DESC").limit(limit)
+      existing_replays.order("matches.uploaded_at DESC").limit(limit)
     else
-      Wc3statsReplay.joins(:match)
+      existing_replays
     end
 
     replay_ids = existing_replays.pluck(:wc3stats_replay_id)

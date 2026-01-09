@@ -14,6 +14,7 @@
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Heroes Lost">HL</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Bases Lost">BL</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Castles Razed">CK</th>
+            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Base Kills (enemy main bases destroyed, 4.6+ only)">BK</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Custom rating change">CR+/-</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Custom rating after match">CR</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Actions Per Minute">APM</th>
@@ -84,6 +85,7 @@
                 <% end %>
               </td>
               <td class="px-2 py-1 text-center whitespace-nowrap"><%= appearance.castles_razed || '-' %></td>
+              <td class="px-2 py-1 text-center whitespace-nowrap"><%= match.map_version.to_s >= "4.6" ? (appearance.main_base_destroyed || 0) : '-' %></td>
               <td class="px-2 py-1 text-center whitespace-nowrap">
                 <% if appearance.custom_rating_change %>
                   <% if appearance.custom_rating_change > 0 %>

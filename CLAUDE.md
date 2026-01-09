@@ -10,7 +10,7 @@ This is a Rails 8.1 application for tracking Warcraft 3 Battle for Middle Earth 
 
 The application uses a join-table architecture for many-to-many relationships:
 
-- **Match**: Represents a game with `uploaded_at` (earliest wc3stats upload date), `seconds` (duration), `good_victory` (boolean), `is_draw` (boolean), and ordering fields (`major_version`, `build_version`, `map_version`, `row_order`)
+- **Match**: Represents a game with `played_at` (game time from replay filename), `uploaded_at` (earliest wc3stats upload date), `seconds` (duration), `good_victory` (boolean), `is_draw` (boolean), and ordering fields (`major_version`, `build_version`, `map_version`, `row_order`)
 - **Player**: Battle.net user with `nickname`, `battletag`, `elo_rating`, `elo_rating_seed`, and Glicko-2 fields
 - **Faction**: One of 10 BfME factions (Gondor, Rohan, Mordor, etc.) with a `color`, `good` boolean, `heroes` array, and `bases` array
 - **Appearance**: Join table linking Player + Faction + Match, storing `hero_kills`, `unit_kills`, `elo_rating`, `elo_rating_change`, and ignore flags
@@ -22,13 +22,21 @@ Key relationships:
 - Player `has_many :appearances` and `has_many :matches, through: :appearances`
 - Appearance `belongs_to :player, :faction, :match`
 
-## Important: uploaded_at vs playedOn
+## Important: played_at vs uploaded_at
 
-The `uploaded_at` field on Match represents when the replay was **first uploaded** to wc3stats.com, NOT when the game was played. The wc3stats API field `playedOn` is misleadingly named - it's actually the upload timestamp.
+The Match model has two timestamp fields:
+- `played_at` - When the game was **actually played** (parsed from replay filename `Replay_YYYY_MM_DD_HHMM.w3g`)
+- `uploaded_at` - When the replay was **first uploaded** to wc3stats.com (earliest upload timestamp)
 
-- `Wc3statsReplay#played_at` returns the **earliest** upload timestamp from all uploads (a replay can be uploaded multiple times by different players)
-- This is used for chronological ordering of matches for ELO/Glicko-2 calculations
-- The `Match.chronological` scope orders by: major_version, build_version, row_order, map_version, uploaded_at, wc3stats_replay_id
+**Data sources:**
+- `Wc3statsReplay#played_at` - Parses the replay filename first (e.g., `Replay_2025_10_19_1942.w3g` → Oct 19, 2025 19:42), falls back to earliest upload timestamp if filename not available
+- `Wc3statsReplay#earliest_upload_at` - The earliest upload timestamp from all uploads (a replay can be uploaded multiple times by different players)
+- The wc3stats API field `playedOn` is misleadingly named - it's actually the LATEST upload timestamp, not when the game was played
+
+**Chronological ordering:**
+- The `Match.chronological` scope orders by: played_at (MOST IMPORTANT), major_version, build_version, row_order, map_version, uploaded_at, wc3stats_replay_id
+- `played_at` from replay filename is the most accurate indicator of when games were played
+- `uploaded_at` serves as a fallback when filename parsing isn't available
 
 ## Rating Systems
 
@@ -261,11 +269,12 @@ This means leaves are "excused" if:
 ## Match Chronological Ordering
 
 Matches are ordered for rating calculations using multiple criteria (see `Match.chronological` scope):
-1. WC3 game version (`major_version`, `build_version`)
-2. Manual `row_order` (for fine-tuning order of same-day matches)
-3. Map version (parsed from filename, e.g., "4.5e")
-4. `uploaded_at` (earliest upload timestamp)
-5. `wc3stats_replay_id` (fallback)
+1. `played_at` - Game time from replay filename (MOST IMPORTANT)
+2. WC3 game version (`major_version`, `build_version`)
+3. Manual `row_order` (for fine-tuning order of same-day matches)
+4. Map version (parsed from filename, e.g., "4.5e")
+5. `uploaded_at` (earliest upload timestamp, fallback)
+6. `wc3stats_replay_id` (final fallback)
 
 ## Map Version Parsing
 

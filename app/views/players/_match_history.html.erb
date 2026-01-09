@@ -4,7 +4,7 @@
       <table class="w-full text-sm border border-gray-200 rounded">
         <thead class="bg-gray-50">
           <tr>
-            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Uploaded</th>
+            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Played</th>
             <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Faction</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase">Result</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Stay percentage - how long the player stayed in the game">Stay</th>
@@ -26,10 +26,17 @@
             <% match = appearance.match %>
             <% faction = appearance.faction %>
             <% player_won = !match.is_draw? && ((faction.good? && match.good_victory?) || (!faction.good? && !match.good_victory?)) %>
-            <% match_date = (match.uploaded_at || match.created_at).strftime('%Y-%m-%d') %>
+            <%
+              played_time = match.played_at || match.uploaded_at || match.created_at
+              # Show time if not midnight (meaning we have actual time from filename)
+              has_time = played_time.present? && (played_time.hour != 0 || played_time.min != 0)
+              match_date = played_time&.strftime(has_time ? '%Y-%m-%d %H:%M' : '%Y-%m-%d') || 'Unknown'
+              # Date is verified if played_at differs from uploaded_at (parsed from filename)
+              date_verified = match.played_at.present? && match.uploaded_at.present? && match.played_at != match.uploaded_at
+            %>
             <tr class="<%= match.is_draw? ? 'bg-gray-100' : (player_won ? 'bg-green-50' : 'bg-red-50') %>">
               <td class="px-2 py-1 whitespace-nowrap">
-                <%= link_to match_date, match_path(match), class: "text-blue-600 hover:underline", data: { turbo_frame: "_top" } %>
+                <%= link_to match_date, match_path(match), class: "text-blue-600 hover:underline", data: { turbo_frame: "_top" } %><% if date_verified %><svg class="inline-block w-3.5 h-3.5 ml-1 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Verified from replay filename"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg><% end %>
               </td>
               <td class="px-2 py-1 whitespace-nowrap">
                 <span class="inline-flex items-center gap-1">

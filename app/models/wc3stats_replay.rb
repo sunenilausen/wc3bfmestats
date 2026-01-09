@@ -64,20 +64,57 @@ class Wc3statsReplay < ApplicationRecord
     body&.dig("length")
   end
 
-  # Returns the earliest upload timestamp from all uploads
-  # This is when the replay was first uploaded to wc3stats
+  # Returns the best estimate of when the game was actually played
+  # Priority:
+  # 1. Parse date from filename if it matches Replay_YYYY_MM_DD_HHMM.w3g format
+  # 2. Fall back to earliest upload timestamp
   def played_at
     uploads = body&.dig("uploads") || []
 
+    # First, try to parse date from filename (most accurate)
     if uploads.any?
-      # Find the earliest upload timestamp
+      parsed_date = parse_date_from_filename(uploads)
+      return parsed_date if parsed_date
+    end
+
+    # Fall back to earliest upload timestamp
+    earliest_upload_at
+  end
+
+  # Returns the earliest upload timestamp (when replay was first uploaded to wc3stats)
+  def earliest_upload_at
+    uploads = body&.dig("uploads") || []
+
+    if uploads.any?
       earliest_timestamp = uploads.map { |u| u["timestamp"] }.compact.min
       return Time.at(earliest_timestamp) if earliest_timestamp
     end
 
-    # Fall back to playedOn timestamp (which is the latest upload)
+    # Final fallback to playedOn timestamp (which is the latest upload)
     timestamp = body&.dig("playedOn")
     Time.at(timestamp) if timestamp
+  end
+
+  # Parse date from replay filename if it matches the standard format
+  # Format: Replay_YYYY_MM_DD_HHMM.w3g (e.g., Replay_2025_10_19_1942.w3g)
+  # Returns nil if filename is missing or doesn't match the format
+  def parse_date_from_filename(uploads)
+    uploads.each do |upload|
+      filename = upload["filename"]
+      next unless filename
+
+      # Match format: Replay_YYYY_MM_DD_HHMM.w3g
+      if filename =~ /\AReplay_(\d{4})_(\d{2})_(\d{2})_(\d{2})(\d{2})\.w3g\z/i
+        year, month, day, hour, minute = $1.to_i, $2.to_i, $3.to_i, $4.to_i, $5.to_i
+        begin
+          return Time.new(year, month, day, hour, minute, 0)
+        rescue ArgumentError
+          # Invalid date, try next upload
+          next
+        end
+      end
+    end
+    nil
   end
 
   def replay_hash

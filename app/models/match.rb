@@ -33,14 +33,16 @@ class Match < ApplicationRecord
 
   # Chronological ordering for ELO/Glicko-2 calculations
   # Order of importance (ascending):
-  # 1. WC3 game version (major_version, build_version)
-  # 2. Manual row_order (for fine-tuning)
-  # 3. Map version (parsed from map filename, e.g., "4.5e")
-  # 4. Uploaded_at date (earliest upload timestamp from wc3stats)
-  # 5. Replay ID (upload order from wc3stats)
+  # 1. Played_at date (from replay filename - MOST IMPORTANT)
+  # 2. WC3 game version (major_version, build_version)
+  # 3. Manual row_order (for fine-tuning)
+  # 4. Map version (parsed from map filename, e.g., "4.5e")
+  # 5. Uploaded_at (when replay was uploaded to wc3stats)
+  # 6. Replay ID (upload order from wc3stats)
   scope :chronological, -> {
     order(
       Arel.sql(<<~SQL.squish)
+        matches.played_at ASC NULLS LAST,
         COALESCE(matches.major_version, 0) ASC,
         COALESCE(matches.build_version, 0) ASC,
         COALESCE(matches.row_order, 999999) ASC,
@@ -54,6 +56,7 @@ class Match < ApplicationRecord
   scope :reverse_chronological, -> {
     order(
       Arel.sql(<<~SQL.squish)
+        matches.played_at DESC NULLS FIRST,
         COALESCE(matches.major_version, 0) DESC,
         COALESCE(matches.build_version, 0) DESC,
         COALESCE(matches.row_order, 999999) DESC,
@@ -89,6 +92,11 @@ class Match < ApplicationRecord
 
   def uploaded_at_formatted
     return uploaded_at.strftime("%Y-%m-%d %H:%M:%S") if uploaded_at.present?
+    "Unknown"
+  end
+
+  def played_at_formatted
+    return played_at.strftime("%Y-%m-%d %H:%M:%S") if played_at.present?
     "Unknown"
   end
 

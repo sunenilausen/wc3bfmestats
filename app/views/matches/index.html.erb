@@ -29,8 +29,14 @@
       <% @matches.each do |match| %>
         <div class="flex flex-col sm:flex-row justify-between items-start pb-5 sm:pb-0 gap-2">
           <div class="flex-1">
+            <%
+              played_time = match.played_at || match.uploaded_at || match.created_at
+              has_time = played_time.present? && (played_time.hour != 0 || played_time.min != 0)
+              match_date = played_time&.strftime(has_time ? '%Y-%m-%d %H:%M' : '%Y-%m-%d') || 'Unknown'
+              date_verified = match.played_at.present? && match.uploaded_at.present? && match.played_at != match.uploaded_at
+            %>
             <div class="mb-1">
-              <%= match.uploaded_at&.strftime("%Y-%m-%d") || match.created_at.strftime("%Y-%m-%d") %>
+              <%= match_date %><% if date_verified %><svg class="inline-block w-3.5 h-3.5 ml-1 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Verified from replay filename"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg><% end %>
               <% if match.is_draw? %>
                 <span class="ml-2 text-gray-600 font-medium">Draw</span>
               <% else %>

@@ -975,6 +975,107 @@ namespace :wc3stats do
     Rake::Task["wc3stats:sync"].invoke
   end
 
+  desc "Re-sync existing replays: re-fetch from API and update uploaded_at (preserves manual changes like victory override)"
+  task resync: :environment do
+    search_term = ENV.fetch("SEARCH", "BFME")
+    limit = ENV["LIMIT"]&.to_i
+    delay = ENV.fetch("DELAY", "0.5").to_f
+
+    puts "=" * 60
+    puts "WC3Stats Re-sync (Update Existing Replays)"
+    puts "=" * 60
+    puts "Search term: #{search_term}"
+    puts "Limit: #{limit || 'None (all existing)'}"
+    puts "=" * 60
+    puts
+    puts "This will:"
+    puts "  1. Re-fetch replay data from wc3stats API"
+    puts "  2. Update uploaded_at based on filename date (if available)"
+    puts "  3. Preserve all other match data (victory, ignored, etc.)"
+    puts
+
+    # Step 1: Get existing replay IDs
+    existing_replays = if limit
+      Wc3statsReplay.joins(:match).order("matches.uploaded_at DESC").limit(limit)
+    else
+      Wc3statsReplay.joins(:match)
+    end
+
+    replay_ids = existing_replays.pluck(:wc3stats_replay_id)
+    puts "Found #{replay_ids.count} existing replays to re-sync"
+    puts
+
+    # Step 2: Re-fetch each replay
+    puts "Step 1: Re-fetching replay data from API..."
+    updated_count = 0
+    failed_count = 0
+
+    replay_ids.each_with_index do |replay_id, index|
+      progress = "[#{index + 1}/#{replay_ids.count}]"
+      print "#{progress} Re-fetching replay #{replay_id}... "
+
+      replay_fetcher = Wc3stats::ReplayFetcher.new(replay_id)
+      replay = replay_fetcher.call
+
+      if replay
+        updated_count += 1
+        puts "OK"
+      else
+        failed_count += 1
+        puts "FAILED: #{replay_fetcher.errors.first}"
+      end
+
+      sleep delay if index < replay_ids.count - 1
+    end
+
+    puts
+    puts "  Updated: #{updated_count}"
+    puts "  Failed: #{failed_count}"
+    puts
+
+    # Step 3: Update played_at and uploaded_at on matches
+    puts "Step 2: Updating played_at and uploaded_at from replay data..."
+    matches_updated = 0
+    matches_skipped = 0
+
+    Match.joins(:wc3stats_replay).includes(:wc3stats_replay).find_each do |match|
+      replay = match.wc3stats_replay
+      changes = {}
+
+      # played_at: from filename or fallback to earliest upload (for chronological ordering)
+      new_played_at = replay.played_at
+      changes[:played_at] = new_played_at if new_played_at && match.played_at != new_played_at
+
+      # uploaded_at: always the earliest upload timestamp (for display)
+      new_uploaded_at = replay.earliest_upload_at
+      changes[:uploaded_at] = new_uploaded_at if new_uploaded_at && match.uploaded_at != new_uploaded_at
+
+      if changes.any?
+        match.update_columns(changes)
+        matches_updated += 1
+      else
+        matches_skipped += 1
+      end
+    end
+
+    puts "  Updated: #{matches_updated}"
+    puts "  Already correct: #{matches_skipped}"
+    puts
+
+    # Step 4: Invalidate cache
+    puts "Step 3: Invalidating stats cache..."
+    StatsCacheKey.invalidate!
+    puts "  Cache invalidated"
+    puts
+
+    puts "=" * 60
+    puts "Re-sync Complete"
+    puts "=" * 60
+    puts "Matches now ordered by filename date where available."
+    puts "Run 'wc3stats:recalculate' if rating order has changed significantly."
+    puts "=" * 60
+  end
+
   desc "Backfill castles_razed from replay data"
   task backfill_castles_razed: :environment do
     puts "=" * 60

@@ -2,6 +2,11 @@
   <div>
     <strong class="inline font-medium">Uploaded:</strong>
     <%= match.uploaded_at&.strftime("%Y-%m-%d") || match.created_at.strftime("%Y-%m-%d") %>
+    <% if match.played_at.present? %>
+      <br>
+      <strong class="inline font-medium">Played:</strong>
+      <%= match.played_at.strftime("%Y-%m-%d %H:%M") %>
+    <% end %>
     <% if match.seconds.present? && match.seconds > 0 %>
       <span class="text-gray-500">(<%= ChronicDuration.output(match.seconds, format: :short) %>)</span>
     <% end %>

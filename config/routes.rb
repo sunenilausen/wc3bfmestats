@@ -2,6 +2,7 @@ Rails.application.routes.draw do
   resources :lobbies, except: [ :destroy ] do
     member do
       post :balance
+      post :copy
     end
   end
   resources :wc3stats_replays

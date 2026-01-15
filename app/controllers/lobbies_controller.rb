@@ -1,7 +1,7 @@
 require "ostruct"
 
 class LobbiesController < ApplicationController
-  before_action :set_lobby, only: %i[ show edit update balance ]
+  before_action :set_lobby, only: %i[ show edit update balance copy ]
   before_action :ensure_lobby_owner, only: %i[ edit update balance ]
 
   # GET /lobbies or /lobbies.json
@@ -163,6 +163,29 @@ class LobbiesController < ApplicationController
     respond_to do |format|
       format.json { render json: result }
       format.html { redirect_to edit_lobby_path(@lobby), notice: result[:message] }
+    end
+  end
+
+  # POST /lobbies/1/copy
+  def copy
+    new_lobby = Lobby.new(session_token: lobby_session_token)
+
+    # Copy all lobby players with their faction and player assignments
+    @lobby.lobby_players.each do |lp|
+      new_lobby.lobby_players.build(
+        faction_id: lp.faction_id,
+        player_id: lp.player_id,
+        is_new_player: lp.is_new_player
+      )
+    end
+
+    # Copy observers
+    new_lobby.observer_ids = @lobby.observer_ids.dup
+
+    if new_lobby.save
+      redirect_to edit_lobby_path(new_lobby), notice: "Lobby copied successfully."
+    else
+      redirect_to @lobby, alert: "Failed to copy lobby."
     end
   end
 

@@ -12,5 +12,6 @@
   <% if lobby_owner?(@lobby) %>
     <%= link_to "Edit this lobby", edit_lobby_path(@lobby), class: "w-full sm:w-auto text-center rounded-md px-3.5 py-2.5 bg-gray-100 hover:bg-gray-50 inline-block font-medium" %>
   <% end %>
+  <%= button_to "Copy lobby", copy_lobby_path(@lobby), method: :post, class: "w-full sm:w-auto text-center mt-2 sm:mt-0 sm:ml-2 rounded-md px-3.5 py-2.5 bg-gray-100 hover:bg-gray-50 inline-block font-medium" %>
   <%= link_to "Show all lobbies", lobbies_path, class: "w-full sm:w-auto text-center mt-2 sm:mt-0 sm:ml-2 rounded-md px-3.5 py-2.5 bg-gray-100 hover:bg-gray-50 inline-block font-medium" %>
 </div>

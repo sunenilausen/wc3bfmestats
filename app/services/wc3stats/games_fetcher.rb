@@ -41,6 +41,8 @@ module Wc3stats
       # Use provided limit or 0 (which returns all results)
       params = { limit: limit && limit > 0 ? limit : 0 }
       params[:search] = search_term if search_term.present?
+      # When using limit, order by desc to get most recent games first
+      params[:order] = "desc" if limit && limit > 0
 
       uri = URI(API_URL)
       uri.query = URI.encode_www_form(params)
@@ -58,13 +60,8 @@ module Wc3stats
       replays = data["body"] || []
       replay_ids = replays.map { |replay| replay["id"] }.compact
 
-      # Sort by ID to maintain consistent order (oldest first)
+      # Sort by ID to maintain consistent order (oldest first for processing)
       replay_ids.sort!
-
-      # Apply limit if specified
-      if limit && limit > 0
-        replay_ids = replay_ids.last(limit) # Take the most recent (highest IDs)
-      end
 
       puts "  Found #{replay_ids.count} replay IDs (total available: #{data.dig('pagination', 'totalItems') || replays.count})"
 

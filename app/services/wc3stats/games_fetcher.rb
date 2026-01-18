@@ -38,7 +38,8 @@ module Wc3stats
     end
 
     def build_uri
-      params = { limit: 0 } # limit=0 returns all results
+      # Use provided limit or 0 (which returns all results)
+      params = { limit: limit && limit > 0 ? limit : 0 }
       params[:search] = search_term if search_term.present?
 
       uri = URI(API_URL)

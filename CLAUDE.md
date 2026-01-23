@@ -84,6 +84,11 @@ Players are ranked within their team by performance score. The performance score
 
 Note: Hero kill contribution is capped at 20% per hero killed **only for performance score calculation** (used for contribution bonuses). For example, killing 1 hero caps your performance score contribution at 20% regardless of how many total hero kills your team has. However, player stats display shows the raw (uncapped) percentages.
 
+**Isengard adjustments (contribution ranking only):**
+- Castle raze: -1 castle for Isengard in ALL map versions (Grond naturally razes castles). Both player and team totals are reduced by 1.
+- Main base destroyed: -1 base for Isengard in map version 4.6+ only. Both player and team totals are reduced by 1.
+- These adjustments apply ONLY to the `CustomRatingRecalculator#performance_score` method (which determines contribution ranking and bonus points). They do NOT apply to PERF score (`MlScoreRecalculator`) or faction stats (`PlayerFactionStatsCalculator`).
+
 - **Winning team** (net +3 points distributed):
   - 1st place: +2
   - 2nd place: +1

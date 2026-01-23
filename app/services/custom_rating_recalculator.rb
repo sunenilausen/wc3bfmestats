@@ -159,6 +159,7 @@ class CustomRatingRecalculator
   RING_DROP_POWERED_BONUS = 1  # Extra +1 if 2+ evil main bases are alive
   RING_DROP_EVENT = "Ring Drop"
   FELLOWSHIP_FACTION = "Fellowship"
+  ISENGARD_FACTION = "Isengard"
 
   # Evil main bases to check for Ring Powered bonus
   # If 2+ of these are alive at ring drop time, Fellowship gets +1 extra
@@ -337,22 +338,35 @@ class CustomRatingRecalculator
     end
 
     # Castle raze contribution (capped at 20% per castle razed)
+    # Isengard gets -1 castle (Grond naturally razes castles)
     if appearance.castles_razed
+      player_castles = appearance.castles_razed
       team_castles = team_appearances.sum { |a| a.castles_razed || 0 }
+      if appearance.faction.name == ISENGARD_FACTION
+        player_castles = [ player_castles - 1, 0 ].max
+        team_castles = [ team_castles - 1, 0 ].max
+      end
       if team_castles > 0
-        raw_contrib = (appearance.castles_razed.to_f / team_castles) * 100
-        max_contrib = appearance.castles_razed * MlScoreRecalculator::CASTLE_RAZE_CAP_PER_KILL
+        raw_contrib = (player_castles.to_f / team_castles) * 100
+        max_contrib = player_castles * MlScoreRecalculator::CASTLE_RAZE_CAP_PER_KILL
         cr_contrib = [ raw_contrib, max_contrib ].min
         score += (cr_contrib - 20.0) * weights[:castle_raze_contribution]
       end
     end
 
     # Main base destroyed contribution (capped at 20% per main base)
+    # Isengard gets -1 base kill in 4.6+ (Grond naturally destroys bases)
     if appearance.main_base_destroyed
+      is_46_plus = MlScoreRecalculator.version_46_plus?(match.map_version)
+      player_bases = appearance.main_base_destroyed
       team_main_bases = team_appearances.sum { |a| a.main_base_destroyed || 0 }
+      if is_46_plus && appearance.faction.name == ISENGARD_FACTION
+        player_bases = [ player_bases - 1, 0 ].max
+        team_main_bases = [ team_main_bases - 1, 0 ].max
+      end
       if team_main_bases > 0
-        raw_contrib = (appearance.main_base_destroyed.to_f / team_main_bases) * 100
-        max_contrib = appearance.main_base_destroyed * MlScoreRecalculator::MAIN_BASE_CAP_PER_KILL
+        raw_contrib = (player_bases.to_f / team_main_bases) * 100
+        max_contrib = player_bases * MlScoreRecalculator::MAIN_BASE_CAP_PER_KILL
         mb_contrib = [ raw_contrib, max_contrib ].min
         score += (mb_contrib - 20.0) * weights[:main_base_contribution]
       end

@@ -14,17 +14,24 @@ module MatchesHelper
 
     wins = 0
     losses = 0
+    faction_wins = 0
+    faction_losses = 0
 
     previous_appearances.each do |a|
       player_won = (a.faction.good? && a.match.good_victory?) || (!a.faction.good? && !a.match.good_victory?)
       if player_won
         wins += 1
+        faction_wins += 1 if a.faction_id == appearance.faction_id
       else
         losses += 1
+        faction_losses += 1 if a.faction_id == appearance.faction_id
       end
     end
 
-    "<span class=\"text-green-600\">#{wins}W</span>-<span class=\"text-red-600\">#{losses}L</span>".html_safe
+    faction_record = "<span class=\"text-gray-400\">#{faction_wins}W-#{faction_losses}L</span>"
+    overall_record = "<span class=\"text-green-600\">#{wins}W</span>-<span class=\"text-red-600\">#{losses}L</span>"
+
+    "#{overall_record} / #{faction_record}".html_safe
   end
 
   # Check if match_a comes before match_b chronologically

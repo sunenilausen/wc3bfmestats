@@ -1,6 +1,5 @@
 # Calculates and stores performance scores for each player-faction combination
 # Performance score is the average of performance scores from all matches with that faction
-# Faction score combines faction-specific rating and average contribution rank
 class PlayerFactionStatsCalculator
   # Minimum games required to be ranked
   MIN_GAMES_FOR_RANKING = 10
@@ -18,13 +17,6 @@ class PlayerFactionStatsCalculator
     calculate_faction_scores
     update_rankings_by_score
     @stats_updated
-  end
-
-  # Recalculate only faction scores and rankings (called after FactionRatingRecalculator)
-  # This does NOT delete/recreate stats, only updates scores using existing faction_rating
-  def recalculate_scores_only
-    calculate_faction_scores
-    update_rankings_by_score
   end
 
   private

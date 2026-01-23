@@ -731,7 +731,7 @@ class CustomRatingRecalculator
   ML_BASELINE = 0  # 0-centered scale (0 = average)
 
   # Store match prediction using same logic as LobbyWinPredictor
-  # Uses CR with ML score adjustment for new players
+  # Uses CR with ML score adjustment for new players, weighted by faction impact
   def store_match_prediction(match, good_avg, evil_avg)
     good_effective_crs = []
     evil_effective_crs = []
@@ -751,10 +751,14 @@ class CustomRatingRecalculator
         )
       end
 
+      # Apply faction impact weight
+      faction_weight = LobbyWinPredictor::FACTION_IMPACT_WEIGHTS[app.faction.name] || LobbyWinPredictor::DEFAULT_FACTION_WEIGHT
+      weighted_cr = effective_cr * faction_weight
+
       if app.faction.good?
-        good_effective_crs << effective_cr
+        good_effective_crs << weighted_cr
       else
-        evil_effective_crs << effective_cr
+        evil_effective_crs << weighted_cr
       end
     end
 

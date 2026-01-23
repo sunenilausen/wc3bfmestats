@@ -22,6 +22,20 @@ class LobbyWinPredictor
   CR_MIN = 1200
   CR_MAX = 1800
 
+  # Faction impact weights: how much each faction's player CR contributes to team average
+  # Higher weight = more impactful faction (carry), lower = less impactful (support)
+  # Team sums: Good = 5.02, Evil = 5.02 (balanced)
+  FACTION_IMPACT_WEIGHTS = {
+    "Mordor" => 1.08,
+    "Gondor" => 1.05,
+    "Easterlings" => 0.99,
+    "Harad" => 0.99,
+    "Isengard" => 0.99,
+    "Minas Morgul" => 0.97,
+    "Fellowship" => 0.97
+  }.freeze
+  DEFAULT_FACTION_WEIGHT = 1.0
+
   attr_reader :lobby
 
   def initialize(lobby)
@@ -79,8 +93,9 @@ class LobbyWinPredictor
 
   def compute_team_effective_crs(lobby_players)
     lobby_players.filter_map do |lp|
-      if lp.is_new_player? && lp.player_id.nil?
-        # New player placeholder: use default values with penalty
+      faction_weight = faction_impact_weight(lp.faction)
+
+      effective_cr = if lp.is_new_player? && lp.player_id.nil?
         calculate_effective_cr(
           NewPlayerDefaults.custom_rating,
           0,
@@ -93,7 +108,14 @@ class LobbyWinPredictor
           lp.player.ml_score || ML_BASELINE
         )
       end
+
+      effective_cr ? effective_cr * faction_weight : nil
     end
+  end
+
+  def faction_impact_weight(faction)
+    return DEFAULT_FACTION_WEIGHT unless faction
+    FACTION_IMPACT_WEIGHTS[faction.name] || DEFAULT_FACTION_WEIGHT
   end
 
   # Calculate effective CR with ML score adjustment for new players

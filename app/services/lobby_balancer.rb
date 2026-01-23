@@ -52,7 +52,7 @@ class LobbyBalancer
       # Calculate current team diff
       good_slots = good_data.map { |d| d[:slot] }
       evil_slots = evil_data.map { |d| d[:slot] }
-      current_diff = calculate_team_diff(good_slots, evil_slots)
+      current_diff = calculate_team_diff(good_slots, evil_slots, good_factions, evil_factions)
 
       # If already balanced enough, stop
       break if current_diff.abs < 20 # Within 20 CR is balanced
@@ -69,7 +69,7 @@ class LobbyBalancer
           new_good_slots[gi] = ed[:slot]
           new_evil_slots[ei] = gd[:slot]
 
-          new_diff = calculate_team_diff(new_good_slots, new_evil_slots)
+          new_diff = calculate_team_diff(new_good_slots, new_evil_slots, good_factions, evil_factions)
 
           # Check if this improves balance
           if new_diff.abs < best_new_diff - 1
@@ -177,9 +177,19 @@ class LobbyBalancer
     end
   end
 
-  def calculate_team_diff(good_slots, evil_slots)
-    good_crs = good_slots.filter_map { |slot| calculate_effective_cr(slot) }
-    evil_crs = evil_slots.filter_map { |slot| calculate_effective_cr(slot) }
+  def calculate_team_diff(good_slots, evil_slots, good_factions, evil_factions)
+    good_crs = good_slots.each_with_index.filter_map do |slot, i|
+      cr = calculate_effective_cr(slot)
+      next nil unless cr
+      weight = LobbyWinPredictor::FACTION_IMPACT_WEIGHTS[good_factions[i]&.name] || LobbyWinPredictor::DEFAULT_FACTION_WEIGHT
+      cr * weight
+    end
+    evil_crs = evil_slots.each_with_index.filter_map do |slot, i|
+      cr = calculate_effective_cr(slot)
+      next nil unless cr
+      weight = LobbyWinPredictor::FACTION_IMPACT_WEIGHTS[evil_factions[i]&.name] || LobbyWinPredictor::DEFAULT_FACTION_WEIGHT
+      cr * weight
+    end
 
     return 0 if good_crs.empty? || evil_crs.empty?
 

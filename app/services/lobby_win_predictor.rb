@@ -24,15 +24,16 @@ class LobbyWinPredictor
 
   # Faction impact weights: how much each faction's player CR contributes to team average
   # Higher weight = more impactful faction (carry), lower = less impactful (support)
-  # Team sums: Good = 5.02, Evil = 5.02 (balanced)
+  # Team sums: Good = 5.00, Evil = 5.00 (balanced)
   FACTION_IMPACT_WEIGHTS = {
     "Mordor" => 1.08,
     "Gondor" => 1.05,
     "Easterlings" => 0.99,
-    "Harad" => 0.99,
+    "Harad" => 0.98,
     "Isengard" => 0.99,
-    "Minas Morgul" => 0.97,
-    "Fellowship" => 0.97
+    "Minas Morgul" => 0.96,
+    "Fellowship" => 0.96,
+    "Dol Amroth" => 0.99
   }.freeze
   DEFAULT_FACTION_WEIGHT = 1.0
 

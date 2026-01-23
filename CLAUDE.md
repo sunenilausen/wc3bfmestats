@@ -207,6 +207,34 @@ Where `cr_diff = good_avg_effective_cr - evil_avg_effective_cr`
 - `MAX_ML_CR_ADJUSTMENT = 200`
 - `ML_BASELINE = 0` (average performance, 0-centered)
 
+**Faction Impact Weights:**
+
+Each player's effective CR is multiplied by their faction's impact weight before averaging into the team score. This reflects that some factions are more impactful (carry) than others (support).
+
+| Faction | Weight | Effect |
+|---------|--------|--------|
+| Mordor | 1.08 | +8% CR contribution |
+| Gondor | 1.05 | +5% CR contribution |
+| Easterlings | 0.99 | -1% CR contribution |
+| Harad | 0.98 | -2% CR contribution |
+| Isengard | 0.99 | -1% CR contribution |
+| Minas Morgul | 0.96 | -4% CR contribution |
+| Fellowship | 0.96 | -4% CR contribution |
+| Rohan | 1.00 | Neutral |
+| Dol Amroth | 0.99 | -1% CR contribution |
+| Fangorn | 1.00 | Neutral |
+
+Team weight sums are balanced: Good = 5.00, Evil = 5.00.
+
+Note: These weights only affect the prediction formula, not the actual CR rating changes.
+
+```
+weighted_effective_cr = effective_cr × faction_impact_weight
+team_avg = sum(weighted_effective_crs) / team_size
+```
+
+Defined in `LobbyWinPredictor::FACTION_IMPACT_WEIGHTS`.
+
 The same formula is used in:
 - `LobbyWinPredictor` - for lobby predictions
 - `LobbyBalancer` - for auto-balancing teams

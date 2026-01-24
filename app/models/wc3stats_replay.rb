@@ -75,10 +75,12 @@ class Wc3statsReplay < ApplicationRecord
     if uploads.any?
       parsed_date = parse_date_from_filename(uploads)
       if parsed_date
-        # Filename time is local timezone, so if it ends up before upload time
-        # (which is always accurate), use upload time instead
+        # Filename time is local timezone (no TZ info), so use whichever is
+        # earliest between filename date and upload time. A match can't be
+        # played after it was uploaded, and timezone offsets (e.g. Korean UTC+9)
+        # can push the filename date into the future.
         upload_time = earliest_upload_at
-        return (upload_time && parsed_date < upload_time) ? upload_time : parsed_date
+        return upload_time && upload_time < parsed_date ? upload_time : parsed_date
       end
     end
 

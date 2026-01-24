@@ -13,10 +13,10 @@ class LobbiesController < ApplicationController
 
   # GET /lobbies/1 or /lobbies/1.json
   def show
-    # Cache key based on lobby composition and global stats version
-    player_ids = @lobby.lobby_players.map(&:player_id).compact.sort
+    # Cache key based on lobby composition (player+faction pairs) and global stats version
+    faction_assignments = @lobby.lobby_players.map { |lp| [lp.faction_id, lp.player_id] }.sort
     observer_ids = @lobby.observer_ids.sort
-    cache_key = [ "lobby_stats", @lobby.id, player_ids, observer_ids, StatsCacheKey.key ]
+    cache_key = [ "lobby_stats", @lobby.id, faction_assignments, observer_ids, StatsCacheKey.key ]
 
     cached_stats = Rails.cache.fetch(cache_key) do
       preload_lobby_player_stats

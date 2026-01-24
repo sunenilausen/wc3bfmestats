@@ -74,7 +74,12 @@ class Wc3statsReplay < ApplicationRecord
     # First, try to parse date from filename (most accurate)
     if uploads.any?
       parsed_date = parse_date_from_filename(uploads)
-      return parsed_date if parsed_date
+      if parsed_date
+        # Filename time is local timezone, so if it ends up before upload time
+        # (which is always accurate), use upload time instead
+        upload_time = earliest_upload_at
+        return (upload_time && parsed_date < upload_time) ? upload_time : parsed_date
+      end
     end
 
     # Fall back to earliest upload timestamp

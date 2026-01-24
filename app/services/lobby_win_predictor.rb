@@ -22,6 +22,10 @@ class LobbyWinPredictor
   CR_MIN = 1200
   CR_MAX = 1800
 
+  # Faction familiarity: penalty for playing unfamiliar factions
+  MAX_FACTION_FAMILIARITY_PENALTY = 80
+  MIN_FACTION_GAMES_THRESHOLD = 5
+
   # Faction impact weights: how much each faction's player CR contributes to team average
   # Higher weight = more impactful faction (carry), lower = less impactful (support)
   # Team sums: Good = 5.00, Evil = 5.00 (balanced)
@@ -81,11 +85,15 @@ class LobbyWinPredictor
     effective_cr = calculate_effective_cr(cr, games, ml_score)
     ml_adjustment = effective_cr - cr
 
+    familiarity_adj = faction_familiarity_adjustment(player, faction)
+    effective_cr += familiarity_adj
+
     {
       effective_cr: effective_cr.round,
       cr: cr.round,
       ml_score: ml_score,
       ml_adjustment: ml_adjustment.round,
+      faction_familiarity_adjustment: familiarity_adj.round,
       games: games
     }
   end
@@ -110,13 +118,36 @@ class LobbyWinPredictor
         )
       end
 
-      effective_cr ? effective_cr * faction_weight : nil
+      if effective_cr
+        effective_cr += faction_familiarity_adjustment(lp.player, lp.faction)
+        effective_cr * faction_weight
+      end
     end
   end
 
   def faction_impact_weight(faction)
     return DEFAULT_FACTION_WEIGHT unless faction
     FACTION_IMPACT_WEIGHTS[faction.name] || DEFAULT_FACTION_WEIGHT
+  end
+
+  # Penalty for playing an unfamiliar faction (fewer games than average)
+  # Uses sqrt easing: a few games quickly reduces penalty, full recovery is gradual
+  def faction_familiarity_adjustment(player, faction)
+    return 0 unless player && faction
+
+    total_games = player.custom_rating_games_played.to_i
+    return 0 if total_games < MIN_FACTION_GAMES_THRESHOLD
+
+    faction_stat = player.player_faction_stats.find_by(faction: faction)
+    faction_games = faction_stat&.games_played.to_i
+
+    avg_games = total_games / 10.0
+    threshold = [avg_games, MIN_FACTION_GAMES_THRESHOLD.to_f].max
+
+    ratio = [faction_games / threshold, 1.0].min
+    eased = Math.sqrt(ratio)
+
+    -((1.0 - eased) * MAX_FACTION_FAMILIARITY_PENALTY)
   end
 
   # Calculate effective CR with ML score adjustment for new players

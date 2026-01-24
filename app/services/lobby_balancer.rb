@@ -162,7 +162,8 @@ class LobbyBalancer
         is_new_player: true,
         cr: NewPlayerDefaults.custom_rating,
         ml_score: NewPlayerDefaults.ml_score,
-        games: 0
+        games: 0,
+        player: nil
       }
     elsif lp.player
       {
@@ -170,10 +171,11 @@ class LobbyBalancer
         is_new_player: false,
         cr: lp.player.custom_rating || 1300,
         ml_score: lp.player.ml_score || ML_BASELINE,
-        games: lp.player.custom_rating_games_played || 0
+        games: lp.player.custom_rating_games_played || 0,
+        player: lp.player
       }
     else
-      { player_id: nil, is_new_player: false, cr: nil, ml_score: nil, games: 0 }
+      { player_id: nil, is_new_player: false, cr: nil, ml_score: nil, games: 0, player: nil }
     end
   end
 
@@ -181,12 +183,14 @@ class LobbyBalancer
     good_crs = good_slots.each_with_index.filter_map do |slot, i|
       cr = calculate_effective_cr(slot)
       next nil unless cr
+      cr += faction_familiarity_adjustment(slot[:player], good_factions[i])
       weight = LobbyWinPredictor::FACTION_IMPACT_WEIGHTS[good_factions[i]&.name] || LobbyWinPredictor::DEFAULT_FACTION_WEIGHT
       cr * weight
     end
     evil_crs = evil_slots.each_with_index.filter_map do |slot, i|
       cr = calculate_effective_cr(slot)
       next nil unless cr
+      cr += faction_familiarity_adjustment(slot[:player], evil_factions[i])
       weight = LobbyWinPredictor::FACTION_IMPACT_WEIGHTS[evil_factions[i]&.name] || LobbyWinPredictor::DEFAULT_FACTION_WEIGHT
       cr * weight
     end
@@ -196,6 +200,25 @@ class LobbyBalancer
     good_avg = good_crs.sum / good_crs.size
     evil_avg = evil_crs.sum / evil_crs.size
     good_avg - evil_avg
+  end
+
+  # Penalty for playing an unfamiliar faction (same logic as LobbyWinPredictor)
+  def faction_familiarity_adjustment(player, faction)
+    return 0 unless player && faction
+
+    total_games = player.custom_rating_games_played.to_i
+    return 0 if total_games < LobbyWinPredictor::MIN_FACTION_GAMES_THRESHOLD
+
+    faction_stat = player.player_faction_stats.find_by(faction: faction)
+    faction_games = faction_stat&.games_played.to_i
+
+    avg_games = total_games / 10.0
+    threshold = [avg_games, LobbyWinPredictor::MIN_FACTION_GAMES_THRESHOLD.to_f].max
+
+    ratio = [faction_games / threshold, 1.0].min
+    eased = Math.sqrt(ratio)
+
+    -((1.0 - eased) * LobbyWinPredictor::MAX_FACTION_FAMILIARITY_PENALTY)
   end
 
   # Calculate effective CR with ML score adjustment for new players

@@ -154,6 +154,10 @@ class CustomRatingRecalculator
   CONTRIBUTION_BONUS_WIN = [ 2, 1, 1, 0, -1 ]   # 1st, 2nd, 3rd, 4th, 5th (winners)
   CONTRIBUTION_BONUS_LOSS = [ 1, 1, 0, -1, -1 ] # 1st, 2nd, 3rd, 4th, 5th (losers)
 
+  # CR-based contribution adjustment: higher-rated players need more contribution to rank well
+  # At 50% above team avg CR, penalty ≈ 7.5% more contribution needed
+  CONTRIBUTION_CR_ADJUSTMENT = 0.15
+
   # Ring Drop bonus for Fellowship
   RING_DROP_BONUS = 1
   RING_DROP_POWERED_BONUS = 1  # Extra +1 if 2+ evil main bases are alive
@@ -439,11 +443,28 @@ class CustomRatingRecalculator
     replay.fix_encoding(str.gsub("\\", ""))
   end
 
-  # Rank appearances by performance score (highest first)
+  # Rank appearances by performance score adjusted for CR (highest first)
+  # Higher-rated players need more contribution to rank well, lower-rated need less
   def rank_by_performance(appearances, match)
-    appearances
-      .map { |a| { appearance: a, score: performance_score(a, match) } }
-      .sort_by { |r| -r[:score] }
+    scored = appearances.map { |a| { appearance: a, score: performance_score(a, match) } }
+
+    # Calculate weighted CRs for CR-based adjustment
+    weighted_crs = appearances.map do |a|
+      cr = a.player&.custom_rating || DEFAULT_RATING
+      faction_weight = LobbyWinPredictor::FACTION_IMPACT_WEIGHTS[a.faction.name] || LobbyWinPredictor::DEFAULT_FACTION_WEIGHT
+      cr * faction_weight
+    end
+
+    # Adjust scores: subtract penalty for above-avg CR, add bonus for below-avg
+    # Team avg excludes the player being evaluated
+    scored.each_with_index do |entry, i|
+      teammates_crs = weighted_crs.each_with_index.filter_map { |cr, j| cr if j != i }
+      team_avg_cr = teammates_crs.sum / teammates_crs.size.to_f
+      deviation = (weighted_crs[i] - team_avg_cr) / team_avg_cr
+      entry[:adjusted_score] = entry[:score] - (deviation * CONTRIBUTION_CR_ADJUSTMENT)
+    end
+
+    scored.sort_by { |r| -r[:adjusted_score] }
   end
 
   # Calculate contribution bonus based on rank within team
@@ -765,6 +786,9 @@ class CustomRatingRecalculator
         )
       end
 
+      # Apply faction familiarity penalty
+      effective_cr += faction_familiarity_adjustment(player, app.faction)
+
       # Apply faction impact weight
       faction_weight = LobbyWinPredictor::FACTION_IMPACT_WEIGHTS[app.faction.name] || LobbyWinPredictor::DEFAULT_FACTION_WEIGHT
       weighted_cr = effective_cr * faction_weight
@@ -793,6 +817,26 @@ class CustomRatingRecalculator
       predicted_good_score: good_avg_effective.round(1),
       predicted_evil_score: evil_avg_effective.round(1)
     )
+  end
+
+  # Penalty for playing an unfamiliar faction (same logic as LobbyWinPredictor)
+  # Uses running @player_stats for game counts during recalculation
+  def faction_familiarity_adjustment(player, faction)
+    return 0 unless player && faction
+
+    stats = @player_stats[player.id]
+    total_games = stats[:games_played]
+    return 0 if total_games < LobbyWinPredictor::MIN_FACTION_GAMES_THRESHOLD
+
+    faction_games = stats[:faction_games][faction.id]
+
+    avg_games = total_games / 10.0
+    threshold = [avg_games, LobbyWinPredictor::MIN_FACTION_GAMES_THRESHOLD.to_f].max
+
+    ratio = [faction_games / threshold, 1.0].min
+    eased = Math.sqrt(ratio)
+
+    -((1.0 - eased) * LobbyWinPredictor::MAX_FACTION_FAMILIARITY_PENALTY)
   end
 
   # Calculate player effective CR using same formula as LobbyWinPredictor

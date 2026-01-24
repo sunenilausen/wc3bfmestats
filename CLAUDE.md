@@ -89,6 +89,14 @@ Note: Hero kill contribution is capped at 20% per hero killed **only for perform
 - Main base destroyed: -1 base for Isengard in map version 4.6+ only. Both player and team totals are reduced by 1.
 - These adjustments apply ONLY to the `CustomRatingRecalculator#performance_score` method (which determines contribution ranking and bonus points). They do NOT apply to PERF score (`MlScoreRecalculator`) or faction stats (`PlayerFactionStatsCalculator`).
 
+**CR-based contribution adjustment:**
+Higher-rated players (including faction weight) need more contribution to rank well, lower-rated need less. The raw performance score is unchanged but ranking uses an adjusted score:
+- `deviation = (player_weighted_cr - teammates_avg_weighted_cr) / teammates_avg_weighted_cr` (team avg excludes the player themselves)
+- `adjusted_score = raw_score - (deviation * CONTRIBUTION_CR_ADJUSTMENT)`
+- `CONTRIBUTION_CR_ADJUSTMENT = 0.15` (50% above avg → ~7.5% more contribution needed)
+- Does NOT affect MVP bonus calculation
+- `player_weighted_cr = custom_rating × faction_impact_weight`
+
 - **Winning team** (net +3 points distributed):
   - 1st place: +2
   - 2nd place: +1
@@ -244,6 +252,36 @@ The same formula is used in:
 - `LobbyWinPredictor` - for lobby predictions
 - `LobbyBalancer` - for auto-balancing teams
 - `CustomRatingRecalculator#store_match_prediction` - stores prediction on Match model
+
+**Faction Familiarity Penalty:**
+
+Players get a CR penalty when playing a faction they have little experience on, relative to their average games per faction. This prevents one-tricks from being overrated on unfamiliar factions.
+
+```
+avg_games = total_games / 10
+threshold = max(avg_games, MIN_FACTION_GAMES_THRESHOLD)  # at least 5
+ratio = min(faction_games / threshold, 1.0)
+eased = sqrt(ratio)  # sqrt easing: quick recovery from 0, gradual convergence to 1
+penalty = -(1 - eased) × MAX_FACTION_FAMILIARITY_PENALTY  # max 80 CR
+```
+
+| Faction games / threshold | Penalty |
+|---------------------------|---------|
+| 0%                        | -80 CR  |
+| 10%                       | -55 CR  |
+| 25%                       | -40 CR  |
+| 50%                       | -23 CR  |
+| 75%                       | -11 CR  |
+| 100%+                     | 0       |
+
+- Only applies to players with 5+ total games (newer players handled by existing new-player penalty)
+- Uses `PlayerFactionStat#games_played` for faction game count in lobby predictions
+- Uses `@player_stats[:faction_games]` running count during rating recalculation
+- Applied before faction impact weight multiplication
+
+**Constants:**
+- `MAX_FACTION_FAMILIARITY_PENALTY = 80`
+- `MIN_FACTION_GAMES_THRESHOLD = 5`
 
 **Prediction accuracy note:**
 Analysis shows the PERF-based penalty provides minimal predictive value:

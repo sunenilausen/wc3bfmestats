@@ -2,6 +2,10 @@ class CustomRatingRecalculator
   DEFAULT_RATING = 1300
   MAX_BONUS_WINS = 15         # Number of wins that get bonus points
 
+  # New player bonus rank multipliers: scales bonus by contribution rank
+  # #1: 150%, #2: 120%, #3: 90%, #4: 60%, #5: 30%
+  NEW_PLAYER_BONUS_RANK_MULTIPLIERS = [ 1.5, 1.2, 0.9, 0.6, 0.3 ].freeze
+
   # Variable K-factor settings
   K_FACTOR_BRAND_NEW = 50     # K-factor for players with 0 games
   K_FACTOR_NORMAL = 30        # K-factor after 30 games
@@ -234,18 +238,21 @@ class CustomRatingRecalculator
       # Apply match experience factor to base change (reduce impact when new players present)
       base_change = (base_change * match_experience).round
 
-      # Add individual bonus for wins if player has bonus wins remaining
-      # Bonus scales down as player approaches 1500 rating
-      new_player_bonus = 0
-      if won && player.custom_rating_bonus_wins.to_i > 0
-        new_player_bonus = bonus_for_win(player.custom_rating_bonus_wins, player.custom_rating)
-      end
-
-      # Calculate performance score and rank
+      # Calculate performance score and rank (needed for new player bonus scaling)
       ranked_team = is_good ? good_ranked : evil_ranked
       rank_entry = ranked_team.find { |r| r[:appearance].id == appearance.id }
       rank_index = ranked_team.index { |r| r[:appearance].id == appearance.id } || (ranked_team.size - 1)
       perf_score = rank_entry ? rank_entry[:score] : 0.0
+
+      # Add individual bonus for wins if player has bonus wins remaining
+      # Bonus scales down as player approaches 1500 rating
+      # Also scaled by contribution rank: #1=150%, #2=120%, #3=90%, #4=60%, #5=30%
+      new_player_bonus = 0
+      if won && player.custom_rating_bonus_wins.to_i > 0
+        base_bonus = bonus_for_win(player.custom_rating_bonus_wins, player.custom_rating)
+        rank_multiplier = NEW_PLAYER_BONUS_RANK_MULTIPLIERS[rank_index] || 0.3
+        new_player_bonus = (base_bonus * rank_multiplier).round
+      end
 
       # Add contribution bonus based on performance ranking (skip if anyone has 0 unit kills)
       contribution_bonus = 0
@@ -923,15 +930,18 @@ class CustomRatingRecalculator
       base_change = (k_factor * (actual - expected)).round
       base_change = (base_change * match_experience).round
 
-      # Calculate bonuses (same as normal)
-      new_player_bonus = 0
-      if won && player.custom_rating_bonus_wins.to_i > 0
-        new_player_bonus = bonus_for_win(player.custom_rating_bonus_wins, player.custom_rating)
-      end
-
+      # Calculate rank first (needed for new player bonus scaling)
       rank_entry = ranked_team.find { |r| r[:appearance].id == appearance.id }
       rank_index = ranked_team.index { |r| r[:appearance].id == appearance.id } || (ranked_team.size - 1)
       perf_score = rank_entry ? rank_entry[:score] : 0.0
+
+      # Calculate bonuses (same as normal, with rank-scaled new player bonus)
+      new_player_bonus = 0
+      if won && player.custom_rating_bonus_wins.to_i > 0
+        base_bonus = bonus_for_win(player.custom_rating_bonus_wins, player.custom_rating)
+        rank_multiplier = NEW_PLAYER_BONUS_RANK_MULTIPLIERS[rank_index] || 0.3
+        new_player_bonus = (base_bonus * rank_multiplier).round
+      end
 
       contribution_bonus = 0
       unless skip_contribution_bonus

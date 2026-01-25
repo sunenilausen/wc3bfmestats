@@ -13,22 +13,19 @@ class LobbiesController < ApplicationController
 
   # GET /lobbies/1 or /lobbies/1.json
   def show
-    # Cache key based on lobby composition (player+faction pairs) and global stats version
-    faction_assignments = @lobby.lobby_players.map { |lp| [lp.faction_id, lp.player_id] }.sort
+    # Cache player stats (expensive queries), keyed by lobby composition
+    player_ids = @lobby.lobby_players.map(&:player_id).compact.sort
     observer_ids = @lobby.observer_ids.sort
-    cache_key = [ "lobby_stats", @lobby.id, faction_assignments, observer_ids, StatsCacheKey.key ]
+    cache_key = [ "lobby_stats", @lobby.id, player_ids, observer_ids, StatsCacheKey.key ]
 
     cached_stats = Rails.cache.fetch(cache_key) do
       preload_lobby_player_stats
       preload_event_stats
-      compute_score_prediction
       {
         lobby_player_stats: @lobby_player_stats,
         faction_specific_stats: @faction_specific_stats,
         recent_stats: @recent_stats,
         event_stats: @event_stats,
-        player_scores: @player_scores,
-        score_prediction: @score_prediction,
         feature_contributions: @feature_contributions,
         overall_avg_ranks: @overall_avg_ranks,
         faction_rank_data: @faction_rank_data,
@@ -40,12 +37,13 @@ class LobbiesController < ApplicationController
     @faction_specific_stats = cached_stats[:faction_specific_stats]
     @recent_stats = cached_stats[:recent_stats]
     @event_stats = cached_stats[:event_stats]
-    @player_scores = cached_stats[:player_scores]
-    @score_prediction = cached_stats[:score_prediction]
     @feature_contributions = cached_stats[:feature_contributions]
     @overall_avg_ranks = cached_stats[:overall_avg_ranks]
     @faction_rank_data = cached_stats[:faction_rank_data]
     @faction_perf_stats = cached_stats[:faction_perf_stats]
+
+    # Always compute prediction fresh (cheap, and depends on faction assignments)
+    compute_score_prediction
   end
 
   # GET /lobbies/new - creates lobby instantly with previous match players

@@ -276,6 +276,17 @@ class CustomRatingRecalculator
 
       total_change = base_change + new_player_bonus + contribution_bonus + mvp_bonus + ring_drop_bonus
 
+      # Scale rating change by stay_pct for players who left before game ended
+      # Exception: Minas Morgul can leave without penalty if their base is destroyed
+      stay_pct = appearance.stay_pct || 100
+      if stay_pct < 100
+        excused_leave = minas_morgul_base_destroyed_before_leave?(appearance, match)
+        unless excused_leave
+          stay_multiplier = stay_pct / 100.0
+          total_change = (total_change * stay_multiplier).round
+        end
+      end
+
       appearance.custom_rating = player.custom_rating
       appearance.custom_rating_change = total_change
 
@@ -961,10 +972,16 @@ class CustomRatingRecalculator
       has_ring_drop = ring_drop_bonus > 0
 
       # Determine final rating change based on early leaver status
-      # Early leaver matches: leaver gets 0, everyone else gets 30% reduced change
+      # Early leaver gets rating scaled by their stay_pct
       if appearance.is_early_leaver?
-        # Early leaver gets 0 rating change, no bonuses
-        total_change = 0
+        stay_multiplier = (appearance.stay_pct || 0) / 100.0
+        if won
+          scaled_base = (base_change * stay_multiplier).round
+          scaled_bonus = (new_player_bonus * stay_multiplier).round
+          total_change = scaled_base + scaled_bonus
+        else
+          total_change = (base_change * stay_multiplier).round
+        end
       elsif won
         # Winners get 70% of normal rating change (30% less)
         reduced_base_change = (base_change * 0.7).round
@@ -1009,6 +1026,45 @@ class CustomRatingRecalculator
 
       update_player_running_stats(appearance, team_appearances, match)
     end
+  end
+
+  # Check if Minas Morgul base was destroyed before the player left
+  # Returns true if player is Minas Morgul and their base died before they left
+  MINAS_MORGUL_FACTION = "Minas Morgul"
+  MINAS_MORGUL_BASE = "Minas Morgul"
+
+  def minas_morgul_base_destroyed_before_leave?(appearance, match)
+    return false unless appearance.faction&.name == MINAS_MORGUL_FACTION
+
+    replay = match.wc3stats_replay
+    return false unless replay&.events&.any?
+
+    match_length = replay.game_length || match.seconds
+    return false unless match_length && match_length > 0
+
+    stay_pct = appearance.stay_pct || 100
+    return false if stay_pct >= 100  # Player didn't leave early
+
+    # Calculate when the player left (in seconds)
+    leave_time = (match_length * stay_pct / 100.0)
+
+    # Find Minas Morgul base death event
+    ring_events = Faction::RING_EVENTS rescue []
+    base_death_events = replay.events.select do |e|
+      e["eventName"] != "heroDeath" &&
+        !ring_events.include?(replay.fix_encoding(e["args"]&.first&.gsub("\\", ""))) &&
+        e["time"] && e["time"] <= match_length
+    end
+
+    base_died_event = base_death_events.find do |event|
+      replay.fix_encoding(event["args"]&.first&.gsub("\\", "")) == MINAS_MORGUL_BASE
+    end
+
+    return false unless base_died_event
+
+    # Check if base died before the player left
+    base_death_time = base_died_event["time"]
+    base_death_time && base_death_time < leave_time
   end
 
   # Store appearance data for draws without rating changes

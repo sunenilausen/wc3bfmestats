@@ -21,7 +21,8 @@ class Wc3statsSyncJobTest < ActiveJob::TestCase
   end
 
   test "recent mode fetches limited replays" do
-    stub_request(:get, "https://api.wc3stats.com/replays?limit=0&search=BFME")
+    # Recent mode uses limit: 5, which sends limit=5&order=desc to API
+    stub_request(:get, "https://api.wc3stats.com/replays?limit=5&order=desc&search=BFME")
       .to_return(status: 200, body: @api_response.to_json, headers: { "Content-Type" => "application/json" })
 
     # Stub individual replay fetches (they will fail, but that's okay for this test)

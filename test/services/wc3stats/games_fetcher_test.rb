@@ -71,14 +71,24 @@ module Wc3stats
     end
 
     test "respects limit parameter by taking most recent IDs" do
-      stub_request(:get, "https://api.wc3stats.com/replays?limit=0&search=BFME")
-        .to_return(status: 200, body: @api_response.to_json, headers: { "Content-Type" => "application/json" })
+      # With limit > 0, fetcher sends limit=3&order=desc to API
+      stub_request(:get, "https://api.wc3stats.com/replays?limit=3&order=desc&search=BFME")
+        .to_return(status: 200, body: {
+          "status" => "OK",
+          "code" => 200,
+          "pagination" => { "totalItems" => 5 },
+          "body" => [
+            { "id" => 720371, "name" => "BFME Game", "map" => "BFME" },
+            { "id" => 720046, "name" => "BFME Test", "map" => "BFME" },
+            { "id" => 719317, "name" => "BFME Match", "map" => "BFME" }
+          ]
+        }.to_json, headers: { "Content-Type" => "application/json" })
 
       fetcher = GamesFetcher.new(search_term: "BFME", limit: 3)
       replay_ids = fetcher.call
 
       assert_equal 3, replay_ids.count
-      # Should take the 3 most recent (highest IDs)
+      # Results are sorted by ID (oldest first) after fetching
       assert_equal [ 719317, 720046, 720371 ], replay_ids
     end
 

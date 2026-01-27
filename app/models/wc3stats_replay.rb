@@ -166,7 +166,7 @@ class Wc3statsReplay < ApplicationRecord
     game_players = players.reject { |p|
       p["isObserver"] ||
         p["team"] == 2 ||
-        (p["flags"] & [ "winner", "loser" ]).empty?
+        (Array(p["flags"]) & [ "winner", "loser" ]).empty?
     }
     return [] if game_players.empty?
 

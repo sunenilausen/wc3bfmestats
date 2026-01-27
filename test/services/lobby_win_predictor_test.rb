@@ -14,7 +14,7 @@ class LobbyWinPredictorTest < ActiveSupport::TestCase
     assert_nil predictor.predict
   end
 
-  test "predicts 50/50 for identical teams" do
+  test "predicts roughly equal for identical teams with faction weight difference" do
     good_faction = factions(:gondor)
     evil_faction = factions(:mordor)
 
@@ -28,8 +28,13 @@ class LobbyWinPredictorTest < ActiveSupport::TestCase
     prediction = LobbyWinPredictor.new(@lobby).predict
 
     assert_not_nil prediction
-    assert_equal 50.0, prediction[:good_win_pct]
-    assert_equal 50.0, prediction[:evil_win_pct]
+    # Faction impact weights differ (Gondor: 1.05, Mordor: 1.08),
+    # so identical CRs don't produce exactly 50/50
+    assert_in_delta 50.0, prediction[:good_win_pct], 10.0
+    assert_equal 100.0, prediction[:good_win_pct] + prediction[:evil_win_pct]
+    # Mordor's higher weight means Evil is slightly favored
+    assert prediction[:evil_win_pct] > prediction[:good_win_pct],
+      "Mordor (1.08 weight) should be slightly favored over Gondor (1.05 weight)"
   end
 
   test "predicts higher win chance for stronger team" do

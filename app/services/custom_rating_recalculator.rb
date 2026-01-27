@@ -668,7 +668,7 @@ class CustomRatingRecalculator
   # Early system matches (first 200) have reduced match_experience penalty
   # because everyone is new and the penalty doesn't serve its purpose
   def effective_match_experience(raw_match_experience)
-    maturity = [@matches_processed.to_f / SYSTEM_MATURITY_MATCHES, 1.0].min
+    maturity = [ @matches_processed.to_f / SYSTEM_MATURITY_MATCHES, 1.0 ].min
     1.0 - (maturity * (1.0 - raw_match_experience))
   end
 
@@ -678,9 +678,9 @@ class CustomRatingRecalculator
     games = player.custom_rating_games_played.to_i
     rating = player.custom_rating
 
-    games_factor = [games.to_f / UNDERDOG_LOSS_PROTECTION_GAMES, 1.0].min
-    proximity_factor = [(1.0 - (rating - UNDERDOG_LOSS_PROTECTION_RATING) / UNDERDOG_LOSS_PROTECTION_RANGE.to_f), 0.0].max
-    proximity_factor = [proximity_factor, 1.0].min
+    games_factor = [ games.to_f / UNDERDOG_LOSS_PROTECTION_GAMES, 1.0 ].min
+    proximity_factor = [ (1.0 - (rating - UNDERDOG_LOSS_PROTECTION_RATING) / UNDERDOG_LOSS_PROTECTION_RANGE.to_f), 0.0 ].max
+    proximity_factor = [ proximity_factor, 1.0 ].min
 
     dampening = games_factor * proximity_factor * UNDERDOG_LOSS_MAX_REDUCTION
     1.0 - dampening
@@ -697,9 +697,9 @@ class CustomRatingRecalculator
     games = player.custom_rating_games_played.to_i
 
     perf_severity = (perf - PERF_PENALTY_THRESHOLD).abs / (PERF_PENALTY_THRESHOLD - PERF_PENALTY_FLOOR).abs.to_f
-    perf_severity = [perf_severity, 1.0].min
+    perf_severity = [ perf_severity, 1.0 ].min
 
-    games_fade = 1.0 - [games.to_f / PERF_PENALTY_GAMES_FADE, 1.0].min
+    games_fade = 1.0 - [ games.to_f / PERF_PENALTY_GAMES_FADE, 1.0 ].min
 
     perf_severity * games_fade * PERF_PENALTY_MAX
   end
@@ -946,9 +946,9 @@ class CustomRatingRecalculator
     faction_games = stats[:faction_games][faction.id]
 
     avg_games = total_games / 10.0
-    threshold = [avg_games, LobbyWinPredictor::MIN_FACTION_GAMES_THRESHOLD.to_f].max
+    threshold = [ avg_games, LobbyWinPredictor::MIN_FACTION_GAMES_THRESHOLD.to_f ].max
 
-    ratio = [faction_games / threshold, 1.0].min
+    ratio = [ faction_games / threshold, 1.0 ].min
     eased = Math.sqrt(ratio)
 
     -((1.0 - eased) * LobbyWinPredictor::MAX_FACTION_FAMILIARITY_PENALTY)

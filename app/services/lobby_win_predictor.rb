@@ -142,9 +142,9 @@ class LobbyWinPredictor
     faction_games = faction_stat&.games_played.to_i
 
     avg_games = total_games / 10.0
-    threshold = [avg_games, MIN_FACTION_GAMES_THRESHOLD.to_f].max
+    threshold = [ avg_games, MIN_FACTION_GAMES_THRESHOLD.to_f ].max
 
-    ratio = [faction_games / threshold, 1.0].min
+    ratio = [ faction_games / threshold, 1.0 ].min
     eased = Math.sqrt(ratio)
 
     -((1.0 - eased) * MAX_FACTION_FAMILIARITY_PENALTY)

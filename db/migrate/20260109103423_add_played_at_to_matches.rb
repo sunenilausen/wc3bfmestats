@@ -5,7 +5,7 @@ class AddPlayedAtToMatches < ActiveRecord::Migration[8.1]
     # Update the ordering index with played_at as the primary ordering field
     remove_index :matches, name: "index_matches_on_ordering", if_exists: true
     add_index :matches,
-      [:played_at, :major_version, :build_version, :row_order, :map_version, :uploaded_at, :wc3stats_replay_id],
+      [ :played_at, :major_version, :build_version, :row_order, :map_version, :uploaded_at, :wc3stats_replay_id ],
       name: "index_matches_on_ordering"
 
     # Backfill played_at and uploaded_at from replay data

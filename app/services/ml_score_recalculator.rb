@@ -193,8 +193,8 @@ class MlScoreRecalculator
       player_castles = cr
       adjusted_team_total = team_total
       if faction_name == "Isengard"
-        player_castles = [player_castles - 1, 0].max
-        adjusted_team_total = [adjusted_team_total - 1, 0].max
+        player_castles = [ player_castles - 1, 0 ].max
+        adjusted_team_total = [ adjusted_team_total - 1, 0 ].max
       end
       next unless adjusted_team_total > 0
 
@@ -219,8 +219,8 @@ class MlScoreRecalculator
       player_bases = mb
       adjusted_team_total = team_total
       if faction_name == "Isengard" && MlScoreRecalculator.version_46_plus?(match_versions[match_id])
-        player_bases = [player_bases - 1, 0].max
-        adjusted_team_total = [adjusted_team_total - 1, 0].max
+        player_bases = [ player_bases - 1, 0 ].max
+        adjusted_team_total = [ adjusted_team_total - 1, 0 ].max
       end
       next unless adjusted_team_total > 0
 

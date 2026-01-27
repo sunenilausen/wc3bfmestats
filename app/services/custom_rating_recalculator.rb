@@ -157,6 +157,8 @@ class CustomRatingRecalculator
   # Contribution bonus points
   CONTRIBUTION_BONUS_WIN = [ 2, 1, 1, 0, -1 ]   # 1st, 2nd, 3rd, 4th, 5th (winners)
   CONTRIBUTION_BONUS_LOSS = [ 1, 1, 0, -1, -1 ] # 1st, 2nd, 3rd, 4th, 5th (losers)
+  CONTRIBUTION_BONUS_FAVORED_WIN = [ 1, 1, 0, -1, -1 ]  # Favored team wins: same as losing
+  CONTRIBUTION_BONUS_UNDERDOG_LOSS = [ 1, 1, 0, 0, 0 ]  # Underdog team loses: no penalty
 
   # CR-based contribution adjustment: higher-rated players need more contribution to rank well
   # At 50% above team avg CR, penalty ≈ 7.5% more contribution needed
@@ -195,6 +197,9 @@ class CustomRatingRecalculator
     # Use CR+ weighted averages for expected score (faction weights, familiarity, ML adjustment)
     good_cr_plus = match.predicted_good_score || good_avg
     evil_cr_plus = match.predicted_evil_score || evil_avg
+
+    # Team predicted win percentages for contribution bonus scaling
+    predicted_good_pct = match.predicted_good_win_pct&.to_f
 
     # For draws, record appearance data but no rating changes
     if match.is_draw?
@@ -261,7 +266,8 @@ class CustomRatingRecalculator
       # Add contribution bonus based on performance ranking (skip if anyone has 0 unit kills)
       contribution_bonus = 0
       unless skip_contribution_bonus
-        contribution_bonus = calculate_contribution_bonus(rank_index, won)
+        team_predicted_pct = predicted_good_pct ? (is_good ? predicted_good_pct : 100 - predicted_good_pct) : nil
+        contribution_bonus = calculate_contribution_bonus(rank_index, won, team_predicted_pct)
       end
 
       # MVP bonus: +1 for having both top unit kills AND top hero kills on winning team
@@ -490,8 +496,22 @@ class CustomRatingRecalculator
   end
 
   # Calculate contribution bonus based on rank within team
-  def calculate_contribution_bonus(rank_index, won)
-    bonus_array = won ? CONTRIBUTION_BONUS_WIN : CONTRIBUTION_BONUS_LOSS
+  # team_predicted_pct: this team's predicted win % (nil if unknown)
+  # >55% = favored, <45% = underdog
+  def calculate_contribution_bonus(rank_index, won, team_predicted_pct = nil)
+    bonus_array = if won
+      if team_predicted_pct && team_predicted_pct > 55
+        CONTRIBUTION_BONUS_FAVORED_WIN
+      else
+        CONTRIBUTION_BONUS_WIN
+      end
+    else
+      if team_predicted_pct && team_predicted_pct < 45
+        CONTRIBUTION_BONUS_UNDERDOG_LOSS
+      else
+        CONTRIBUTION_BONUS_LOSS
+      end
+    end
     bonus_array[rank_index] || 0
   end
 
@@ -931,6 +951,9 @@ class CustomRatingRecalculator
       evil_cr_plus ||= evil_avg
     end
 
+    # Team predicted win percentages for contribution bonus scaling
+    predicted_good_pct = match.predicted_good_win_pct&.to_f
+
     match.appearances.each do |appearance|
       player = appearance.player
       next unless player&.custom_rating
@@ -966,7 +989,8 @@ class CustomRatingRecalculator
 
       contribution_bonus = 0
       unless skip_contribution_bonus
-        contribution_bonus = calculate_contribution_bonus(rank_index, won)
+        team_predicted_pct = predicted_good_pct ? (is_good ? predicted_good_pct : 100 - predicted_good_pct) : nil
+        contribution_bonus = calculate_contribution_bonus(rank_index, won, team_predicted_pct)
       end
 
       mvp_bonus = 0

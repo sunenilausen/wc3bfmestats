@@ -192,6 +192,10 @@ class CustomRatingRecalculator
     # Store prediction based on team ratings (before updating ratings)
     store_match_prediction(match, good_avg, evil_avg)
 
+    # Use CR+ weighted averages for expected score (faction weights, familiarity, ML adjustment)
+    good_cr_plus = match.predicted_good_score || good_avg
+    evil_cr_plus = match.predicted_evil_score || evil_avg
+
     # For draws, record appearance data but no rating changes
     if match.is_draw?
       store_draw_appearances(match, good_appearances, evil_appearances)
@@ -222,9 +226,9 @@ class CustomRatingRecalculator
       is_good = appearance.faction.good?
       won = (is_good && match.good_victory?) || (!is_good && !match.good_victory?)
 
-      # Calculate player's effective rating: 1/5 own + 4/5 team average
-      own_team_avg = is_good ? good_avg : evil_avg
-      opponent_avg = is_good ? evil_avg : good_avg
+      # Calculate player's effective rating: 1/5 own CR + 4/5 team CR+ average
+      own_team_avg = is_good ? good_cr_plus : evil_cr_plus
+      opponent_avg = is_good ? evil_cr_plus : good_cr_plus
       player_effective = (INDIVIDUAL_WEIGHT * player.custom_rating) + (TEAM_WEIGHT * own_team_avg)
 
       # Expected score based on effective rating vs opponent team average
@@ -917,9 +921,15 @@ class CustomRatingRecalculator
     # Calculate match experience factor
     match_experience = calculate_match_experience(match.appearances)
 
-    # Calculate team averages
-    good_avg = good_appearances.sum { |a| a.player&.custom_rating || DEFAULT_RATING } / good_appearances.size.to_f
-    evil_avg = evil_appearances.sum { |a| a.player&.custom_rating || DEFAULT_RATING } / evil_appearances.size.to_f
+    # Use CR+ weighted averages for expected score (already stored by store_match_prediction)
+    good_cr_plus = match.predicted_good_score
+    evil_cr_plus = match.predicted_evil_score
+    unless good_cr_plus && evil_cr_plus
+      good_avg = good_appearances.sum { |a| a.player&.custom_rating || DEFAULT_RATING } / good_appearances.size.to_f
+      evil_avg = evil_appearances.sum { |a| a.player&.custom_rating || DEFAULT_RATING } / evil_appearances.size.to_f
+      good_cr_plus ||= good_avg
+      evil_cr_plus ||= evil_avg
+    end
 
     match.appearances.each do |appearance|
       player = appearance.player
@@ -929,8 +939,8 @@ class CustomRatingRecalculator
       won = (is_good && match.good_victory?) || (!is_good && !match.good_victory?)
       team_appearances = is_good ? good_appearances : evil_appearances
       ranked_team = is_good ? good_ranked : evil_ranked
-      opponent_avg = is_good ? evil_avg : good_avg
-      own_team_avg = is_good ? good_avg : evil_avg
+      opponent_avg = is_good ? evil_cr_plus : good_cr_plus
+      own_team_avg = is_good ? good_cr_plus : evil_cr_plus
 
       # Calculate what the normal rating change would be
       player_effective = (INDIVIDUAL_WEIGHT * player.custom_rating) + (TEAM_WEIGHT * own_team_avg)

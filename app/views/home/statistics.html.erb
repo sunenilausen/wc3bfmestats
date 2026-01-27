@@ -42,6 +42,7 @@
       <p class="text-xs text-gray-400">Underdog win rate = &lt;45% predicted, Favorite win rate = &gt;55% predicted</p>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <%# Good vs Evil %>
       <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
         <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Good vs Evil</h2>
         <div class="mt-2 flex items-baseline gap-2">
@@ -56,43 +57,20 @@
         </p>
       </div>
 
-      <% if @underdog_stats[:underdog_matches] > 0 %>
+      <% if @balanced_games_stats[:balanced_total] > 0 %>
       <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Underdog Win Rate (CR)</h2>
-        <p class="mt-2 text-3xl font-bold text-purple-600"><%= @underdog_stats[:percentage] %>%</p>
+        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Good vs Evil (Balanced)</h2>
+        <div class="mt-2 flex items-baseline gap-2">
+          <span class="text-2xl font-bold text-green-600"><%= @balanced_games_stats[:balanced_good_pct] %>%</span>
+          <span class="text-gray-400">vs</span>
+          <span class="text-2xl font-bold text-red-600"><%= @balanced_games_stats[:balanced_evil_pct] %>%</span>
+        </div>
         <p class="mt-1 text-sm text-gray-500">
-          <%= @underdog_stats[:underdog_wins] %> of <%= @underdog_stats[:underdog_matches] %> matches
+          <span class="text-green-600"><%= @balanced_games_stats[:balanced_good_wins] %> Good</span> /
+          <span class="text-red-600"><%= @balanced_games_stats[:balanced_evil_wins] %> Evil</span>
+          wins (<%= @balanced_games_stats[:balanced_total] %> balanced matches)
         </p>
-      </div>
-      <% end %>
-
-      <% if @underdog_stats[:favorite_matches] > 0 %>
-      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Favorite Win Rate (CR)</h2>
-        <p class="mt-2 text-3xl font-bold text-orange-600"><%= @underdog_stats[:favorite_percentage] %>%</p>
-        <p class="mt-1 text-sm text-gray-500">
-          <%= @underdog_stats[:favorite_wins] %> of <%= @underdog_stats[:favorite_matches] %> matches
-        </p>
-      </div>
-      <% end %>
-
-      <% if @ml_prediction_stats[:underdog_matches] > 0 %>
-      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Underdog Win Rate (CR+)</h2>
-        <p class="mt-2 text-3xl font-bold text-purple-600"><%= @ml_prediction_stats[:underdog_win_rate] %>%</p>
-        <p class="mt-1 text-sm text-gray-500">
-          <%= @ml_prediction_stats[:underdog_wins] %> of <%= @ml_prediction_stats[:underdog_matches] %> matches
-        </p>
-      </div>
-      <% end %>
-
-      <% if @ml_prediction_stats[:favorite_matches] > 0 %>
-      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Favorite Win Rate (CR+)</h2>
-        <p class="mt-2 text-3xl font-bold text-orange-600"><%= @ml_prediction_stats[:favorite_win_rate] %>%</p>
-        <p class="mt-1 text-sm text-gray-500">
-          <%= @ml_prediction_stats[:favorite_wins] %> of <%= @ml_prediction_stats[:favorite_matches] %> matches
-        </p>
+        <p class="mt-1 text-xs text-gray-400">45-55% CR+ prediction only</p>
       </div>
       <% end %>
 
@@ -104,23 +82,71 @@
         </p>
       </div>
 
+      <%# CR+ group %>
+      <h3 class="col-span-full text-xs font-semibold text-gray-400 uppercase tracking-wider mt-2">CR+ Prediction</h3>
+
+      <% if @ml_prediction_stats[:underdog_matches] > 0 %>
+      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
+        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Underdog Win Rate</h2>
+        <p class="mt-2 text-3xl font-bold text-purple-600"><%= @ml_prediction_stats[:underdog_win_rate] %>%</p>
+        <p class="mt-1 text-sm text-gray-500">
+          <%= @ml_prediction_stats[:underdog_wins] %> of <%= @ml_prediction_stats[:underdog_matches] %> matches
+        </p>
+      </div>
+      <% end %>
+
+      <% if @ml_prediction_stats[:favorite_matches] > 0 %>
+      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
+        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Favorite Win Rate</h2>
+        <p class="mt-2 text-3xl font-bold text-orange-600"><%= @ml_prediction_stats[:favorite_win_rate] %>%</p>
+        <p class="mt-1 text-sm text-gray-500">
+          <%= @ml_prediction_stats[:favorite_wins] %> of <%= @ml_prediction_stats[:favorite_matches] %> matches
+        </p>
+      </div>
+      <% end %>
+
       <% if @balanced_games_stats[:total_matches] > 0 %>
       <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Balanced Games (CR)</h2>
-        <p class="mt-2 text-3xl font-bold text-teal-600"><%= @balanced_games_stats[:cr_only_percentage] %>%</p>
-        <p class="mt-1 text-sm text-gray-500">
-          <%= @balanced_games_stats[:balanced_cr_only] %> of <%= @balanced_games_stats[:total_matches] %> matches
-        </p>
-        <p class="mt-1 text-xs text-gray-400">45-55% CR-only prediction</p>
-      </div>
-
-      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Balanced Games (CR+)</h2>
+        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Balanced Games</h2>
         <p class="mt-2 text-3xl font-bold text-teal-600"><%= @balanced_games_stats[:cr_ml_percentage] %>%</p>
         <p class="mt-1 text-sm text-gray-500">
           <%= @balanced_games_stats[:balanced_cr_ml] %> of <%= @balanced_games_stats[:total_matches] %> matches
         </p>
-        <p class="mt-1 text-xs text-gray-400">45-55% CR+ prediction</p>
+        <p class="mt-1 text-xs text-gray-400">45-55% prediction</p>
+      </div>
+      <% end %>
+
+      <%# CR group %>
+      <h3 class="col-span-full text-xs font-semibold text-gray-400 uppercase tracking-wider mt-2">CR-only Prediction</h3>
+
+      <% if @underdog_stats[:underdog_matches] > 0 %>
+      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
+        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Underdog Win Rate</h2>
+        <p class="mt-2 text-3xl font-bold text-purple-600"><%= @underdog_stats[:percentage] %>%</p>
+        <p class="mt-1 text-sm text-gray-500">
+          <%= @underdog_stats[:underdog_wins] %> of <%= @underdog_stats[:underdog_matches] %> matches
+        </p>
+      </div>
+      <% end %>
+
+      <% if @underdog_stats[:favorite_matches] > 0 %>
+      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
+        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Favorite Win Rate</h2>
+        <p class="mt-2 text-3xl font-bold text-orange-600"><%= @underdog_stats[:favorite_percentage] %>%</p>
+        <p class="mt-1 text-sm text-gray-500">
+          <%= @underdog_stats[:favorite_wins] %> of <%= @underdog_stats[:favorite_matches] %> matches
+        </p>
+      </div>
+      <% end %>
+
+      <% if @balanced_games_stats[:total_matches] > 0 %>
+      <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
+        <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Balanced Games</h2>
+        <p class="mt-2 text-3xl font-bold text-teal-600"><%= @balanced_games_stats[:cr_only_percentage] %>%</p>
+        <p class="mt-1 text-sm text-gray-500">
+          <%= @balanced_games_stats[:balanced_cr_only] %> of <%= @balanced_games_stats[:total_matches] %> matches
+        </p>
+        <p class="mt-1 text-xs text-gray-400">45-55% prediction</p>
       </div>
       <% end %>
     </div>

@@ -344,13 +344,25 @@ class HomeController < ApplicationController
     total_matches = 0
     balanced_cr_ml = 0
     balanced_cr_only = 0
+    balanced_good_wins = 0
+    balanced_evil_wins = 0
 
     matches.find_each do |match|
       # CR+ balanced (from stored prediction)
       if match.predicted_good_win_pct.present?
         total_matches += 1
         good_pct = match.predicted_good_win_pct.to_f
-        balanced_cr_ml += 1 if good_pct >= 45 && good_pct <= 55
+        if good_pct >= 45 && good_pct <= 55
+          balanced_cr_ml += 1
+          # Track Good vs Evil outcome in balanced CR+ games
+          if !match.good_victory.nil? && !match.is_draw?
+            if match.good_victory?
+              balanced_good_wins += 1
+            else
+              balanced_evil_wins += 1
+            end
+          end
+        end
       end
 
       # CR-only balanced (calculate from appearances)
@@ -368,12 +380,19 @@ class HomeController < ApplicationController
       end
     end
 
+    balanced_total = balanced_good_wins + balanced_evil_wins
+
     {
       balanced_cr_ml: balanced_cr_ml,
       balanced_cr_only: balanced_cr_only,
       total_matches: total_matches,
       cr_ml_percentage: total_matches > 0 ? (balanced_cr_ml.to_f / total_matches * 100).round(1) : 0,
-      cr_only_percentage: total_matches > 0 ? (balanced_cr_only.to_f / total_matches * 100).round(1) : 0
+      cr_only_percentage: total_matches > 0 ? (balanced_cr_only.to_f / total_matches * 100).round(1) : 0,
+      balanced_good_wins: balanced_good_wins,
+      balanced_evil_wins: balanced_evil_wins,
+      balanced_good_pct: balanced_total > 0 ? (balanced_good_wins.to_f / balanced_total * 100).round(1) : 0,
+      balanced_evil_pct: balanced_total > 0 ? (balanced_evil_wins.to_f / balanced_total * 100).round(1) : 0,
+      balanced_total: balanced_total
     }
   end
 end

@@ -167,6 +167,12 @@ class CustomRatingRecalculator
   CONTRIBUTION_BONUS_FAVORED_WIN = [ 1, 1, 0, -1, -1 ]  # Favored team wins: same as losing
   CONTRIBUTION_BONUS_UNDERDOG_LOSS = [ 1, 1, 0, 0, 0 ]  # Underdog team loses: no penalty
 
+  # Underdog loss protection: established players near starting rating lose less as underdogs
+  UNDERDOG_LOSS_PROTECTION_GAMES = 100   # Full protection after this many games
+  UNDERDOG_LOSS_PROTECTION_RATING = 1300 # Center of protection (starting rating)
+  UNDERDOG_LOSS_PROTECTION_RANGE = 200   # Protection fades over this CR range above center
+  UNDERDOG_LOSS_MAX_REDUCTION = 0.5      # Maximum 50% loss reduction
+
   # CR-based contribution adjustment: higher-rated players need more contribution to rank well
   # At 50% above team avg CR, penalty ≈ 7.5% more contribution needed
   CONTRIBUTION_CR_ADJUSTMENT = 0.15
@@ -255,6 +261,14 @@ class CustomRatingRecalculator
       # Apply match experience factor to base change (reduce impact when new players present)
       base_change = (base_change * match_experience).round
 
+      # Team's predicted win % for contribution bonus and underdog loss protection
+      team_predicted_pct = predicted_good_pct ? (is_good ? predicted_good_pct : 100 - predicted_good_pct) : nil
+
+      # Underdog loss protection: established players near starting rating lose less
+      if !won && team_predicted_pct && team_predicted_pct < 45
+        base_change = (base_change * underdog_loss_multiplier(player)).round
+      end
+
       # Calculate performance score and rank (needed for new player bonus scaling)
       ranked_team = is_good ? good_ranked : evil_ranked
       rank_entry = ranked_team.find { |r| r[:appearance].id == appearance.id }
@@ -274,7 +288,6 @@ class CustomRatingRecalculator
       # Add contribution bonus based on performance ranking (skip if anyone has 0 unit kills)
       contribution_bonus = 0
       unless skip_contribution_bonus
-        team_predicted_pct = predicted_good_pct ? (is_good ? predicted_good_pct : 100 - predicted_good_pct) : nil
         contribution_bonus = calculate_contribution_bonus(rank_index, won, team_predicted_pct)
       end
 
@@ -647,6 +660,20 @@ class CustomRatingRecalculator
     1.0 - (maturity * (1.0 - raw_match_experience))
   end
 
+  # Underdog loss protection multiplier for established players near starting rating
+  # Returns a multiplier (0.5 to 1.0) to reduce base loss
+  def underdog_loss_multiplier(player)
+    games = player.custom_rating_games_played.to_i
+    rating = player.custom_rating
+
+    games_factor = [games.to_f / UNDERDOG_LOSS_PROTECTION_GAMES, 1.0].min
+    proximity_factor = [(1.0 - (rating - UNDERDOG_LOSS_PROTECTION_RATING) / UNDERDOG_LOSS_PROTECTION_RANGE.to_f), 0.0].max
+    proximity_factor = [proximity_factor, 1.0].min
+
+    dampening = games_factor * proximity_factor * UNDERDOG_LOSS_MAX_REDUCTION
+    1.0 - dampening
+  end
+
   # Store contribution percentages on appearance for faster queries
   # Note: These are raw percentages without caps, for display purposes
   # The performance_score method applies the 20% per kill cap separately
@@ -990,6 +1017,14 @@ class CustomRatingRecalculator
       base_change = (k_factor * (actual - expected)).round
       base_change = (base_change * match_experience).round
 
+      # Team's predicted win % for contribution bonus and underdog loss protection
+      team_predicted_pct = predicted_good_pct ? (is_good ? predicted_good_pct : 100 - predicted_good_pct) : nil
+
+      # Underdog loss protection: established players near starting rating lose less
+      if !won && team_predicted_pct && team_predicted_pct < 45
+        base_change = (base_change * underdog_loss_multiplier(player)).round
+      end
+
       # Calculate rank first (needed for new player bonus scaling)
       rank_entry = ranked_team.find { |r| r[:appearance].id == appearance.id }
       rank_index = ranked_team.index { |r| r[:appearance].id == appearance.id } || (ranked_team.size - 1)
@@ -1005,7 +1040,6 @@ class CustomRatingRecalculator
 
       contribution_bonus = 0
       unless skip_contribution_bonus
-        team_predicted_pct = predicted_good_pct ? (is_good ? predicted_good_pct : 100 - predicted_good_pct) : nil
         contribution_bonus = calculate_contribution_bonus(rank_index, won, team_predicted_pct)
       end
 

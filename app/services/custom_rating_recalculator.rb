@@ -14,6 +14,10 @@ class CustomRatingRecalculator
   RATING_FOR_LOW_K = 1800     # Rating threshold for lower K-factor
   RATING_FOR_PERMANENT_LOW_K = 2000  # Once reached, K stays at 10 permanently
 
+  # System maturity: gradually phase in match_experience over first N system matches
+  # Before this threshold, match_experience penalty is reduced (everyone is new early on)
+  SYSTEM_MATURITY_MATCHES = 200
+
   attr_reader :matches_processed, :errors
 
   def initialize
@@ -66,7 +70,10 @@ class CustomRatingRecalculator
     match = Match.includes(appearances: %i[player faction], wc3stats_replay: []).find(match.id)
 
     Rails.logger.info "CustomRatingRecalculator: Processing match ##{match.id} incrementally"
-    new.send(:calculate_and_update_ratings, match)
+    recalculator = new
+    # Set matches_processed for system maturity ramp (count of prior matches)
+    recalculator.instance_variable_set(:@matches_processed, Match.where(ignored: false).where.not(id: match.id).count)
+    recalculator.send(:calculate_and_update_ratings, match)
     Rails.logger.info "CustomRatingRecalculator: Finished processing match ##{match.id}"
     true
   end
@@ -221,7 +228,8 @@ class CustomRatingRecalculator
 
     # Calculate match experience factor (0.0 to 1.0) based on all players' games played
     # Matches with new players have reduced rating impact for everyone
-    match_experience = calculate_match_experience(match.appearances)
+    # System maturity ramp: reduced penalty in first 200 system matches
+    match_experience = effective_match_experience(calculate_match_experience(match.appearances))
 
     # Apply changes to all players (each player uses their own K-factor)
     match.appearances.each do |appearance|
@@ -631,6 +639,14 @@ class CustomRatingRecalculator
     experience_sum / appearances.size
   end
 
+  # Apply system maturity ramp to match_experience
+  # Early system matches (first 200) have reduced match_experience penalty
+  # because everyone is new and the penalty doesn't serve its purpose
+  def effective_match_experience(raw_match_experience)
+    maturity = [@matches_processed.to_f / SYSTEM_MATURITY_MATCHES, 1.0].min
+    1.0 - (maturity * (1.0 - raw_match_experience))
+  end
+
   # Store contribution percentages on appearance for faster queries
   # Note: These are raw percentages without caps, for display purposes
   # The performance_score method applies the 20% per kill cap separately
@@ -938,8 +954,8 @@ class CustomRatingRecalculator
     good_ranked = rank_by_performance(good_appearances, match)
     evil_ranked = rank_by_performance(evil_appearances, match)
 
-    # Calculate match experience factor
-    match_experience = calculate_match_experience(match.appearances)
+    # Calculate match experience factor (with system maturity ramp)
+    match_experience = effective_match_experience(calculate_match_experience(match.appearances))
 
     # Use CR+ weighted averages for expected score (already stored by store_match_prediction)
     good_cr_plus = match.predicted_good_score

@@ -144,13 +144,13 @@ class MlScoreRecalculator
     castle_appearances = Appearance.joins(:match, :faction)
       .where(matches: { ignored: false, has_early_leaver: false })
       .where.not(castles_razed: nil)
-      .pluck(:player_id, :match_id, "factions.good", :castles_razed)
+      .pluck(:player_id, :match_id, "factions.good", :castles_razed, "factions.name")
 
     # Get main base destroyed appearances separately (4.6+ only)
     main_base_appearances = Appearance.joins(:match, :faction)
       .where(matches: { ignored: false, has_early_leaver: false })
       .where.not(main_base_destroyed: nil)
-      .pluck(:player_id, :match_id, "factions.good", :main_base_destroyed)
+      .pluck(:player_id, :match_id, "factions.good", :main_base_destroyed, "factions.name")
 
     # Get team heal appearances separately
     team_heal_appearances = Appearance.joins(:match, :faction)
@@ -185,13 +185,22 @@ class MlScoreRecalculator
       player_contributions[player_id][:uk_contribs] << (uk.to_f / team_total * 100)
     end
 
-    castle_appearances.each do |player_id, match_id, is_good, cr|
+    castle_appearances.each do |player_id, match_id, is_good, cr, faction_name|
       team_total = castle_totals_by_match.dig(match_id, is_good)
       next unless team_total && team_total > 0
 
+      # Isengard adjustment: -1 castle for Grond (same as contribution ranking)
+      player_castles = cr
+      adjusted_team_total = team_total
+      if faction_name == "Isengard"
+        player_castles = [player_castles - 1, 0].max
+        adjusted_team_total = [adjusted_team_total - 1, 0].max
+      end
+      next unless adjusted_team_total > 0
+
       # Cap at 20% per castle razed
-      raw_contrib = (cr.to_f / team_total * 100)
-      max_contrib = cr * CASTLE_RAZE_CAP_PER_KILL
+      raw_contrib = (player_castles.to_f / adjusted_team_total * 100)
+      max_contrib = player_castles * CASTLE_RAZE_CAP_PER_KILL
       capped_contrib = [ raw_contrib, max_contrib ].min
 
       # Track separately by version for different weights
@@ -202,13 +211,22 @@ class MlScoreRecalculator
       end
     end
 
-    main_base_appearances.each do |player_id, match_id, is_good, mb|
+    main_base_appearances.each do |player_id, match_id, is_good, mb, faction_name|
       team_total = main_base_totals_by_match.dig(match_id, is_good)
       next unless team_total && team_total > 0
 
+      # Isengard adjustment: -1 base kill in 4.6+ (same as contribution ranking)
+      player_bases = mb
+      adjusted_team_total = team_total
+      if faction_name == "Isengard" && MlScoreRecalculator.version_46_plus?(match_versions[match_id])
+        player_bases = [player_bases - 1, 0].max
+        adjusted_team_total = [adjusted_team_total - 1, 0].max
+      end
+      next unless adjusted_team_total > 0
+
       # Cap at 20% per main base destroyed (same as castle raze)
-      raw_contrib = (mb.to_f / team_total * 100)
-      max_contrib = mb * MAIN_BASE_CAP_PER_KILL
+      raw_contrib = (player_bases.to_f / adjusted_team_total * 100)
+      max_contrib = player_bases * MAIN_BASE_CAP_PER_KILL
       player_contributions[player_id][:mb_contribs] << [ raw_contrib, max_contrib ].min
     end
 
@@ -288,7 +306,9 @@ class MlScoreRecalculator
       centered_scores = player_raw_scores.transform_values { |v| v - 50.0 }
 
       # Calculate shift needed to make average exactly 0
-      current_avg = centered_scores.values.sum / centered_scores.size
+      # Only average across players with games (not diluted by 0-game players)
+      scores_with_games = centered_scores.select { |pid, _| games_played[pid].to_i > 0 }
+      current_avg = scores_with_games.any? ? scores_with_games.values.sum / scores_with_games.size : 0.0
 
       # Apply shift and save normalized scores
       centered_scores.each do |player_id, centered_score|

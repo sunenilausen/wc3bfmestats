@@ -173,6 +173,12 @@ class CustomRatingRecalculator
   UNDERDOG_LOSS_PROTECTION_RANGE = 200   # Protection fades over this CR range above center
   UNDERDOG_LOSS_MAX_REDUCTION = 0.5      # Maximum 50% loss reduction
 
+  # PERF-based penalty: new players with poor performance gain less and lose more
+  PERF_PENALTY_THRESHOLD = 0     # Only penalize PERF below this
+  PERF_PENALTY_FLOOR = -50       # PERF at which penalty reaches maximum
+  PERF_PENALTY_GAMES_FADE = 100  # Penalty fully fades after this many games
+  PERF_PENALTY_MAX = 0.5         # Maximum penalty factor (50%)
+
   # CR-based contribution adjustment: higher-rated players need more contribution to rank well
   # At 50% above team avg CR, penalty ≈ 7.5% more contribution needed
   CONTRIBUTION_CR_ADJUSTMENT = 0.15
@@ -267,6 +273,12 @@ class CustomRatingRecalculator
       # Underdog loss protection: established players near starting rating lose less
       if !won && team_predicted_pct && team_predicted_pct < 45
         base_change = (base_change * underdog_loss_multiplier(player)).round
+      end
+
+      # PERF-based penalty: new players with poor performance gain less / lose more
+      pp = perf_penalty(player)
+      if pp > 0
+        base_change = (base_change * (won ? (1.0 - pp) : (1.0 + pp))).round
       end
 
       # Calculate performance score and rank (needed for new player bonus scaling)
@@ -674,6 +686,24 @@ class CustomRatingRecalculator
     1.0 - dampening
   end
 
+  # PERF-based penalty for new players with poor performance
+  # Returns penalty factor (0.0 to 0.5) - applied as:
+  #   wins: base_change × (1 - penalty)  → gain less
+  #   losses: base_change × (1 + penalty) → lose more
+  def perf_penalty(player)
+    perf = player.ml_score
+    return 0.0 if perf.nil? || perf >= PERF_PENALTY_THRESHOLD
+
+    games = player.custom_rating_games_played.to_i
+
+    perf_severity = (perf - PERF_PENALTY_THRESHOLD).abs / (PERF_PENALTY_THRESHOLD - PERF_PENALTY_FLOOR).abs.to_f
+    perf_severity = [perf_severity, 1.0].min
+
+    games_fade = 1.0 - [games.to_f / PERF_PENALTY_GAMES_FADE, 1.0].min
+
+    perf_severity * games_fade * PERF_PENALTY_MAX
+  end
+
   # Store contribution percentages on appearance for faster queries
   # Note: These are raw percentages without caps, for display purposes
   # The performance_score method applies the 20% per kill cap separately
@@ -1023,6 +1053,12 @@ class CustomRatingRecalculator
       # Underdog loss protection: established players near starting rating lose less
       if !won && team_predicted_pct && team_predicted_pct < 45
         base_change = (base_change * underdog_loss_multiplier(player)).round
+      end
+
+      # PERF-based penalty: new players with poor performance gain less / lose more
+      pp = perf_penalty(player)
+      if pp > 0
+        base_change = (base_change * (won ? (1.0 - pp) : (1.0 + pp))).round
       end
 
       # Calculate rank first (needed for new player bonus scaling)

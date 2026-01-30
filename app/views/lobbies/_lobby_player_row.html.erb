@@ -5,7 +5,8 @@
 <% player_event_stats = event_stats[lp.player_id] if defined?(event_stats) && lp.player_id %>
 <% player_score_data = player_scores[lp.player_id] if defined?(player_scores) && lp.player_id %>
 <tr class="nested-fields" data-team="<%= team_number %>"
-    <%= "data-lobby-drag-target=playerSlot data-slot-index=#{index}" if editable %>>
+    <%= "data-lobby-drag-target=playerSlot data-slot-index=#{index}" if editable %>
+    <%= "data-is-new-player=true" if editable && lp.is_new_player? %>>
   <td class="px-4 py-2 whitespace-nowrap text-sm">
     <span style="display: inline-block; width: 12px; height: 12px; background-color: <%= lp.faction.color_hex %>; border: 1px solid #000; vertical-align: middle; margin-right: 4px;"></span>
     <%= lp.faction.name %>
@@ -60,6 +61,19 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
           <% end %>
+          <button type="button" onclick="clearSlot(<%= index %>)" class="text-gray-400 hover:text-red-500 text-sm leading-none">&times;</button>
+        </span>
+      <% elsif lp.is_new_player? %>
+        <span class="slot-player cursor-move px-2 py-1 bg-green-50 border border-green-300 rounded inline-flex items-center gap-2"
+              draggable="true"
+              data-player-id="new"
+              data-player-name="New Player (<%= NewPlayerDefaults.ml_score %>)"
+              data-slot-index="<%= index %>"
+              data-is-new="true"
+              data-ml-score="<%= NewPlayerDefaults.ml_score %>"
+              ondragstart="handleSlotDragStart(event, 'new', 'New Player (<%= NewPlayerDefaults.ml_score %>)', <%= index %>)"
+              ondragend="handlePlayerDragEnd(event)">
+          <span class="text-green-700">New Player</span>
           <button type="button" onclick="clearSlot(<%= index %>)" class="text-gray-400 hover:text-red-500 text-sm leading-none">&times;</button>
         </span>
       <% else %>

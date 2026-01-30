@@ -24,7 +24,13 @@ module Wc3stats
       uri = build_uri
       puts "  Fetching from API: #{uri}"
 
-      response = Net::HTTP.get_response(uri)
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = true
+      http.open_timeout = 30
+      http.read_timeout = 300  # 5 minutes for large responses
+
+      request = Net::HTTP::Get.new(uri)
+      response = http.request(request)
 
       unless response.is_a?(Net::HTTPSuccess)
         @errors << "API request failed with status #{response.code}: #{response.message}"

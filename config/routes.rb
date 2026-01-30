@@ -3,6 +3,7 @@ Rails.application.routes.draw do
     member do
       post :balance
       post :copy
+      get :prediction
     end
   end
   resources :wc3stats_replays

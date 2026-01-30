@@ -1,7 +1,7 @@
 require "ostruct"
 
 class LobbiesController < ApplicationController
-  before_action :set_lobby, only: %i[ show edit update balance copy ]
+  before_action :set_lobby, only: %i[ show edit update balance copy prediction ]
   before_action :ensure_lobby_owner, only: %i[ edit update balance ]
 
   # GET /lobbies or /lobbies.json
@@ -185,6 +185,40 @@ class LobbiesController < ApplicationController
     else
       redirect_to @lobby, alert: "Failed to copy lobby."
     end
+  end
+
+  # GET /lobbies/1/prediction
+  def prediction
+    @lobby.reload
+    predictor = LobbyWinPredictor.new(@lobby)
+    prediction = predictor.predict
+
+    # Add per-player effective CR details for display
+    player_details = {}
+    @lobby.lobby_players.each do |lp|
+      next unless lp.player || lp.is_new_player?
+
+      if lp.is_new_player? && lp.player_id.nil?
+        player_details[lp.faction_id] = {
+          effective_cr: predictor.player_score(nil, lp.faction)&.dig(:effective_cr) || NewPlayerDefaults.custom_rating,
+          cr: NewPlayerDefaults.custom_rating,
+          faction_weight: LobbyWinPredictor::FACTION_IMPACT_WEIGHTS[lp.faction&.name] || 1.0
+        }
+      elsif lp.player
+        score_data = predictor.player_score(lp.player, lp.faction)
+        player_details[lp.faction_id] = {
+          effective_cr: score_data&.dig(:effective_cr) || lp.player.custom_rating,
+          cr: lp.player.custom_rating,
+          faction_weight: LobbyWinPredictor::FACTION_IMPACT_WEIGHTS[lp.faction&.name] || 1.0,
+          familiarity_adjustment: score_data&.dig(:faction_familiarity_adjustment) || 0
+        }
+      end
+    end
+
+    render json: {
+      prediction: prediction,
+      player_details: player_details
+    }
   end
 
   private

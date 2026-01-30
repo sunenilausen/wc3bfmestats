@@ -612,45 +612,94 @@
     });
   }
 
-  // Prediction constants (matching LobbyWinPredictor service)
-  const GAMES_FOR_FULL_CR_TRUST = 30;
-  const MAX_ML_CR_ADJUSTMENT = 200;
-  const ML_BASELINE = 0;  // 0-centered scale (0 = average)
+  // Debounce helper to avoid too many AJAX calls
+  let predictionTimeout = null;
+  let predictionAbortController = null;
 
-  // Calculate effective CR with ML score adjustment for new players
-  // Only applies penalty for new players with ML score < 0 (below average)
-  // No bonus for any new player - trust their CR if they perform well
-  function calculateEffectiveCR(cr, games, mlScore) {
-    if (games >= GAMES_FOR_FULL_CR_TRUST) {
-      return cr;
-    }
+  async function updatePrediction() {
+    // Debounce: wait 200ms after last call before making request
+    if (predictionTimeout) clearTimeout(predictionTimeout);
+    if (predictionAbortController) predictionAbortController.abort();
 
-    // Only apply penalty if ML score is below baseline (0)
-    // No bonus for new players at or above 0
-    if (mlScore >= ML_BASELINE) {
-      return cr;
-    }
+    predictionTimeout = setTimeout(async () => {
+      // Wait for any pending form saves to complete first
+      await waitForPendingSaves();
 
-    // ML score deviation from baseline (negative only at this point)
-    const mlDeviation = mlScore - ML_BASELINE;
+      predictionAbortController = new AbortController();
 
-    // Penalty scales down as games increase
-    const adjustmentFactor = 1.0 - (games / GAMES_FOR_FULL_CR_TRUST);
+      try {
+        const response = await fetch('<%= prediction_lobby_path(@lobby) %>', {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' },
+          signal: predictionAbortController.signal
+        });
 
-    // Scale deviation to CR adjustment (max -200 for ML score -50)
-    const mlCRAdjustment = (mlDeviation / 50.0) * MAX_ML_CR_ADJUSTMENT * adjustmentFactor;
+        if (!response.ok) return;
 
-    return cr + mlCRAdjustment;
+        const data = await response.json();
+        const prediction = data.prediction;
+
+        if (!prediction) return;
+
+        const goodPct = Math.round(prediction.good_win_pct);
+        const evilPct = Math.round(prediction.evil_win_pct);
+
+        // Update combined prediction bar
+        const combinedBar = document.getElementById('combined-win-bar');
+        const combinedGoodPct = document.getElementById('combined-good-pct');
+        const combinedEvilPct = document.getElementById('combined-evil-pct');
+
+        if (combinedBar) combinedBar.style.width = goodPct + '%';
+        if (combinedGoodPct) combinedGoodPct.textContent = goodPct + '%';
+        if (combinedEvilPct) combinedEvilPct.textContent = evilPct + '%';
+
+        // Show balance indicator with three states
+        const balanceIndicator = document.getElementById('balance-indicator');
+        const confidencePct = Math.max(goodPct, evilPct);
+        if (balanceIndicator) {
+          balanceIndicator.classList.remove('text-teal-600', 'text-yellow-600', 'text-red-600');
+
+          if (confidencePct <= 55) {
+            balanceIndicator.textContent = 'BALANCED';
+            balanceIndicator.classList.add('text-teal-600');
+          } else if (confidencePct <= 60) {
+            balanceIndicator.textContent = 'POSSIBLY UNBALANCED';
+            balanceIndicator.classList.add('text-yellow-600');
+          } else {
+            balanceIndicator.textContent = 'NOT BALANCED';
+            balanceIndicator.classList.add('text-red-600');
+          }
+        }
+
+        // Update detail display with weighted averages from server
+        const predGoodCR = document.getElementById('pred-good-cr');
+        const predEvilCR = document.getElementById('pred-evil-cr');
+
+        if (predGoodCR) predGoodCR.textContent = prediction.good_avg_cr || '-';
+        if (predEvilCR) predEvilCR.textContent = prediction.evil_avg_cr || '-';
+
+        // Update ML averages from details
+        const goodDetails = prediction.good_details || {};
+        const evilDetails = prediction.evil_details || {};
+        const predGoodRank = document.getElementById('pred-good-rank');
+        const predEvilRank = document.getElementById('pred-evil-rank');
+        if (predGoodRank) predGoodRank.textContent = goodDetails.avg_ml_score || '-';
+        if (predEvilRank) predEvilRank.textContent = evilDetails.avg_ml_score || '-';
+
+        // Update faction perf/rank displays (these still use client-side data)
+        updateFactionStatsDisplay();
+
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('Prediction fetch failed:', error);
+        }
+      }
+    }, 150);
   }
 
-  function updatePrediction() {
+  // Update faction-specific stats display (perf scores, ranks) - still client-side
+  function updateFactionStatsDisplay() {
     const rows = document.querySelectorAll('tr.nested-fields');
-    let goodEffectiveCRs = [];
-    let evilEffectiveCRs = [];
-    let goodCRs = [];
-    let evilCRs = [];
-    let goodMLScores = [];
-    let evilMLScores = [];
     let goodFacPerfs = [];
     let evilFacPerfs = [];
     let goodOverallRanks = [];
@@ -663,127 +712,35 @@
       if (!team) return;
 
       const isNewPlayer = row.dataset.isNewPlayer === 'true';
-      let cr = null;
-      let mlScore = null;
-      let games = 0;
-      let playerId = null;
-      let factionId = null;
+      if (isNewPlayer) return;
 
-      // Get faction ID from hidden input
+      const select = row.querySelector('select');
+      if (!select) return;
+
+      const selectedOption = select.options[select.selectedIndex];
+      if (!selectedOption || !selectedOption.value) return;
+
+      const playerId = parseInt(selectedOption.value);
       const factionInput = row.querySelector('input[name*="[faction_id]"]');
-      if (factionInput) factionId = parseInt(factionInput.value);
+      const factionId = factionInput ? parseInt(factionInput.value) : null;
 
-      if (isNewPlayer) {
-        cr = newPlayerDefaults.custom_rating || 1300;
-        mlScore = newPlayerDefaults.ml_score || 35;
-        games = 0;
-      } else {
-        const select = row.querySelector('select');
-        if (select) {
-          const selectedOption = select.options[select.selectedIndex];
-          if (selectedOption && selectedOption.value) {
-            playerId = parseInt(selectedOption.value);
-            cr = parseFloat(selectedOption.dataset.customRating) || 1300;
-            mlScore = parseFloat(selectedOption.dataset.mlScore) || 50;
-            games = parseInt(selectedOption.dataset.games) || 0;
-          }
-        }
-      }
-
-      if (cr !== null && !isNaN(cr)) {
-        const effectiveCR = calculateEffectiveCR(cr, games, mlScore);
-
-        // Get faction-specific perf and rank if we have a player
-        let facPerf = null;
-        let overallRank = null;
-        let facRank = null;
-
-        if (playerId && factionId) {
-          facPerf = getFactionPerfScore(playerId, factionId);
-          const facRankData = getFactionRankStats(playerId, factionId);
-          if (facRankData) facRank = facRankData.avg;
-          // Get overall rank from players search data
-          const playerData = allPlayers.find(p => p.id === playerId);
-          if (playerData) overallRank = playerData.avgRank;
-        }
+      if (playerId && factionId) {
+        const facPerf = getFactionPerfScore(playerId, factionId);
+        const facRankData = getFactionRankStats(playerId, factionId);
+        const playerData = allPlayers.find(p => p.id === playerId);
+        const overallRank = playerData ? playerData.avgRank : null;
 
         if (team === '1') {
-          goodEffectiveCRs.push(effectiveCR);
-          goodCRs.push(cr);
-          goodMLScores.push(mlScore);
           if (facPerf !== null) goodFacPerfs.push(facPerf);
           if (overallRank !== null) goodOverallRanks.push(overallRank);
-          if (facRank !== null) goodFacRanks.push(facRank);
+          if (facRankData) goodFacRanks.push(facRankData.avg);
         } else if (team === '2') {
-          evilEffectiveCRs.push(effectiveCR);
-          evilCRs.push(cr);
-          evilMLScores.push(mlScore);
           if (facPerf !== null) evilFacPerfs.push(facPerf);
           if (overallRank !== null) evilOverallRanks.push(overallRank);
-          if (facRank !== null) evilFacRanks.push(facRank);
+          if (facRankData) evilFacRanks.push(facRankData.avg);
         }
       }
     });
-
-    // Calculate average effective CRs
-    const goodAvgEffectiveCR = goodEffectiveCRs.length > 0 ? goodEffectiveCRs.reduce((a, b) => a + b, 0) / goodEffectiveCRs.length : 1300;
-    const evilAvgEffectiveCR = evilEffectiveCRs.length > 0 ? evilEffectiveCRs.reduce((a, b) => a + b, 0) / evilEffectiveCRs.length : 1300;
-
-    // Convert CR difference to win probability
-    // 100 CR difference ≈ 64% win chance for higher rated team
-    const crDiff = goodAvgEffectiveCR - evilAvgEffectiveCR;
-    const goodExpected = 1 / (1 + Math.exp(-crDiff / 150.0));
-    const goodPct = Math.round(goodExpected * 100);
-    const evilPct = 100 - goodPct;
-
-    // Calculate averages for display
-    const goodCRAvg = goodCRs.length > 0 ? goodCRs.reduce((a, b) => a + b, 0) / goodCRs.length : 1300;
-    const evilCRAvg = evilCRs.length > 0 ? evilCRs.reduce((a, b) => a + b, 0) / evilCRs.length : 1300;
-    const goodMLAvg = goodMLScores.length > 0 ? goodMLScores.reduce((a, b) => a + b, 0) / goodMLScores.length : 50;
-    const evilMLAvg = evilMLScores.length > 0 ? evilMLScores.reduce((a, b) => a + b, 0) / evilMLScores.length : 50;
-
-    // Update combined prediction bar
-    const combinedBar = document.getElementById('combined-win-bar');
-    const combinedGoodPct = document.getElementById('combined-good-pct');
-    const combinedEvilPct = document.getElementById('combined-evil-pct');
-
-    if (combinedBar) combinedBar.style.width = goodPct + '%';
-    if (combinedGoodPct) combinedGoodPct.textContent = goodPct + '%';
-    if (combinedEvilPct) combinedEvilPct.textContent = evilPct + '%';
-
-    // Show balance indicator with three states
-    const balanceIndicator = document.getElementById('balance-indicator');
-    const confidencePct = Math.max(goodPct, evilPct);
-    if (balanceIndicator) {
-      // Remove all color classes first
-      balanceIndicator.classList.remove('text-teal-600', 'text-yellow-600', 'text-red-600');
-
-      if (confidencePct <= 55) {
-        // Balanced: 45-55%
-        balanceIndicator.textContent = 'BALANCED';
-        balanceIndicator.classList.add('text-teal-600');
-      } else if (confidencePct <= 60) {
-        // Possibly unbalanced: 55-60%
-        balanceIndicator.textContent = 'POSSIBLY UNBALANCED';
-        balanceIndicator.classList.add('text-yellow-600');
-      } else {
-        // Not balanced: 60%+
-        balanceIndicator.textContent = 'NOT BALANCED';
-        balanceIndicator.classList.add('text-red-600');
-      }
-    }
-
-    // Update detail display
-    const predGoodCR = document.getElementById('pred-good-cr');
-    const predEvilCR = document.getElementById('pred-evil-cr');
-    const predGoodRank = document.getElementById('pred-good-rank');
-    const predEvilRank = document.getElementById('pred-evil-rank');
-
-    if (predGoodCR) predGoodCR.textContent = Math.round(goodAvgEffectiveCR);
-    if (predEvilCR) predEvilCR.textContent = Math.round(evilAvgEffectiveCR);
-    // Show ML avg instead of rank score now
-    if (predGoodRank) predGoodRank.textContent = Math.round(goodMLAvg);
-    if (predEvilRank) predEvilRank.textContent = Math.round(evilMLAvg);
 
     // Update team average faction PERF displays
     const goodAvgFacPerfEl = document.getElementById('good-avg-fac-perf');
@@ -805,7 +762,7 @@
       }
     }
 
-    // Update team average rank displays (overall/faction)
+    // Update team average rank displays
     const goodAvgOverallRankEl = document.getElementById('good-avg-overall-rank');
     const goodAvgFacRankEl = document.getElementById('good-avg-fac-rank');
     const evilAvgOverallRankEl = document.getElementById('evil-avg-overall-rank');

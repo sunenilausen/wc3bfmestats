@@ -25,8 +25,11 @@ class Glicko2Recalculator
   end
 
   def call
-    reset_all_ratings
-    recalculate_all_matches
+    # Wrap in transaction so users can view the site with old data during recalculation
+    ActiveRecord::Base.transaction do
+      reset_all_ratings
+      recalculate_all_matches
+    end
     self
   end
 

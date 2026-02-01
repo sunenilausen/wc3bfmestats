@@ -36,8 +36,12 @@ class CustomRatingRecalculator
 
   def call
     RatingRecalculationStatus.start!
-    reset_all_ratings
-    recalculate_all_matches
+    # Wrap in transaction so users can view the site with old data during recalculation
+    # When transaction commits, all changes become visible atomically
+    ActiveRecord::Base.transaction do
+      reset_all_ratings
+      recalculate_all_matches
+    end
     self
   ensure
     RatingRecalculationStatus.finish!
@@ -319,10 +323,11 @@ class CustomRatingRecalculator
 
       total_change = base_change + new_player_bonus + contribution_bonus + mvp_bonus + ring_drop_bonus
 
-      # Scale rating change by stay_pct for players who left before game ended
+      # Scale rating change by stay_pct for WINNERS who left before game ended
+      # Losers take the full hit regardless of when they left (no reduced penalty for ragequitting)
       # Exception: Minas Morgul can leave without penalty if their base is destroyed
       stay_pct = appearance.stay_pct || 100
-      if stay_pct < 100
+      if won && stay_pct < 100
         excused_leave = minas_morgul_base_destroyed_before_leave?(appearance, match)
         unless excused_leave
           stay_multiplier = stay_pct / 100.0
@@ -1092,15 +1097,17 @@ class CustomRatingRecalculator
       has_ring_drop = ring_drop_bonus > 0
 
       # Determine final rating change based on early leaver status
-      # Early leaver gets rating scaled by their stay_pct
+      # Early leaver who WON gets rating scaled by their stay_pct
+      # Early leaver who LOST takes the full hit (no reduced penalty for ragequitting)
       if appearance.is_early_leaver?
-        stay_multiplier = (appearance.stay_pct || 0) / 100.0
         if won
+          stay_multiplier = (appearance.stay_pct || 0) / 100.0
           scaled_base = (base_change * stay_multiplier).round
           scaled_bonus = (new_player_bonus * stay_multiplier).round
           total_change = scaled_base + scaled_bonus
         else
-          total_change = (base_change * stay_multiplier).round
+          # Loser takes full loss
+          total_change = base_change + contribution_bonus + ring_drop_bonus
         end
       elsif won
         # Winners get 70% of normal rating change (30% less)

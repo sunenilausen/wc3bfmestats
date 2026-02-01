@@ -24,8 +24,11 @@ class StayLeaveRecalculator
   end
 
   def call
-    process_all_matches
-    update_all_players
+    # Wrap in transaction so users can view the site with old data during recalculation
+    ActiveRecord::Base.transaction do
+      process_all_matches
+      update_all_players
+    end
     self
   end
 

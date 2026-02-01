@@ -46,6 +46,19 @@ class MlScoreRecalculator
     player_ids = Player.pluck(:id)
     return if player_ids.empty?
 
+    # Wrap in transaction so users can view the site with old data during recalculation
+    ActiveRecord::Base.transaction do
+      call_inner(player_ids)
+    end
+
+    # Recalculate tier thresholds based on new ML score distribution
+    PlayerTierCalculator.call
+
+    # Invalidate stats cache since ML scores affect lobby/player displays
+    StatsCacheKey.invalidate!
+  end
+
+  def call_inner(player_ids)
     # Batch query: games played per player (exclude early leaver matches for stats)
     games_played = Appearance.joins(:match)
       .where(matches: { ignored: false, has_early_leaver: false })
@@ -316,12 +329,6 @@ class MlScoreRecalculator
         Player.where(id: player_id).update_all(ml_score: normalized_score)
       end
     end
-
-    # Recalculate tier thresholds based on new ML score distribution
-    PlayerTierCalculator.call
-
-    # Invalidate stats cache since ML scores affect lobby/player displays
-    StatsCacheKey.invalidate!
   end
 
   private

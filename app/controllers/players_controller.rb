@@ -105,7 +105,8 @@ class PlayersController < ApplicationController
     # Preload appearances with includes needed for PlayerStatsCalculator
     # Note: match.appearances is needed for team/opponent stats
     # Order by reverse chronological (newest first) using same ordering as matches index
-    base_scope = @player.appearances
+    # Stats exclude early leaver matches, but match history includes them
+    stats_scope = @player.appearances
       .joins(:match)
       .where(matches: { ignored: false, has_early_leaver: false })
       .includes(:faction, match: { appearances: :faction })
@@ -113,15 +114,15 @@ class PlayersController < ApplicationController
 
     # Filter by map versions if specified
     if @map_version.present? || @map_version_until.present?
-      base_scope = base_scope.where(matches: { map_version: @filtered_map_versions })
+      stats_scope = stats_scope.where(matches: { map_version: @filtered_map_versions })
     end
 
     # Filter by last N games if specified
     if @last_n_games.present? && @last_n_games > 0
-      base_scope = base_scope.limit(@last_n_games)
+      stats_scope = stats_scope.limit(@last_n_games)
     end
 
-    @appearances = base_scope
+    @appearances = stats_scope
 
     # Use player-specific cache key for stats that only depend on this player's data
     # This avoids invalidating cache when OTHER players' matches change
@@ -254,10 +255,10 @@ class PlayersController < ApplicationController
 
     @version_filter = params[:version_filter]
 
-    # Build the same scope as show action
+    # Build scope for match history (includes early leaver matches, unlike stats)
     base_scope = @player.appearances
       .joins(:match)
-      .where(matches: { ignored: false, has_early_leaver: false })
+      .where(matches: { ignored: false })
       .includes(:faction, :match)
       .merge(Match.reverse_chronological)
 

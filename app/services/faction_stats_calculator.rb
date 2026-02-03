@@ -38,6 +38,8 @@ class FactionStatsCalculator
       avg_hero_kill_contribution: 0,
       avg_unit_kill_contribution: 0,
       avg_castles_razed: 0,
+      avg_base_kills: nil,
+      base_kills_games: 0,
       times_top_hero_kills: 0,
       times_top_unit_kills: 0,
       times_mvp: 0,
@@ -57,6 +59,7 @@ class FactionStatsCalculator
     unit_contributions = []
     castle_raze_contributions = []
     castles_razed_values = []
+    base_kills_values = []
     heal_contributions = []
     team_heal_contributions = []
     contribution_ranks = []
@@ -212,6 +215,11 @@ class FactionStatsCalculator
         end
       end
 
+      # Base kills (main_base_destroyed) - only for 4.6+ matches
+      if match.map_version.to_s >= "4.6" && appearance.main_base_destroyed.present?
+        base_kills_values << appearance.main_base_destroyed
+      end
+
       # Heal contribution - use stored percentage if available
       if appearance.heal_pct
         heal_contributions << appearance.heal_pct
@@ -254,6 +262,8 @@ class FactionStatsCalculator
     stats[:avg_unit_kill_contribution] = unit_contributions.any? ? (unit_contributions.sum / unit_contributions.size).round(1) : 0
     stats[:avg_castle_raze_contribution] = castle_raze_contributions.any? ? (castle_raze_contributions.sum / castle_raze_contributions.size).round(1) : 0
     stats[:avg_castles_razed] = castles_razed_values.any? ? (castles_razed_values.sum.to_f / castles_razed_values.size).round(2) : 0
+    stats[:avg_base_kills] = base_kills_values.any? ? (base_kills_values.sum.to_f / base_kills_values.size).round(2) : nil
+    stats[:base_kills_games] = base_kills_values.size
     stats[:avg_heal_contribution] = heal_contributions.any? ? (heal_contributions.sum / heal_contributions.size).round(1) : 0
     stats[:avg_team_heal_contribution] = team_heal_contributions.any? ? (team_heal_contributions.sum / team_heal_contributions.size).round(1) : 0
     stats[:avg_contribution_rank] = contribution_ranks.any? ? (contribution_ranks.sum.to_f / contribution_ranks.size).round(2) : 0

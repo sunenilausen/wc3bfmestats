@@ -77,6 +77,12 @@
             <td class="py-0.5">Castles Razed/game</td>
             <td class="text-right py-0.5"><%= @stats[:avg_castles_razed] %></td>
           </tr>
+          <% if @stats[:avg_base_kills].present? && @stats[:base_kills_games].to_i > 0 %>
+            <tr>
+              <td class="py-0.5" title="Enemy main bases destroyed per game (4.6+ only, <%= @stats[:base_kills_games] %> games)">Base Kills/game <span class="text-xs text-gray-400">(4.6+)</span></td>
+              <td class="text-right py-0.5"><%= @stats[:avg_base_kills] %></td>
+            </tr>
+          <% end %>
         </tbody>
       </table>
     </div>

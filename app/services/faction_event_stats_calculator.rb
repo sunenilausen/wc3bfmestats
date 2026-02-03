@@ -366,6 +366,7 @@ class FactionEventStatsCalculator
           ringbearer_heroes[hero_name] += 1
         end
       end
+
     end
 
     # Build results

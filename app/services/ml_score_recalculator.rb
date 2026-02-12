@@ -17,7 +17,7 @@ class MlScoreRecalculator
     hero_kill_contribution: 0.05,
     unit_kill_contribution: 0.05,
     castle_raze_contribution: 0.01,
-    main_base_contribution: 0.02,
+    main_base_contribution: 0.01,
     team_heal_contribution: 0.01,
     hero_uptime: 0.01
   }.freeze

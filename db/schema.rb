@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_01_24_195150) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_27_212140) do
   create_table "ahoy_events", force: :cascade do |t|
     t.string "name"
     t.text "properties"
@@ -67,8 +67,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_24_195150) do
     t.integer "elo_rating"
     t.integer "elo_rating_change"
     t.decimal "faction_avg_rank"
+    t.integer "faction_games_before_match"
     t.integer "faction_id", null: false
     t.decimal "faction_perf_score"
+    t.integer "games_played_before_match"
     t.float "glicko2_rating"
     t.float "glicko2_rating_change"
     t.float "glicko2_rating_deviation"
@@ -86,6 +88,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_24_195150) do
     t.integer "main_base_destroyed"
     t.decimal "main_base_pct"
     t.integer "match_id", null: false
+    t.decimal "ml_score_at_match"
     t.decimal "overall_avg_rank"
     t.decimal "perf_score"
     t.float "performance_score"

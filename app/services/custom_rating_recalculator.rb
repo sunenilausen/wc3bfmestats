@@ -77,6 +77,10 @@ class CustomRatingRecalculator
     recalculator = new
     # Set matches_processed for system maturity ramp (count of prior matches)
     recalculator.instance_variable_set(:@matches_processed, Match.where(ignored: false).where.not(id: match.id).count)
+    # Seed @player_stats from the DB so the prediction snapshot sees correct
+    # pre-match games_played / faction_games (full recalc accumulates these
+    # incrementally, but the single-match path starts from zero).
+    recalculator.send(:populate_running_stats_from_db, match)
     recalculator.send(:calculate_and_update_ratings, match)
     Rails.logger.info "CustomRatingRecalculator: Finished processing match ##{match.id}"
     true
@@ -213,6 +217,11 @@ class CustomRatingRecalculator
     # (Faction ratings are for display only, not used in CR calculation)
     good_avg = good_appearances.sum { |a| a.player&.custom_rating || DEFAULT_RATING } / good_appearances.size.to_f
     evil_avg = evil_appearances.sum { |a| a.player&.custom_rating || DEFAULT_RATING } / evil_appearances.size.to_f
+
+    # Snapshot all per-appearance inputs the prediction depends on, so the
+    # stored prediction is a pure function of frozen per-match data and won't
+    # drift when ml_score / player_faction_stats are recomputed downstream.
+    snapshot_prediction_inputs(match)
 
     # Store prediction based on team ratings (before updating ratings)
     store_match_prediction(match, good_avg, evil_avg)
@@ -885,31 +894,77 @@ class CustomRatingRecalculator
   MAX_ML_CR_ADJUSTMENT = 200
   ML_BASELINE = 0  # 0-centered scale (0 = average)
 
-  # Store match prediction using same logic as LobbyWinPredictor
-  # Uses CR with ML score adjustment for new players, weighted by faction impact
+  # Seed @player_stats from prior non-ignored appearances so the single-match
+  # incremental path sees the same pre-match counts a full recalc would have
+  # accumulated by the time it reached this match.
+  def populate_running_stats_from_db(current_match)
+    player_ids = current_match.appearances.map(&:player_id).compact
+    return if player_ids.empty?
+
+    # Total games: count every prior non-ignored appearance (mirrors
+    # player.custom_rating_games_played, which is unfiltered).
+    Appearance
+      .joins(:match)
+      .where(matches: { ignored: false })
+      .where.not(matches: { id: current_match.id })
+      .where(player_id: player_ids)
+      .pluck(:player_id)
+      .each { |player_id| @player_stats[player_id][:games_played] += 1 }
+
+    # Faction games: apply the same filter PlayerFactionStatsCalculator uses,
+    # so the snapshot matches what the lobby reads from PFS.
+    Appearance
+      .joins(:match)
+      .where(matches: { ignored: false, has_early_leaver: false })
+      .where.not(matches: { id: current_match.id })
+      .where(player_id: player_ids)
+      .where.not(performance_score: nil)
+      .pluck(:player_id, :faction_id)
+      .each do |player_id, faction_id|
+        @player_stats[player_id][:faction_games][faction_id] += 1
+      end
+  end
+
+  # Freeze every input the prediction depends on onto each appearance, so the
+  # prediction is reproducible from per-match data alone — re-running the
+  # recalc later (with newer ml_score / player_faction_stats values) won't
+  # silently change the historical prediction.
+  def snapshot_prediction_inputs(match)
+    match.appearances.each do |app|
+      next unless app.faction
+      player = app.player
+      if player
+        stats = @player_stats[player.id]
+        app.games_played_before_match = stats[:games_played]
+        app.faction_games_before_match = stats[:faction_games][app.faction.id] || 0
+        app.ml_score_at_match = player.ml_score || ML_BASELINE
+      else
+        app.games_played_before_match = 0
+        app.faction_games_before_match = 0
+        app.ml_score_at_match = NewPlayerDefaults.ml_score
+      end
+    end
+  end
+
+  # Store match prediction using same logic as LobbyWinPredictor.
+  # Reads every input from the per-appearance snapshots set by
+  # snapshot_prediction_inputs, so the result depends only on frozen
+  # per-match data.
   def store_match_prediction(match, good_avg, evil_avg)
     good_effective_crs = []
     evil_effective_crs = []
 
     match.appearances.each do |app|
       next unless app.faction
-      player = app.player
 
-      effective_cr = if player
-        calculate_player_effective_cr(player)
-      else
-        # New player without match history
-        calculate_effective_cr(
-          NewPlayerDefaults.custom_rating,
-          0,
-          NewPlayerDefaults.ml_score
-        )
-      end
+      cr = app.player&.custom_rating || NewPlayerDefaults.custom_rating
+      games = app.games_played_before_match || 0
+      faction_games = app.faction_games_before_match || 0
+      ml_score = app.ml_score_at_match&.to_f || ML_BASELINE
 
-      # Apply faction familiarity penalty
-      effective_cr += faction_familiarity_adjustment(player, app.faction)
+      effective_cr = calculate_effective_cr(cr, games, ml_score)
+      effective_cr += faction_familiarity_from_counts(games, faction_games)
 
-      # Apply faction impact weight
       faction_weight = LobbyWinPredictor::FACTION_IMPACT_WEIGHTS[app.faction.name] || LobbyWinPredictor::DEFAULT_FACTION_WEIGHT
       weighted_cr = effective_cr * faction_weight
 
@@ -939,34 +994,19 @@ class CustomRatingRecalculator
     )
   end
 
-  # Penalty for playing an unfamiliar faction (same logic as LobbyWinPredictor)
-  # Uses running @player_stats for game counts during recalculation
-  def faction_familiarity_adjustment(player, faction)
-    return 0 unless player && faction
-
-    stats = @player_stats[player.id]
-    total_games = stats[:games_played]
+  # Penalty for playing an unfamiliar faction (same shape as
+  # LobbyWinPredictor#faction_familiarity_adjustment, but takes raw counts so
+  # it can run off frozen per-appearance snapshots).
+  def faction_familiarity_from_counts(total_games, faction_games)
     return 0 if total_games < LobbyWinPredictor::MIN_FACTION_GAMES_THRESHOLD
-
-    faction_games = stats[:faction_games][faction.id]
 
     avg_games = total_games / 10.0
     threshold = [ avg_games, LobbyWinPredictor::MIN_FACTION_GAMES_THRESHOLD.to_f ].max
 
-    ratio = [ faction_games / threshold, 1.0 ].min
+    ratio = [ faction_games / threshold.to_f, 1.0 ].min
     eased = Math.sqrt(ratio)
 
     -((1.0 - eased) * LobbyWinPredictor::MAX_FACTION_FAMILIARITY_PENALTY)
-  end
-
-  # Calculate player effective CR using same formula as LobbyWinPredictor
-  def calculate_player_effective_cr(player)
-    stats = @player_stats[player.id]
-    games_played = stats[:games_played]
-    cr = player.custom_rating || DEFAULT_RATING
-    ml_score = player.ml_score || ML_BASELINE
-
-    calculate_effective_cr(cr, games_played, ml_score)
   end
 
   # Calculate effective CR with ML score adjustment for new players
@@ -992,7 +1032,7 @@ class CustomRatingRecalculator
   end
 
   # Update running stats for a player after processing a match appearance
-  def update_player_running_stats(appearance, _team_appearances, _match)
+  def update_player_running_stats(appearance, _team_appearances, match)
     player = appearance.player
     return unless player
 
@@ -1005,7 +1045,14 @@ class CustomRatingRecalculator
     end
 
     stats[:games_played] += 1
-    stats[:faction_games][appearance.faction_id] += 1
+
+    # Mirror PlayerFactionStatsCalculator's filter so the snapshot's
+    # faction_games_before_match matches what the lobby reads from PFS:
+    # skip early-leaver matches and appearances without a performance_score
+    # (draws don't get one).
+    if !match.has_early_leaver? && appearance.performance_score.present?
+      stats[:faction_games][appearance.faction_id] += 1
+    end
   end
 
   # Store appearance data for early leaver matches

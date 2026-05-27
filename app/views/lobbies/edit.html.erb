@@ -641,8 +641,8 @@
 
         if (!prediction) return;
 
-        const goodPct = Math.round(prediction.good_win_pct);
-        const evilPct = Math.round(prediction.evil_win_pct);
+        const goodPct = Number(prediction.good_win_pct);
+        const evilPct = Number(prediction.evil_win_pct);
 
         // Update combined prediction bar
         const combinedBar = document.getElementById('combined-win-bar');
@@ -650,8 +650,8 @@
         const combinedEvilPct = document.getElementById('combined-evil-pct');
 
         if (combinedBar) combinedBar.style.width = goodPct + '%';
-        if (combinedGoodPct) combinedGoodPct.textContent = goodPct + '%';
-        if (combinedEvilPct) combinedEvilPct.textContent = evilPct + '%';
+        if (combinedGoodPct) combinedGoodPct.textContent = goodPct.toFixed(1) + '%';
+        if (combinedEvilPct) combinedEvilPct.textContent = evilPct.toFixed(1) + '%';
 
         // Show balance indicator with three states
         const balanceIndicator = document.getElementById('balance-indicator');

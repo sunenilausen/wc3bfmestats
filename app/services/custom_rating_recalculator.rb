@@ -772,35 +772,36 @@ class CustomRatingRecalculator
   end
 
   # Store historical rank and PERF scores at time of match
+  # Avg ranks come from the in-memory running stats (strictly previous matches
+  # in processing order) instead of per-appearance DB aggregates — during a
+  # full recalc the DB still holds stale ranks for not-yet-reprocessed later
+  # matches, which the old queries incorrectly included.
   def store_historical_stats(appearance)
     player_id = appearance.player_id
     faction_id = appearance.faction_id
     return unless player_id && faction_id
 
-    # Calculate overall avg rank from previous matches
-    overall_avg = Appearance.joins(:match)
-      .where(player_id: player_id, matches: { ignored: false })
-      .where.not(contribution_rank: nil)
-      .where.not(id: appearance.id)
-      .average(:contribution_rank)
+    stats = @player_stats[player_id]
 
-    appearance.overall_avg_rank = overall_avg&.round(2)
+    ranks = stats[:contribution_ranks]
+    appearance.overall_avg_rank = ranks.any? ? (ranks.sum.to_f / ranks.size).round(2) : nil
 
-    # Calculate faction-specific avg rank from previous matches
-    faction_avg = Appearance.joins(:match)
-      .where(player_id: player_id, faction_id: faction_id, matches: { ignored: false })
-      .where.not(contribution_rank: nil)
-      .where.not(id: appearance.id)
-      .average(:contribution_rank)
-
-    appearance.faction_avg_rank = faction_avg&.round(2)
+    faction_ranks = stats[:faction_ranks][faction_id]
+    appearance.faction_avg_rank = faction_ranks.any? ? (faction_ranks.sum.to_f / faction_ranks.size).round(2) : nil
 
     # Get current PERF scores
     player = appearance.player
     appearance.perf_score = player&.ml_score
 
-    faction_stat = PlayerFactionStat.find_by(player_id: player_id, faction_id: faction_id)
-    appearance.faction_perf_score = faction_stat&.faction_score
+    appearance.faction_perf_score = faction_perf_scores[[ player_id, faction_id ]]
+  end
+
+  # PlayerFactionStat rows don't change during a recalc, so load them once
+  # instead of one find_by per appearance
+  def faction_perf_scores
+    @faction_perf_scores ||= PlayerFactionStat
+      .pluck(:player_id, :faction_id, :faction_score)
+      .to_h { |player_id, faction_id, score| [ [ player_id, faction_id ], score ] }
   end
 
   # Store top hero/unit kills flags
@@ -922,6 +923,20 @@ class CustomRatingRecalculator
       .pluck(:player_id, :faction_id)
       .each do |player_id, faction_id|
         @player_stats[player_id][:faction_games][faction_id] += 1
+      end
+
+    # Contribution ranks: seed prior ranks so store_historical_stats computes
+    # the same "avg rank from previous matches" a full recalc would.
+    Appearance
+      .joins(:match)
+      .where(matches: { ignored: false })
+      .where.not(matches: { id: current_match.id })
+      .where(player_id: player_ids)
+      .where.not(contribution_rank: nil)
+      .pluck(:player_id, :faction_id, :contribution_rank)
+      .each do |player_id, faction_id, rank|
+        @player_stats[player_id][:contribution_ranks] << rank
+        @player_stats[player_id][:faction_ranks][faction_id] << rank
       end
   end
 

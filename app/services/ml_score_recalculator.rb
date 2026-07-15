@@ -178,7 +178,7 @@ class MlScoreRecalculator
       hk_contribs: [], uk_contribs: [],
       cr_contribs_pre46: [], cr_contribs_46plus: [],  # Castle raze by version
       mb_contribs: [],  # Main base (4.6+ only)
-      th_contribs: [], enemy_elo_diffs: []
+      th_contribs: []
     } }
 
     hero_kill_appearances.each do |player_id, match_id, is_good, hk|
@@ -252,27 +252,6 @@ class MlScoreRecalculator
       player_contributions[player_id][:th_contribs] << [ raw_contrib, TEAM_HEAL_CAP_PER_GAME ].min
     end
 
-    # Batch query: Custom ratings per match for enemy CR diff calculation
-    cr_appearances = Appearance.joins(:match, :faction)
-      .where(matches: { ignored: false, has_early_leaver: false })
-      .where.not(custom_rating: nil)
-      .pluck(:player_id, :match_id, "factions.good", :custom_rating)
-
-    # Group custom ratings by match and team
-    match_team_crs = Hash.new { |h, k| h[k] = { true => [], false => [] } }
-    cr_appearances.each do |player_id, match_id, is_good, cr|
-      match_team_crs[match_id][is_good] << { player_id: player_id, cr: cr }
-    end
-
-    # Calculate enemy CR diff for each player appearance
-    cr_appearances.each do |player_id, match_id, is_good, player_cr|
-      enemy_team = match_team_crs[match_id][!is_good]
-      next if enemy_team.empty?
-
-      enemy_avg_cr = enemy_team.sum { |e| e[:cr] }.to_f / enemy_team.size
-      player_contributions[player_id][:enemy_elo_diffs] << (player_cr - enemy_avg_cr)
-    end
-
     # Batch compute event stats for all players (hero K/D)
     event_stats = batch_compute_event_stats
 
@@ -339,6 +318,7 @@ class MlScoreRecalculator
 
     # Build battletag to player_id mapping
     battletag_to_id = Player.pluck(:battletag, :id).to_h
+    factions_by_name = Faction.all.index_by(&:name)
 
     # Process all replays once
     Wc3statsReplay.includes(match: :appearances).find_each do |replay|
@@ -359,7 +339,7 @@ class MlScoreRecalculator
         faction_name = Wc3stats::MatchBuilder::SLOT_TO_FACTION[slot]
         next unless faction_name
 
-        faction = Faction.find_by(name: faction_name)
+        faction = factions_by_name[faction_name]
         next unless faction
 
         # Get hero kills from appearance

@@ -194,10 +194,6 @@ class PlayerStatsCalculator
     end
   end
 
-  # Factions that get a 1.33x unit kill multiplier for MVP calculation (support factions)
-  MVP_UNIT_KILL_BOOST_FACTIONS = [ "Minas Morgul", "Fellowship" ].freeze
-  MVP_UNIT_KILL_BOOST = 1.5
-
   # Cap hero kill contribution at 10% per hero killed for avg stats
   HERO_KILL_CAP_PER_KILL = 10.0
   # Cap castle raze contribution at 20% per castle razed for avg stats
@@ -232,7 +228,6 @@ class PlayerStatsCalculator
       # However we need to handle tie-sharing for backwards compatibility
       team_with_hero_kills = team_appearances.select { |a| !a.hero_kills.nil? && !a.ignore_hero_kills? }
       if team_with_hero_kills.any?
-        max_hero_kills = team_with_hero_kills.map(&:hero_kills).max
         tied_count = team_with_hero_kills.count { |a| a.top_hero_kills? }
         tied_count = 1 if tied_count == 0 # Fallback if flags not yet populated
         share = 1.0 / tied_count

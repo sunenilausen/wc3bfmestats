@@ -13,7 +13,6 @@ class PlayerFactionStatsCalculator
 
   def call
     calculate_all_stats
-    update_rankings
     calculate_faction_scores
     update_rankings_by_score
     @stats_updated
@@ -65,11 +64,6 @@ class PlayerFactionStatsCalculator
     # Bulk insert
     PlayerFactionStat.insert_all(records_to_insert) if records_to_insert.any?
     @stats_updated = records_to_insert.size
-  end
-
-  def update_rankings
-    # Rankings are now updated after faction_score is calculated
-    # See update_rankings_by_score method
   end
 
   def update_rankings_by_score

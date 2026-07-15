@@ -1,9 +1,5 @@
 # Computes all faction statistics efficiently in minimal passes
 class FactionStatsCalculator
-  # Factions that get a 1.33x unit kill multiplier for MVP calculation (support factions)
-  MVP_UNIT_KILL_BOOST_FACTIONS = [ "Minas Morgul", "Fellowship" ].freeze
-  MVP_UNIT_KILL_BOOST = 1.5
-
   attr_reader :faction, :map_version, :map_versions, :limit
 
   def initialize(faction, map_version: nil, map_versions: nil, limit: nil)

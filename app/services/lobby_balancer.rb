@@ -231,10 +231,14 @@ class LobbyBalancer
 
     return cr.to_f if games >= GAMES_FOR_FULL_CR_TRUST
 
+    # Only apply penalty if ML score is below baseline (same as LobbyWinPredictor):
+    # no bonus for new players who perform well, trust their CR
+    return cr.to_f if ml_score >= ML_BASELINE
+
     # Calculate how much of the ML adjustment to apply (decreases as games increase)
     adjustment_factor = 1.0 - (games.to_f / GAMES_FOR_FULL_CR_TRUST)
 
-    # ML score deviation from baseline (50)
+    # ML score deviation from baseline (negative only at this point)
     ml_deviation = ml_score - ML_BASELINE
 
     # Scale deviation to CR adjustment (-200 to +200)

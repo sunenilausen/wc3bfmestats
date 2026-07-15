@@ -347,6 +347,13 @@ class Wc3statsSyncJob < ApplicationJob
     Rails.logger.info "Wc3statsSyncJob: Recalculating ML scores"
     ml = MlScoreRecalculator.new
     ml.call
+
+    # Keep player_faction_stats fresh: the lobby faction familiarity penalty
+    # reads games_played from this table, and it must match the counts the
+    # match prediction snapshot uses (otherwise lobby and stored predictions
+    # disagree).
+    Rails.logger.info "Wc3statsSyncJob: Recalculating player faction stats"
+    PlayerFactionStatsCalculator.new.call
   end
 
   def full_recalculate

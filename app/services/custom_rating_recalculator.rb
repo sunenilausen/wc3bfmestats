@@ -937,11 +937,15 @@ class CustomRatingRecalculator
         stats = @player_stats[player.id]
         app.games_played_before_match = stats[:games_played]
         app.faction_games_before_match = stats[:faction_games][app.faction.id] || 0
-        app.ml_score_at_match = player.ml_score || ML_BASELINE
+        # ml_score at match time is NOT reproducible in a later full recalc
+        # (ml_score drifts with every game played since), so freeze the value
+        # from the first processing and never overwrite it. games/faction_games
+        # ARE reproducible from match history, so they are always recomputed.
+        app.ml_score_at_match = player.ml_score || ML_BASELINE if app.ml_score_at_match.nil?
       else
         app.games_played_before_match = 0
         app.faction_games_before_match = 0
-        app.ml_score_at_match = NewPlayerDefaults.ml_score
+        app.ml_score_at_match = NewPlayerDefaults.ml_score if app.ml_score_at_match.nil?
       end
     end
   end

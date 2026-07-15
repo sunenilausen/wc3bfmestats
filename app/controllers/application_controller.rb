@@ -28,4 +28,15 @@ class ApplicationController < ActionController::Base
       format.html { redirect_to root_path, alert: exception.message }
     end
   end
+
+  # In development, automatically sign in as an admin so no login is needed
+  if Rails.env.development?
+    before_action :dev_auto_sign_in_admin
+
+    def dev_auto_sign_in_admin
+      return if user_signed_in?
+      admin = User.find_by(role: "admin")
+      sign_in(admin) if admin
+    end
+  end
 end

@@ -23,6 +23,9 @@ class RatingRecalculationJob < ApplicationJob
     Rails.logger.info "RatingRecalculationJob: Recalculating ML scores"
     MlScoreRecalculator.new.call
 
+    Rails.logger.info "RatingRecalculationJob: Recalculating player faction stats"
+    PlayerFactionStatsCalculator.new.call
+
     Rails.logger.info "RatingRecalculationJob: Recalculating stay/leave percentages"
     StayLeaveRecalculator.new.call
 

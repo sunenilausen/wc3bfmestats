@@ -56,10 +56,6 @@
     post_placement_ratings << player.custom_rating.round if player.custom_rating && win_count > 20
     highest_custom = post_placement_ratings.any? ? post_placement_ratings.max : nil
     lowest_custom = post_placement_ratings.any? ? post_placement_ratings.min : nil
-
-    # Use precomputed values from controller (efficient batch query)
-    avg_enemy_team_cr = defined?(@avg_enemy_team_cr) ? @avg_enemy_team_cr : nil
-    avg_team_cr = defined?(@avg_team_cr) ? @avg_team_cr : nil
   %>
 
   <%# Helper to convert percentile to bracket %>
@@ -156,14 +152,6 @@
             <td class="py-0.5">CR Range</td>
             <td class="text-right py-0.5"><%= lowest_custom || "-" %> - <%= highest_custom || "-" %></td>
           </tr>
-          <tr>
-            <td class="py-0.5" title="Average Custom Rating of enemy teams faced">Avg Enemy CR</td>
-            <td class="text-right py-0.5"><%= avg_enemy_team_cr || "-" %></td>
-          </tr>
-          <tr>
-            <td class="py-0.5" title="Average Custom Rating of teammates (excluding self)">Avg Team CR</td>
-            <td class="text-right py-0.5"><%= avg_team_cr || "-" %></td>
-          </tr>
           <% if player.custom_rating_bonus_wins.to_i > 0 %>
             <tr>
               <td class="py-0.5">Bonus Wins Left</td>
@@ -176,16 +164,6 @@
       </table>
     </div>
   </div>
-
-  <%# Compute averages from preloaded appearances %>
-  <% unit_kills_values = appearances.map(&:unit_kills).compact %>
-  <% hero_kills_values = appearances.map(&:hero_kills).compact %>
-  <% match_durations = appearances.map { |a| a.match.seconds }.compact %>
-  <% avg_unit_kills = unit_kills_values.any? ? unit_kills_values.sum.to_f / unit_kills_values.size : 0 %>
-  <% avg_hero_kills = hero_kills_values.any? ? hero_kills_values.sum.to_f / hero_kills_values.size : 0 %>
-  <% avg_duration = match_durations.any? ? match_durations.sum.to_f / match_durations.size : 0 %>
-  <% kills_per_min = avg_duration > 0 ? (avg_unit_kills / (avg_duration / 60.0)) : 0 %>
-  <% hero_kills_per_min = avg_duration > 0 ? (avg_hero_kills / (avg_duration / 60.0)) : 0 %>
 
   <h2 class="text-2xl font-bold mb-3">Stats</h2>
 
@@ -275,36 +253,6 @@
               <span class="text-orange-600 font-medium">(<%= favorite_winrate %>%)</span>
             </td>
           </tr>
-          <tr>
-            <td class="py-0.5" title="Average difference between this player's CR and the enemy team's average CR. Positive means typically facing weaker opponents, negative means typically facing stronger opponents.">CR vs Enemies</td>
-            <td class="text-right py-0.5">
-              <% enemy_diff = stats[:avg_enemy_elo_diff] %>
-              <% if enemy_diff > 0 %>
-                <span class="text-green-600">+<%= enemy_diff %></span>
-                <span class="text-gray-400 text-xs">(weaker foes)</span>
-              <% elsif enemy_diff < 0 %>
-                <span class="text-red-600"><%= enemy_diff %></span>
-                <span class="text-gray-400 text-xs">(stronger foes)</span>
-              <% else %>
-                <span class="text-gray-500">0</span>
-              <% end %>
-            </td>
-          </tr>
-          <tr>
-            <td class="py-0.5" title="Average difference between this player's CR and their teammates' average CR (excluding self). Positive means typically the strongest on the team, negative means typically with stronger teammates.">CR vs Teammates</td>
-            <td class="text-right py-0.5">
-              <% ally_diff = stats[:avg_ally_elo_diff] %>
-              <% if ally_diff > 0 %>
-                <span class="text-green-600">+<%= ally_diff %></span>
-                <span class="text-gray-400 text-xs">(weaker teammates)</span>
-              <% elsif ally_diff < 0 %>
-                <span class="text-red-600"><%= ally_diff %></span>
-                <span class="text-gray-400 text-xs">(stronger teammates)</span>
-              <% else %>
-                <span class="text-gray-500">0</span>
-              <% end %>
-            </td>
-          </tr>
         </tbody>
       </table>
     </div>
@@ -350,30 +298,6 @@
             </tr>
           <% end %>
           <tr>
-            <td class="py-0.5">Avg Hero Kill Contrib</td>
-            <td class="text-right py-0.5"><%= stats[:avg_hero_kill_contribution] %>%</td>
-          </tr>
-          <tr>
-            <td class="py-0.5">Avg Unit Kill Contrib</td>
-            <td class="text-right py-0.5"><%= stats[:avg_unit_kill_contribution] %>%</td>
-          </tr>
-          <tr>
-            <td class="py-0.5">Avg Castle Raze Contrib</td>
-            <td class="text-right py-0.5"><%= stats[:avg_castle_raze_contribution] %>%</td>
-          </tr>
-          <tr>
-            <td class="py-0.5" title="Average share of team's base kills (4.6+ only)">Avg Base Kill Contrib</td>
-            <td class="text-right py-0.5"><%= stats[:avg_main_base_contribution] %>%</td>
-          </tr>
-          <tr>
-            <td class="py-0.5" title="Average share of team's total healing (self + teammates)">Avg Heal Contrib</td>
-            <td class="text-right py-0.5"><%= stats[:avg_heal_contribution] %>%</td>
-          </tr>
-          <tr>
-            <td class="py-0.5" title="Average share of team's healing applied to teammates (not self)">Avg Team Heal Contrib</td>
-            <td class="text-right py-0.5"><%= stats[:avg_team_heal_contribution] %>%</td>
-          </tr>
-          <tr>
             <td class="py-0.5" title="Average contribution rank within team (1 = top performer, 5 = lowest)">Avg Contribution Rank</td>
             <td class="text-right py-0.5">
               <% rank = stats[:avg_contribution_rank] %>
@@ -390,120 +314,6 @@
       </table>
     </div>
 
-    <%# Average Kills %>
-    <div class="bg-gray-50 rounded-md p-3">
-      <h3 class="font-semibold mb-2 text-gray-700">Averages</h3>
-      <table class="w-full text-sm">
-        <tbody>
-          <tr>
-            <td class="py-0.5">Hero Kills</td>
-            <td class="text-right py-0.5"><%= number_with_precision(avg_hero_kills, precision: 2) %></td>
-          </tr>
-          <tr>
-            <td class="py-0.5">Hero Kills/min</td>
-            <td class="text-right py-0.5"><%= number_with_precision(hero_kills_per_min, precision: 2) %></td>
-          </tr>
-          <tr>
-            <td class="py-0.5">Unit Kills</td>
-            <td class="text-right py-0.5"><%= number_with_precision(avg_unit_kills, precision: 2) %></td>
-          </tr>
-          <tr>
-            <td class="py-0.5">Unit Kills/min</td>
-            <td class="text-right py-0.5"><%= number_with_precision(kills_per_min, precision: 2) %></td>
-          </tr>
-          <tr>
-            <td class="py-0.5">Castles Razed</td>
-            <td class="text-right py-0.5"><%= number_with_precision(stats[:avg_castles_razed], precision: 2) %></td>
-          </tr>
-          <tr>
-            <td class="py-0.5" title="Average base kills per game (4.6+ only)">Base Kills</td>
-            <td class="text-right py-0.5"><%= number_with_precision(stats[:avg_main_base_destroyed], precision: 2) %></td>
-          </tr>
-          <tr>
-            <td class="py-0.5" title="Actions Per Minute">APM</td>
-            <td class="text-right py-0.5">
-              <% apm_values = appearances.map(&:apm).compact %>
-              <%= apm_values.any? ? number_with_precision(apm_values.sum / apm_values.size.to_f, precision: 1) : '-' %>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <% if defined?(event_stats) && event_stats && event_stats[:total_games] > 0 %>
-      <%# Hero Deaths %>
-      <div class="bg-gray-50 rounded-md p-3">
-        <h3 class="font-semibold mb-2 text-gray-700">Hero Losses</h3>
-        <table class="w-full text-sm">
-          <tbody>
-            <tr>
-              <td class="py-0.5">Hero K/D Ratio</td>
-              <td class="text-right py-0.5">
-                <% if event_stats[:hero_kd_ratio] %>
-                  <%= event_stats[:hero_kills] %>/<%= event_stats[:hero_deaths] %>
-                  <span class="text-gray-500">(<%= event_stats[:hero_kd_ratio] %>)</span>
-                <% else %>
-                  <%= event_stats[:hero_kills] %>/0
-                <% end %>
-              </td>
-            </tr>
-            <tr>
-              <td class="py-0.5">Avg Heroes Survived</td>
-              <td class="text-right py-0.5"><%= event_stats[:avg_heroes_survived] %> / <%= event_stats[:avg_heroes_total] %></td>
-            </tr>
-            <tr>
-              <td class="py-0.5">Hero Uptime</td>
-              <td class="text-right py-0.5"><%= event_stats[:hero_uptime] %>%</td>
-            </tr>
-            <tr>
-              <td class="py-0.5">All Heroes Kept Alive</td>
-              <td class="text-right py-0.5">
-                <%= event_stats[:games_all_heroes_survived] %>/<%= event_stats[:games_with_hero_data] %>
-                <span class="text-gray-500">(<%= event_stats[:all_heroes_survived_rate] %>%)</span>
-              </td>
-            </tr>
-            <tr>
-              <td class="py-0.5">All Heroes Lost</td>
-              <td class="text-right py-0.5">
-                <%= event_stats[:all_heroes_lost] %>x
-                <span class="text-gray-500">(<%= event_stats[:all_heroes_lost_rate] %>%)</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <%# Base Deaths %>
-      <div class="bg-gray-50 rounded-md p-3">
-        <h3 class="font-semibold mb-2 text-gray-700">Base Losses</h3>
-        <table class="w-full text-sm">
-          <tbody>
-            <tr>
-              <td class="py-0.5">Avg Bases Survived</td>
-              <td class="text-right py-0.5"><%= event_stats[:avg_bases_survived] %> / <%= event_stats[:avg_bases_total] %></td>
-            </tr>
-            <tr>
-              <td class="py-0.5">Base Uptime</td>
-              <td class="text-right py-0.5"><%= event_stats[:base_uptime] %>%</td>
-            </tr>
-            <tr>
-              <td class="py-0.5">All Bases Kept Alive</td>
-              <td class="text-right py-0.5">
-                <%= event_stats[:games_all_bases_survived] %>/<%= event_stats[:games_with_bases] %>
-                <span class="text-gray-500">(<%= event_stats[:all_bases_survived_rate] %>%)</span>
-              </td>
-            </tr>
-            <tr>
-              <td class="py-0.5">All Bases Lost</td>
-              <td class="text-right py-0.5">
-                <%= event_stats[:all_bases_lost] %>x
-                <span class="text-gray-500">(<%= event_stats[:all_bases_lost_rate] %>%)</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    <% end %>
   </div>
 
   <% if stats[:faction_stats].any? %>

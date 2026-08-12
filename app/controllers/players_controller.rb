@@ -121,15 +121,29 @@ class PlayersController < ApplicationController
 
     # Preload player's faction stats
     @player_faction_stats = @player.player_faction_stats.includes(:faction).index_by(&:faction_id)
-
-    # Compute avg enemy/team CR efficiently with a single query
-    @avg_enemy_team_cr, @avg_team_cr = compute_team_cr_averages(@player, @appearances)
   end
 
   # GET /players/1/details - Advanced stats page (secondary stats)
   def details
     load_version_filter
+    @appearances = build_stats_scope
     filtered_versions = (@map_version.present? || @map_version_until.present?) ? @filtered_map_versions : nil
+
+    # Shares the "basic" and "events" caches with the show page
+    @stats = Rails.cache.fetch(player_stats_cache_key + [ "basic" ]) do
+      stats = PlayerStatsCalculator.new(@player, @appearances).compute
+      stats[:faction_stats] = Hash[stats[:faction_stats]] if stats[:faction_stats]
+      stats
+    end
+
+    @event_stats = Rails.cache.fetch(player_stats_cache_key + [ "events" ]) do
+      PlayerEventStatsCalculator.new(@player, map_versions: filtered_versions).compute
+    end
+
+    # Compute avg enemy/team CR efficiently with a single query (cached)
+    @avg_enemy_team_cr, @avg_team_cr = Rails.cache.fetch(player_stats_cache_key + [ "team_cr" ]) do
+      compute_team_cr_averages(@player, @appearances)
+    end
 
     @hosting_stats = Rails.cache.fetch(player_stats_cache_key + [ "hosting", "v2" ]) do
       compute_hosting_stats(@player, map_versions: filtered_versions)

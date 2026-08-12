@@ -201,4 +201,48 @@
     </div>
   </div>
   <% end %>
+
+  <%# Top Hosters %>
+  <% if @top_hosters.any? %>
+  <div class="mt-8">
+    <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
+      <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">Top Hosters</h2>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead>
+            <tr class="border-b border-gray-200">
+              <th class="text-left py-2 px-3 font-medium text-gray-600">#</th>
+              <th class="text-left py-2 px-3 font-medium text-gray-600">Player</th>
+              <th class="text-right py-2 px-3 font-medium text-gray-600">Games Hosted</th>
+              <th class="text-right py-2 px-3 font-medium text-gray-600" title="Hosted games with a 45-55% predicted win chance">Balanced Lobbies</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @top_hosters.each_with_index do |entry, index| %>
+              <tr class="border-b border-gray-100 hover:bg-gray-50">
+                <td class="py-2 px-3 text-gray-400"><%= index + 1 %></td>
+                <td class="py-2 px-3 font-medium">
+                  <% if entry[:player] %>
+                    <%= link_to entry[:player].nickname, player_path(entry[:player]), class: "text-blue-600 hover:underline" %>
+                  <% else %>
+                    <%= entry[:battletag] %>
+                  <% end %>
+                </td>
+                <td class="py-2 px-3 text-right"><%= entry[:hosted] %></td>
+                <td class="py-2 px-3 text-right">
+                  <% if entry[:balanced_pct] %>
+                    <%= entry[:balanced] %>
+                    <span class="text-gray-500">(<%= entry[:balanced_pct] %>%)</span>
+                  <% else %>
+                    <span class="text-gray-400">-</span>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <% end %>
 </div>

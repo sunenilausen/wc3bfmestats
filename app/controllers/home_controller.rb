@@ -78,6 +78,7 @@ class HomeController < ApplicationController
     @good_vs_evil_stats = calculate_good_vs_evil_stats(@map_version, @last_n_games, @map_versions)
     @balanced_games_stats = calculate_balanced_games_stats(@map_version, @last_n_games, @map_versions)
     @prediction_accuracy_by_confidence = calculate_prediction_accuracy_by_confidence(@map_version, @last_n_games, @map_versions)
+    @top_hosters = calculate_top_hosters(@map_version, @last_n_games, @map_versions)
     @avg_match_time = calculate_avg_match_time(@map_version, @last_n_games, @map_versions)
     @matches_count = Match.where(ignored: false).count
     # Players who have played at least one valid (non-ignored) match
@@ -184,6 +185,40 @@ class HomeController < ApplicationController
       good_percentage: total > 0 ? (good_wins.to_f / total * 100).round(1) : 0,
       evil_percentage: total > 0 ? (evil_wins.to_f / total * 100).round(1) : 0
     }
+  end
+
+  # Top 10 players by number of games hosted (lobby host from replay data)
+  def calculate_top_hosters(map_version = nil, limit = nil, map_versions = nil, top_n: 10)
+    matches = Match.where(ignored: false).where.not(host_battletag: nil)
+    matches = matches.where(map_version: map_version) if map_version.present?
+    matches = matches.where(map_version: map_versions) if map_versions.present?
+    matches = matches.reverse_chronological.limit(limit) if limit.present? && limit > 0
+
+    # Per-battletag hosted/balanced counts
+    tag_stats = Hash.new { |h, k| h[k] = { hosted: 0, predicted: 0, balanced: 0 } }
+    matches.pluck(:host_battletag, :predicted_good_win_pct).each do |tag, pct|
+      stats = tag_stats[tag]
+      stats[:hosted] += 1
+      next if pct.nil?
+      stats[:predicted] += 1
+      stats[:balanced] += 1 if pct >= 45 && pct <= 55
+    end
+
+    # Merge counts per resolved player (hosts can have alternative battletags)
+    merged = {}
+    tag_stats.each do |tag, stats|
+      player = Player.find_by_any_battletag(tag)
+      entry = merged[player || tag] ||= { player: player, battletag: tag, hosted: 0, predicted: 0, balanced: 0 }
+      entry[:hosted] += stats[:hosted]
+      entry[:predicted] += stats[:predicted]
+      entry[:balanced] += stats[:balanced]
+    end
+
+    top = merged.values.sort_by { |entry| -entry[:hosted] }.first(top_n)
+    top.each do |entry|
+      entry[:balanced_pct] = entry[:predicted] > 0 ? (entry[:balanced].to_f / entry[:predicted] * 100).round(1) : nil
+    end
+    top
   end
 
   def calculate_avg_match_time(map_version = nil, limit = nil, map_versions = nil)

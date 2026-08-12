@@ -50,6 +50,7 @@ module Wc3stats
         create_appearances(match)
         create_observers
         set_ignore_flags(match)
+        mark_korean_regions
         match
       end
     rescue ActiveRecord::RecordInvalid => e
@@ -178,6 +179,18 @@ module Wc3stats
         custom_rating: NewPlayerDefaults::CUSTOM_RATING,
         ml_score: NewPlayerDefaults::ML_SCORE
       )
+    end
+
+    # Mark players as region KR based on Hangul in their name or chat messages
+    def mark_korean_regions
+      marker = KoreanRegionMarker.new
+      wc3stats_replay.players.each do |player_data|
+        battletag = player_data["name"]
+        next if battletag.blank?
+        player = Player.find_by_any_battletag(fix_encoding(battletag)) || Player.find_by_any_battletag(battletag)
+        marker.mark_by_name(player) if player
+      end
+      marker.mark_from_replay(wc3stats_replay)
     end
 
     def fix_encoding(str)

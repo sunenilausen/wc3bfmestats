@@ -133,6 +133,30 @@ class Wc3statsReplay < ApplicationRecord
     body&.dig("data", "game", "players") || []
   end
 
+  def chat_messages
+    body&.dig("data", "chatlog") || []
+  end
+
+  # Battletags (encoding-fixed) of players who wrote at least one chat
+  # message containing Korean Hangul characters
+  def hangul_chatter_battletags
+    players_by_id = players.index_by { |p| p["id"] }
+
+    chatter_ids = chat_messages.filter_map do |chat|
+      message = chat["message"].to_s
+      next if message.empty?
+      # Skip engine messages (e.g. desync warnings quoting another player's
+      # Hangul battletag) - they are attributed to a player who didn't type them
+      next if message.match?(/\AWarning:/i)
+      chat["playerId"] if fix_encoding(message).match?(/\p{Hangul}/)
+    end.uniq
+
+    chatter_ids.filter_map do |player_id|
+      name = players_by_id.dig(player_id, "name")
+      fix_encoding(name) if name.present?
+    end
+  end
+
   # Battletag of the lobby host.
   # Note: the per-player "isHost" flag is NOT the host - it always marks the
   # slot 0 player. The game-level "host" field is the actual lobby host.

@@ -133,6 +133,15 @@ class Wc3statsReplay < ApplicationRecord
     body&.dig("data", "game", "players") || []
   end
 
+  # Battletag of the lobby host.
+  # Note: the per-player "isHost" flag is NOT the host - it always marks the
+  # slot 0 player. The game-level "host" field is the actual lobby host.
+  def host_battletag
+    host = body&.dig("data", "game", "host")
+    return nil if host.blank?
+    fix_encoding(host)
+  end
+
   def winners
     players.select { |p| p["isWinner"] == true }
   end

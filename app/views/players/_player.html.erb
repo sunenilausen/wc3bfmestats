@@ -1,6 +1,7 @@
 <div id="<%= dom_id player %>" class="w-full sm:w-auto my-5 space-y-5">
   <div class="mb-4 flex flex-wrap items-center gap-4">
     <%= link_to "Allies & Rivals", player_relationships_path(player), class: "rounded-md px-3.5 py-2.5 bg-blue-100 hover:bg-blue-50 text-blue-700 inline-block font-medium" %>
+    <%= link_to "Advanced Stats", details_player_path(player), class: "rounded-md px-3.5 py-2.5 bg-blue-100 hover:bg-blue-50 text-blue-700 inline-block font-medium" %>
 
     <%= form_with url: player_path(player), method: :get, local: true, class: "flex flex-wrap items-center gap-4" do %>
       <div class="flex items-center gap-2">

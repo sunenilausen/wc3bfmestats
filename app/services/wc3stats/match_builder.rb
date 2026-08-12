@@ -69,6 +69,7 @@ module Wc3stats
         major_version: wc3stats_replay.major_version,
         build_version: wc3stats_replay.build_version,
         map_version: wc3stats_replay.map_version,
+        host_battletag: wc3stats_replay.host_battletag,
         ignored: should_ignore_match?
       )
     end

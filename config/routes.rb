@@ -22,6 +22,7 @@ Rails.application.routes.draw do
     resource :relationships, only: [ :show ], controller: "player_relationships"
     member do
       get :match_history
+      get :details
     end
   end
 

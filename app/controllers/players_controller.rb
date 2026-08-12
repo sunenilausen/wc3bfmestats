@@ -1,6 +1,6 @@
 class PlayersController < ApplicationController
-  load_and_authorize_resource except: %i[index show edit update destroy match_history]
-  before_action :set_player, only: %i[show edit update destroy]
+  load_and_authorize_resource except: %i[index show details edit update destroy match_history]
+  before_action :set_player, only: %i[show details edit update destroy]
   authorize_resource only: %i[show edit update destroy]
 
   # GET /players or /players.json
@@ -57,82 +57,11 @@ class PlayersController < ApplicationController
 
   # GET /players/1 or /players/1.json
   def show
-    @version_filter = params[:version_filter]
-    @available_map_versions = Rails.cache.fetch([ "available_map_versions", StatsCacheKey.key ]) do
-      Match.where(ignored: false)
-        .where.not(map_version: nil)
-        .distinct
-        .pluck(:map_version)
-        .sort_by do |v|
-          match = v.match(/^(\d+)\.(\d+)([a-zA-Z]*)/)
-          if match
-            [ match[1].to_i, match[2].to_i, match[3].to_s ]
-          else
-            [ 0, 0, v ]
-          end
-        end
-        .reverse
-    end
-
-    # Parse version filter (format: "from:4.5e", "only:4.5e", or "last:100")
-    @map_version = nil
-    @map_version_until = nil
-    @last_n_games = nil
-    if @version_filter.present?
-      if @version_filter.start_with?("only:")
-        @map_version = @version_filter.sub("only:", "")
-      elsif @version_filter.start_with?("from:")
-        @map_version_until = @version_filter.sub("from:", "")
-      elsif @version_filter.start_with?("last:")
-        @last_n_games = @version_filter.sub("last:", "").to_i
-      end
-    end
-
-    # Determine which map versions to include based on filter
-    @filtered_map_versions = if @map_version.present?
-      [ @map_version ]
-    elsif @map_version_until.present?
-      until_index = @available_map_versions.index(@map_version_until)
-      if until_index
-        @available_map_versions[0..until_index]
-      else
-        @available_map_versions
-      end
-    else
-      @available_map_versions
-    end
-
-    # Preload appearances with includes needed for PlayerStatsCalculator
-    # Note: match.appearances is needed for team/opponent stats
-    # Order by reverse chronological (newest first) using same ordering as matches index
-    # Stats exclude early leaver matches, but match history includes them
-    stats_scope = @player.appearances
-      .joins(:match)
-      .where(matches: { ignored: false, has_early_leaver: false })
-      .includes(:faction, match: { appearances: :faction })
-      .merge(Match.reverse_chronological)
-
-    # Filter by map versions if specified
-    if @map_version.present? || @map_version_until.present?
-      stats_scope = stats_scope.where(matches: { map_version: @filtered_map_versions })
-    end
-
-    # Filter by last N games if specified
-    if @last_n_games.present? && @last_n_games > 0
-      stats_scope = stats_scope.limit(@last_n_games)
-    end
-
-    @appearances = stats_scope
-
-    # Use player-specific cache key for stats that only depend on this player's data
-    # This avoids invalidating cache when OTHER players' matches change
-    player_last_match = @player.appearances.joins(:match).maximum("matches.updated_at")
-    player_cache_version = player_last_match&.to_i || 0
-
-    cache_key = [ "player_stats", @player.id, @version_filter, player_cache_version ]
+    load_version_filter
+    @appearances = build_stats_scope
 
     # Compute all stats in a single pass (cached)
-    @stats = Rails.cache.fetch(cache_key + [ "basic" ]) do
+    @stats = Rails.cache.fetch(player_stats_cache_key + [ "basic" ]) do
       stats = PlayerStatsCalculator.new(@player, @appearances).compute
       # Convert Hash with default proc to regular Hash for caching
       stats[:faction_stats] = Hash[stats[:faction_stats]] if stats[:faction_stats]
@@ -141,7 +70,7 @@ class PlayersController < ApplicationController
 
     # Compute hero and base death stats from replay events (cached)
     # Use longer-lived cache since event stats rarely change
-    @event_stats = Rails.cache.fetch(cache_key + [ "events" ]) do
+    @event_stats = Rails.cache.fetch(player_stats_cache_key + [ "events" ]) do
       PlayerEventStatsCalculator.new(@player, map_versions: (@map_version.present? || @map_version_until.present?) ? @filtered_map_versions : nil).compute
     end
 
@@ -195,6 +124,16 @@ class PlayersController < ApplicationController
 
     # Compute avg enemy/team CR efficiently with a single query
     @avg_enemy_team_cr, @avg_team_cr = compute_team_cr_averages(@player, @appearances)
+  end
+
+  # GET /players/1/details - Advanced stats page (secondary stats)
+  def details
+    load_version_filter
+    filtered_versions = (@map_version.present? || @map_version_until.present?) ? @filtered_map_versions : nil
+
+    @hosting_stats = Rails.cache.fetch(player_stats_cache_key + [ "hosting" ]) do
+      compute_hosting_stats(@player, map_versions: filtered_versions)
+    end
   end
 
   def compute_team_cr_averages(player, appearances)
@@ -327,6 +266,134 @@ class PlayersController < ApplicationController
   end
 
   private
+
+    # Parses the version_filter param and sets filter instance variables
+    def load_version_filter
+      @version_filter = params[:version_filter]
+      @available_map_versions = Rails.cache.fetch([ "available_map_versions", StatsCacheKey.key ]) do
+        Match.where(ignored: false)
+          .where.not(map_version: nil)
+          .distinct
+          .pluck(:map_version)
+          .sort_by do |v|
+            match = v.match(/^(\d+)\.(\d+)([a-zA-Z]*)/)
+            if match
+              [ match[1].to_i, match[2].to_i, match[3].to_s ]
+            else
+              [ 0, 0, v ]
+            end
+          end
+          .reverse
+      end
+
+      # Parse version filter (format: "from:4.5e", "only:4.5e", or "last:100")
+      @map_version = nil
+      @map_version_until = nil
+      @last_n_games = nil
+      if @version_filter.present?
+        if @version_filter.start_with?("only:")
+          @map_version = @version_filter.sub("only:", "")
+        elsif @version_filter.start_with?("from:")
+          @map_version_until = @version_filter.sub("from:", "")
+        elsif @version_filter.start_with?("last:")
+          @last_n_games = @version_filter.sub("last:", "").to_i
+        end
+      end
+
+      # Determine which map versions to include based on filter
+      @filtered_map_versions = if @map_version.present?
+        [ @map_version ]
+      elsif @map_version_until.present?
+        until_index = @available_map_versions.index(@map_version_until)
+        if until_index
+          @available_map_versions[0..until_index]
+        else
+          @available_map_versions
+        end
+      else
+        @available_map_versions
+      end
+    end
+
+    # Preload appearances with includes needed for PlayerStatsCalculator
+    # Note: match.appearances is needed for team/opponent stats
+    # Order by reverse chronological (newest first) using same ordering as matches index
+    # Stats exclude early leaver matches, but match history includes them
+    def build_stats_scope
+      stats_scope = @player.appearances
+        .joins(:match)
+        .where(matches: { ignored: false, has_early_leaver: false })
+        .includes(:faction, match: { appearances: :faction })
+        .merge(Match.reverse_chronological)
+
+      # Filter by map versions if specified
+      if @map_version.present? || @map_version_until.present?
+        stats_scope = stats_scope.where(matches: { map_version: @filtered_map_versions })
+      end
+
+      # Filter by last N games if specified
+      if @last_n_games.present? && @last_n_games > 0
+        stats_scope = stats_scope.limit(@last_n_games)
+      end
+
+      stats_scope
+    end
+
+    # Use player-specific cache key for stats that only depend on this player's data
+    # This avoids invalidating cache when OTHER players' matches change
+    def player_stats_cache_key
+      @player_stats_cache_key ||= begin
+        player_last_match = @player.appearances.joins(:match).maximum("matches.updated_at")
+        player_cache_version = player_last_match&.to_i || 0
+        [ "player_stats", @player.id, @version_filter, player_cache_version ]
+      end
+    end
+
+    # Stats about matches this player hosted (lobby host from replay data)
+    def compute_hosting_stats(player, map_versions: nil)
+      host_tags = [ player.battletag, *(player.alternative_battletags || []) ].compact
+
+      hosted = Match.where(ignored: false, host_battletag: host_tags)
+      hosted = hosted.where(map_version: map_versions) if map_versions
+      total = hosted.count
+      return nil if total == 0
+
+      with_prediction = hosted.where.not(predicted_good_win_pct: nil)
+      predicted = with_prediction.count
+      balanced = with_prediction.merge(Match.balanced).count
+
+      # Host's own record in the games they hosted AND played in
+      played_scope = player.appearances
+        .joins(:match)
+        .where(matches: { ignored: false, host_battletag: host_tags })
+        .includes(:faction, :match)
+      played_scope = played_scope.where(matches: { map_version: map_versions }) if map_versions
+
+      wins = 0
+      losses = 0
+      played = 0
+      played_scope.each do |app|
+        played += 1
+        next if app.match.is_draw?
+        if app.faction.good? == app.match.good_victory?
+          wins += 1
+        else
+          losses += 1
+        end
+      end
+
+      {
+        total: total,
+        predicted: predicted,
+        balanced: balanced,
+        balanced_pct: predicted > 0 ? (balanced.to_f / predicted * 100).round(1) : nil,
+        wins: wins,
+        losses: losses,
+        played: played,
+        not_played: total - played,
+        win_pct: (wins + losses) > 0 ? (wins.to_f / (wins + losses) * 100).round(1) : nil
+      }
+    end
 
     # Cache all expensive computations for players index
     def load_players_index_cache

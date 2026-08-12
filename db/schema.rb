@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_27_212140) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_12_100001) do
   create_table "ahoy_events", force: :cascade do |t|
     t.string "name"
     t.text "properties"
@@ -148,6 +148,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_27_212140) do
     t.datetime "created_at", null: false
     t.boolean "good_victory"
     t.boolean "has_early_leaver", default: false, null: false
+    t.string "host_battletag"
     t.boolean "ignored", default: false, null: false
     t.boolean "is_draw", default: false, null: false
     t.integer "major_version"
@@ -164,6 +165,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_27_212140) do
     t.datetime "updated_at", null: false
     t.datetime "uploaded_at"
     t.integer "wc3stats_replay_id"
+    t.index ["host_battletag"], name: "index_matches_on_host_battletag"
     t.index ["played_at", "major_version", "build_version", "row_order", "map_version", "uploaded_at", "wc3stats_replay_id"], name: "index_matches_on_ordering"
     t.index ["wc3stats_replay_id"], name: "index_matches_on_wc3stats_replay_id"
   end

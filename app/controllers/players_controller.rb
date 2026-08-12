@@ -131,7 +131,7 @@ class PlayersController < ApplicationController
     load_version_filter
     filtered_versions = (@map_version.present? || @map_version_until.present?) ? @filtered_map_versions : nil
 
-    @hosting_stats = Rails.cache.fetch(player_stats_cache_key + [ "hosting" ]) do
+    @hosting_stats = Rails.cache.fetch(player_stats_cache_key + [ "hosting", "v2" ]) do
       compute_hosting_stats(@player, map_versions: filtered_versions)
     end
   end
@@ -362,25 +362,46 @@ class PlayersController < ApplicationController
       predicted = with_prediction.count
       balanced = with_prediction.merge(Match.balanced).count
 
-      # Host's own record in the games they hosted AND played in
+      # Lobby balance brackets: how far from 50/50 the hosted games were,
+      # in 5% steps of the favored team's predicted win chance (like /statistics)
+      brackets = (50..95).step(5).map do |start|
+        { label: "#{start}-#{start + 5}", count: 0 }
+      end
+      with_prediction.pluck(:predicted_good_win_pct).each do |pct|
+        confidence = [ pct.to_f, 100 - pct.to_f ].max
+        index = (((confidence - 50) / 5).floor).clamp(0, brackets.size - 1)
+        brackets[index][:count] += 1
+      end
+      brackets.each do |bracket|
+        bracket[:pct] = predicted > 0 ? (bracket[:count].to_f / predicted * 100).round(1) : 0
+      end
+
+      # Host's own record in the games they hosted AND played in,
+      # split by predicted win chance of their team (same thresholds as player page:
+      # underdog <45%, balanced 45-55%, favorite >55%)
       played_scope = player.appearances
         .joins(:match)
         .where(matches: { ignored: false, host_battletag: host_tags })
         .includes(:faction, :match)
       played_scope = played_scope.where(matches: { map_version: map_versions }) if map_versions
 
-      wins = 0
-      losses = 0
+      record = { overall: [ 0, 0 ], favorite: [ 0, 0 ], balanced: [ 0, 0 ], underdog: [ 0, 0 ] }
       played = 0
       played_scope.each do |app|
         played += 1
-        next if app.match.is_draw?
-        if app.faction.good? == app.match.good_victory?
-          wins += 1
-        else
-          losses += 1
-        end
+        match = app.match
+        next if match.is_draw?
+
+        won = app.faction.good? == match.good_victory?
+        record[:overall][won ? 0 : 1] += 1
+
+        next if match.predicted_good_win_pct.nil?
+        team_pct = app.faction.good? ? match.predicted_good_win_pct.to_f : 100 - match.predicted_good_win_pct.to_f
+        role = team_pct < 45 ? :underdog : (team_pct > 55 ? :favorite : :balanced)
+        record[role][won ? 0 : 1] += 1
       end
+
+      wins, losses = record[:overall]
 
       {
         total: total,
@@ -391,7 +412,9 @@ class PlayersController < ApplicationController
         losses: losses,
         played: played,
         not_played: total - played,
-        win_pct: (wins + losses) > 0 ? (wins.to_f / (wins + losses) * 100).round(1) : nil
+        win_pct: (wins + losses) > 0 ? (wins.to_f / (wins + losses) * 100).round(1) : nil,
+        record_by_role: record.except(:overall),
+        brackets: brackets
       }
     end
 

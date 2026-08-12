@@ -73,12 +73,60 @@
                   <% end %>
                 </td>
               </tr>
+              <%
+                role_rows = [
+                  [ :favorite, "As Favorite", "Win rate when the host's team had >55% predicted win chance", "text-orange-600" ],
+                  [ :balanced, "As Balanced", "Win rate when the host's team had 45-55% predicted win chance", "text-teal-600" ],
+                  [ :underdog, "As Underdog", "Win rate when the host's team had <45% predicted win chance", "text-purple-600" ]
+                ]
+              %>
+              <% role_rows.each do |role, label, tooltip, color| %>
+                <% role_wins, role_losses = @hosting_stats[:record_by_role][role] %>
+                <% role_games = role_wins + role_losses %>
+                <tr>
+                  <td class="py-0.5" title="<%= tooltip %>"><%= label %></td>
+                  <td class="text-right py-0.5">
+                    <% if role_games > 0 %>
+                      <span class="text-green-600 font-medium"><%= role_wins %>W</span>/<span class="text-red-600 font-medium"><%= role_losses %>L</span>
+                      <span class="<%= color %> font-medium">(<%= (role_wins.to_f / role_games * 100).round(1) %>%)</span>
+                    <% else %>
+                      -
+                    <% end %>
+                  </td>
+                </tr>
+              <% end %>
             </tbody>
           </table>
         <% else %>
           <p class="text-sm text-gray-500">No hosted games recorded.</p>
         <% end %>
       </div>
+
+      <%# Lobby Balance Brackets %>
+      <% if @hosting_stats && @hosting_stats[:predicted] > 0 %>
+        <div class="bg-gray-50 rounded-md p-3">
+          <h3 class="font-semibold mb-2 text-gray-700">Lobby Balance</h3>
+          <p class="text-xs text-gray-500 mb-2">Predicted win chance of the favored team in hosted games. 50-55% = even match, 95-100% = heavily one-sided.</p>
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b">
+                <th class="text-left py-1 font-medium text-gray-600">Prediction</th>
+                <th class="text-right py-1 font-medium text-gray-600">Games</th>
+                <th class="text-right py-1 font-medium text-gray-600">Share</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @hosting_stats[:brackets].each do |bracket| %>
+                <tr class="border-b border-gray-100">
+                  <td class="py-1"><%= bracket[:label] %>%</td>
+                  <td class="text-right py-1"><%= bracket[:count] %></td>
+                  <td class="text-right py-1 text-gray-500"><%= bracket[:pct] %>%</td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% end %>
     </div>
   </div>
 </div>

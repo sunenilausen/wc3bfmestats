@@ -57,7 +57,13 @@
             <%= [calibrated[:good_pct], calibrated[:evil_pct]].max.round(1) %>%
           </span>
           <% if calibrated[:margin_pct] %>
-            <span class="ml-1 text-xs text-gray-400" title="Good <%= calibrated[:low_pct] %>-<%= calibrated[:high_pct] %>% - how well these players' ratings were known going into this match">
+            <% margin_title = "Good #{calibrated[:low_pct]}-#{calibrated[:high_pct]}% - how well these players' ratings were known going into this match" %>
+            <% if calibrated[:streak_shift_pct].abs >= 0.5 %>
+              <%# quote the shift from the point of view of the side being shown %>
+              <% shown_shift = (calibrated_favored_good ? calibrated[:streak_shift_pct] : -calibrated[:streak_shift_pct]).round(1) %>
+              <% margin_title += " - win/loss streaks going into this match moved this by #{shown_shift} points" %>
+            <% end %>
+            <span class="ml-1 text-xs text-gray-400" title="<%= margin_title %>">
               &plusmn;<%= calibrated[:margin_pct] %>
             </span>
           <% end %>

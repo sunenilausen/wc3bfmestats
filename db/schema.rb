@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_13_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_13_120001) do
   create_table "ahoy_events", force: :cascade do |t|
     t.string "name"
     t.text "properties"
@@ -95,6 +95,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_100000) do
     t.integer "player_id", null: false
     t.integer "self_heal"
     t.float "stay_pct"
+    t.integer "streak_before_match"
     t.integer "team_heal"
     t.float "team_heal_pct"
     t.boolean "top_hero_kills", default: false
@@ -196,6 +197,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_100000) do
     t.integer "battlenet_number"
     t.string "battletag"
     t.datetime "created_at", null: false
+    t.integer "current_streak", default: 0, null: false
     t.float "custom_rating"
     t.integer "custom_rating_bonus_wins"
     t.integer "custom_rating_games_played"

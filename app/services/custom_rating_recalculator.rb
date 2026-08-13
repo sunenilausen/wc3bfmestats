@@ -97,7 +97,8 @@ class CustomRatingRecalculator
         custom_rating: seed,
         custom_rating_bonus_wins: bonus_wins_for_seed(seed),
         custom_rating_games_played: 0,
-        custom_rating_reached_2000: false
+        custom_rating_reached_2000: false,
+        current_streak: 0
       )
     end
 
@@ -168,6 +169,16 @@ class CustomRatingRecalculator
   # Weight for individual rating vs team average in expected score calculation
   INDIVIDUAL_WEIGHT = 0.2  # 1/5 own rating
   TEAM_WEIGHT = 0.8        # 4/5 team average
+
+  # Classic Elo scale for the expected score: a rating gap of this size means
+  # the favourite is expected to score 10:1. Sets how far ratings spread out -
+  # a larger scale means a given gap implies a smaller edge, so ratings have to
+  # spread further before the expected score matches what actually happens.
+  ELO_SCALE = 400.0
+
+  # Scale used to turn a CR difference into the stored win prediction.
+  # Kept in step with LobbyWinPredictor's sigmoid.
+  PREDICTION_SCALE = 150.0
 
   # Contribution bonus points
   CONTRIBUTION_BONUS_WIN = [ 2, 1, 1, 0, -1 ]   # 1st, 2nd, 3rd, 4th, 5th (winners)
@@ -270,7 +281,7 @@ class CustomRatingRecalculator
       player_effective = (INDIVIDUAL_WEIGHT * player.custom_rating) + (TEAM_WEIGHT * own_team_avg)
 
       # Expected score based on effective rating vs opponent team average
-      expected = 1.0 / (1.0 + 10**((opponent_avg - player_effective) / 400.0))
+      expected = 1.0 / (1.0 + 10**((opponent_avg - player_effective) / ELO_SCALE))
       actual = won ? 1 : 0
 
       # Use player's individual K-factor
@@ -366,6 +377,7 @@ class CustomRatingRecalculator
 
       player.custom_rating += total_change
       player.custom_rating_games_played = player.custom_rating_games_played.to_i + 1
+      player.current_streak = StreakAdjustment.next_streak(player.current_streak, won)
 
       # Mark if player reaches 2000 (permanent low K)
       if player.custom_rating >= RATING_FOR_PERMANENT_LOW_K && !player.custom_rating_reached_2000?
@@ -952,6 +964,7 @@ class CustomRatingRecalculator
         stats = @player_stats[player.id]
         app.games_played_before_match = stats[:games_played]
         app.faction_games_before_match = stats[:faction_games][app.faction.id] || 0
+        app.streak_before_match = player.current_streak.to_i
         # ml_score at match time is NOT reproducible in a later full recalc
         # (ml_score drifts with every game played since), so freeze the value
         # from the first processing and never overwrite it. games/faction_games
@@ -960,6 +973,7 @@ class CustomRatingRecalculator
       else
         app.games_played_before_match = 0
         app.faction_games_before_match = 0
+        app.streak_before_match = 0
         app.ml_score_at_match = NewPlayerDefaults.ml_score if app.ml_score_at_match.nil?
       end
     end
@@ -1002,7 +1016,7 @@ class CustomRatingRecalculator
     # Convert CR difference to win probability (same as LobbyWinPredictor)
     # 100 CR difference ≈ 64% win chance for higher rated team
     cr_diff = good_avg_effective - evil_avg_effective
-    good_win_probability = 1.0 / (1 + Math.exp(-cr_diff / 150.0))
+    good_win_probability = 1.0 / (1 + Math.exp(-cr_diff / PREDICTION_SCALE))
 
     match.update_columns(
       predicted_good_win_pct: (good_win_probability * 100).round(1),
@@ -1111,7 +1125,7 @@ class CustomRatingRecalculator
 
       # Calculate what the normal rating change would be
       player_effective = (INDIVIDUAL_WEIGHT * player.custom_rating) + (TEAM_WEIGHT * own_team_avg)
-      expected = 1.0 / (1.0 + 10**((opponent_avg - player_effective) / 400.0))
+      expected = 1.0 / (1.0 + 10**((opponent_avg - player_effective) / ELO_SCALE))
       actual = won ? 1 : 0
 
       k_factor = k_factor_for_player(player)
@@ -1203,6 +1217,7 @@ class CustomRatingRecalculator
 
       player.custom_rating += total_change
       player.custom_rating_games_played = player.custom_rating_games_played.to_i + 1
+      player.current_streak = StreakAdjustment.next_streak(player.current_streak, won)
 
       # Mark if player reaches 2000 (permanent low K)
       if player.custom_rating >= RATING_FOR_PERMANENT_LOW_K && !player.custom_rating_reached_2000?

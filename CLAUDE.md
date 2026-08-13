@@ -332,7 +332,36 @@ Adjustments applied on top:
 
 Variances add across players, then the team-average uncertainty is converted to a probability band through the calibrated sigmoid. In practice this gives about ±11pp for a lobby of veterans and ±15pp for a green one.
 
-**Caveat:** accuracy does *not* measurably degrade with new players (67.0% with none vs 68.2% with two, flat within noise). The band represents uncertainty in the rating inputs, not a measured drop in prediction accuracy.
+**Caveat — what the band does and does not claim:**
+
+It represents uncertainty in the *rating inputs* ("this player's CR could be off by this much"), **not** a measured drop in prediction accuracy. Two tests back this distinction up:
+
+- Accuracy does not degrade with new players: 67.0% with none in the lobby vs 68.2% with two, flat and non-monotone within noise.
+- Fitting a model where uncertainty shrinks the prediction toward 50% (`z = k * logit(raw) / (1 + c * sigma/100)`) puts `c` at **-0.5** — the wrong sign — for a likelihood gain of 1.55, below the ~1.9 needed to justify the parameter.
+
+So uncertainty must never be used to move the point estimate, only to draw the band around it.
+
+The `MAX_FAMILIARITY_UNCERTAINTY = 20` term is the least-evidenced constant here. Sorting matches by how off-role the established players were gives a monotone Brier trend (0.2051 → 0.2193 across quartiles), but at ~1.5 standard errors it is suggestive only, and the trend vanishes when new players are included. It is kept because it is small and directionally sensible — don't grow it without better evidence.
+
+**Streak adjustment (display only):**
+
+Players on a losing streak are underrated and players on a winning streak are overrated. Measured on established players (30+ games), by streak going into a game, looking at CR movement over the next 30 games:
+
+| Streak going in | n | mean drift | SD |
+|---|---|---|---|
+| losing 4+ | 715 | **+31.8** | 60.3 |
+| losing 2 | 1475 | +16.7 | 61.8 |
+| none | 6016 | +11.0 | 61.1 |
+| winning 2 | 1539 | +7.3 | 62.3 |
+| winning 4+ | 887 | **-4.0** | 61.9 |
+
+**The SD column is flat**, so a streak says which way a rating is displaced, never that it is less reliable — it shifts the centre of the meter and must never widen the band.
+
+`StreakAdjustment::CR_PER_STEP = 6.0`, capped at `MAX_STEPS = 4`, fitted by maximum likelihood: adding the term improves log-likelihood by 3.31 (a parameter needs ~1.9) and holds on a 70/30 holdout (Brier 0.2152 → 0.2147). Effect on the displayed chance: median 1.6pp, 99th percentile 6.4pp, max 10.2pp.
+
+Applied **only to the calibrated meter**. The raw `good_win_pct`, `Match.balanced`, `LobbyBalancer` and CR changes are all untouched — a mean-reversion term fed back into ratings would fight the rating system's own dynamics.
+
+Streak data: `players.current_streak` (lobbies) and `appearances.streak_before_match` (history), both maintained by `CustomRatingRecalculator` during its chronological walk and backfilled by `BackfillStreaks`. Draws neither extend nor break a streak. A full recalculation reproduces the backfill exactly (verified on all 18,760 appearances).
 
 **Where it's shown:**
 - **Lobby page** — "Actual Win Chance" meter below "Balance of Power", with the band drawn as a pale zone. Live-updating on the edit page.

@@ -233,6 +233,35 @@ class LobbyWinPredictorTest < ActiveSupport::TestCase
       "a completely unknown player should be less certain than a player with one game"
   end
 
+  test "streaks move the win chance but never the balance of power" do
+    good = Player.create!(nickname: "GoodSide", custom_rating: 1500, ml_score: 0, custom_rating_games_played: 100)
+    evil = Player.create!(nickname: "EvilSide", custom_rating: 1500, ml_score: 0, custom_rating_games_played: 100)
+    @lobby.lobby_players.create!(faction: factions(:gondor), player: good)
+    @lobby.lobby_players.create!(faction: factions(:mordor), player: evil)
+
+    neutral = LobbyWinPredictor.new(@lobby).predict
+
+    good.update!(current_streak: -4)  # on a losing streak, so underrated
+    streaking = LobbyWinPredictor.new(@lobby.reload).predict
+
+    assert_equal neutral[:good_win_pct], streaking[:good_win_pct],
+      "the raw balance of power must not move - it defines balanced lobbies and drives ratings"
+    assert streaking[:true_good_win_pct] > neutral[:true_good_win_pct],
+      "a losing streak should raise the displayed win chance"
+    assert streaking[:streak_shift_pct] > 0
+  end
+
+  test "streaks on both sides cancel out" do
+    good = Player.create!(nickname: "G", custom_rating: 1500, ml_score: 0, custom_rating_games_played: 100, current_streak: 3)
+    evil = Player.create!(nickname: "E", custom_rating: 1500, ml_score: 0, custom_rating_games_played: 100, current_streak: 3)
+    @lobby.lobby_players.create!(faction: factions(:gondor), player: good)
+    @lobby.lobby_players.create!(faction: factions(:mordor), player: evil)
+
+    prediction = LobbyWinPredictor.new(@lobby).predict
+
+    assert_equal 0.0, prediction[:streak_shift_pct]
+  end
+
   private
 
   def build_lobby(games_played:)

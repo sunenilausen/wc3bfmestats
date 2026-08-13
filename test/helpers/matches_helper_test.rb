@@ -35,6 +35,23 @@ class MatchesHelperTest < ActionView::TestCase
       "a lobby of new players should give a wider margin than a lobby of veterans"
   end
 
+  test "streaks carried into the match move the displayed chance" do
+    match = matches(:one)
+    match.update!(predicted_good_win_pct: 50.0)
+    match.appearances.each { |a| a.update!(streak_before_match: 0) }
+
+    assert_equal 0.0, calibrated_prediction(match)[:streak_shift_pct]
+
+    # put the Good side on a losing streak - they were underrated at the time
+    match.appearances.each do |a|
+      a.update!(streak_before_match: a.faction.good? ? -4 : 0)
+    end
+    shifted = calibrated_prediction(match.reload)
+
+    assert shifted[:streak_shift_pct] > 0
+    assert shifted[:good_pct] > 50.0
+  end
+
   test "no margin when the historical game counts were never backfilled" do
     match = matches(:one)
     match.update!(predicted_good_win_pct: 55.0)

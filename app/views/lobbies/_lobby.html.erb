@@ -273,9 +273,11 @@
               <div class="flex justify-between text-sm mt-1">
                 <span class="text-green-700 font-medium"><%= prediction[:true_good_win_pct] %>%</span>
                 <% if prediction[:true_margin_pct] %>
-                  <span class="text-xs text-gray-400" title="Good <%= prediction[:true_good_low_pct] %>-<%= prediction[:true_good_high_pct] %>%">
-                    &plusmn;<%= prediction[:true_margin_pct] %>
-                  </span>
+                  <% margin_title = "Good #{prediction[:true_good_low_pct]}-#{prediction[:true_good_high_pct]}%" %>
+                  <% if prediction[:streak_shift_pct].abs >= 0.5 %>
+                    <% margin_title += " - win/loss streaks moved Good's chance by #{prediction[:streak_shift_pct]} points" %>
+                  <% end %>
+                  <span class="text-xs text-gray-400" title="<%= margin_title %>">&plusmn;<%= prediction[:true_margin_pct] %></span>
                 <% end %>
                 <span class="text-red-700 font-medium"><%= prediction[:true_evil_win_pct] %>%</span>
               </div>

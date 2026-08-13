@@ -157,12 +157,17 @@
   <div class="mt-8">
     <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
       <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">Prediction Accuracy</h2>
-      <p class="text-xs text-gray-500 mb-4">50% = even match, 95-100% = heavily favored</p>
+      <p class="text-xs text-gray-500 mb-4">
+        50% = even match, 95-100% = heavily favored.
+        <span class="text-teal-600">Claimed</span> is what the calibrated "Actual Win Chance" meter says for these matches -
+        the closer it sits to <span class="text-blue-600">CR+ Accuracy</span>, the more honest the meter.
+      </p>
       <div class="overflow-x-auto">
         <table class="min-w-full text-sm">
           <thead>
             <tr class="border-b border-gray-200">
               <th class="text-left py-2 px-3 font-medium text-gray-600">Prediction</th>
+              <th class="text-right py-2 px-3 font-medium text-teal-600">Claimed</th>
               <th class="text-right py-2 px-3 font-medium text-blue-600">CR+ Accuracy</th>
               <th class="text-right py-2 px-3 font-medium text-gray-400 text-xs">matches</th>
               <th class="text-right py-2 px-3 font-medium text-purple-600">CR-only Accuracy</th>
@@ -173,6 +178,13 @@
             <% @prediction_accuracy_by_confidence.each do |bucket| %>
               <tr class="border-b border-gray-100 hover:bg-gray-50">
                 <td class="py-2 px-3 font-medium text-gray-700"><%= bucket[:label] %>%</td>
+                <td class="py-2 px-3 text-right">
+                  <% if bucket[:calibrated] %>
+                    <span class="font-medium text-teal-600"><%= bucket[:calibrated] %>%</span>
+                  <% else %>
+                    <span class="text-gray-400">-</span>
+                  <% end %>
+                </td>
                 <td class="py-2 px-3 text-right">
                   <% if bucket[:accuracy] %>
                     <span class="font-medium <%= bucket[:accuracy] >= 60 ? 'text-green-600' : bucket[:accuracy] >= 50 ? 'text-gray-700' : 'text-red-600' %>">

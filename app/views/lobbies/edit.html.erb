@@ -671,6 +671,35 @@
           }
         }
 
+        // Update calibrated win chance bar with its uncertainty band
+        const trueGood = Number(prediction.true_good_win_pct);
+        const trueEvil = Number(prediction.true_evil_win_pct);
+        const trueLow = Number(prediction.true_good_low_pct);
+        const trueHigh = Number(prediction.true_good_high_pct);
+
+        const trueBar = document.getElementById('true-win-bar');
+        const trueBand = document.getElementById('true-win-band');
+        const trueGoodPct = document.getElementById('true-good-pct');
+        const trueEvilPct = document.getElementById('true-evil-pct');
+        const trueMargin = document.getElementById('true-margin');
+
+        if (!isNaN(trueGood)) {
+          if (trueBar) trueBar.style.width = trueGood + '%';
+          if (trueGoodPct) trueGoodPct.textContent = trueGood.toFixed(1) + '%';
+          if (trueEvilPct) trueEvilPct.textContent = trueEvil.toFixed(1) + '%';
+        }
+
+        if (trueBand && !isNaN(trueLow) && !isNaN(trueHigh)) {
+          trueBand.style.left = trueLow + '%';
+          trueBand.style.width = (trueHigh - trueLow).toFixed(1) + '%';
+          trueBand.title = `Good ${trueLow.toFixed(1)}-${trueHigh.toFixed(1)}% - range the true chance is likely to fall in, given how well we know these players' ratings`;
+        }
+
+        if (trueMargin && prediction.true_margin_pct != null) {
+          trueMargin.textContent = '±' + Number(prediction.true_margin_pct).toFixed(1);
+          trueMargin.title = `Good ${trueLow.toFixed(1)}-${trueHigh.toFixed(1)}%`;
+        }
+
         // Update detail display with weighted averages from server
         const predGoodCR = document.getElementById('pred-good-cr');
         const predEvilCR = document.getElementById('pred-evil-cr');

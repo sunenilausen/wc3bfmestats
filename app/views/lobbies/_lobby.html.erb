@@ -190,7 +190,7 @@
     <%# Prediction bar - combined CR/ML with adaptive weighting %>
     <% if editable %>
       <div id="prediction" class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-        <h3 class="text-sm font-medium text-gray-700 mb-2">Win Prediction</h3>
+        <h3 class="text-sm font-medium text-gray-700 mb-2">Balance of Power</h3>
         <div class="flex items-center gap-2">
           <span class="text-green-700 font-bold text-sm w-12">Good</span>
           <div class="flex-1 h-6 bg-red-500 rounded-full overflow-hidden">
@@ -207,12 +207,33 @@
           <span>Avg CR: <span id="pred-good-cr" class="text-green-600">-</span> | Eff: <span id="pred-good-rank" class="text-green-600">-</span></span>
           <span>Avg CR: <span id="pred-evil-cr" class="text-red-600">-</span> | Eff: <span id="pred-evil-rank" class="text-red-600">-</span></span>
         </div>
+
+        <div class="mt-3 pt-3 border-t border-gray-200">
+          <h3 class="text-sm font-medium text-gray-700 mb-2" title="How often the favoured side actually wins lobbies like this one, based on all past matches">
+            Actual Win Chance
+          </h3>
+          <div class="flex items-center gap-2">
+            <span class="text-green-700 font-bold text-sm w-12">Good</span>
+            <div class="relative flex-1 h-6 bg-red-500 rounded-full overflow-hidden">
+              <div id="true-win-bar" class="h-full bg-green-500 transition-all duration-300" style="width: 50%"></div>
+              <div id="true-win-band" class="absolute inset-y-0 bg-white/30 border-x-2 border-white/70 transition-all duration-300"
+                   title="Range the true chance is likely to fall in, given how well we know these players' ratings"
+                   style="left: 50%; width: 0%"></div>
+            </div>
+            <span class="text-red-700 font-bold text-sm w-12 text-right">Evil</span>
+          </div>
+          <div class="flex justify-between text-sm mt-1">
+            <span id="true-good-pct" class="text-green-700 font-medium">50%</span>
+            <span id="true-margin" class="text-xs text-gray-400">-</span>
+            <span id="true-evil-pct" class="text-red-700 font-medium">50%</span>
+          </div>
+        </div>
       </div>
     <% else %>
       <% prediction = LobbyWinPredictor.new(lobby).predict %>
       <% if prediction %>
         <div class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <h3 class="text-sm font-medium text-gray-700 mb-2">Win Prediction</h3>
+          <h3 class="text-sm font-medium text-gray-700 mb-2">Balance of Power</h3>
           <div class="flex items-center gap-2">
             <span class="text-green-700 font-bold text-sm w-12">Good</span>
             <div class="flex-1 h-6 bg-red-500 rounded-full overflow-hidden">
@@ -229,6 +250,37 @@
             <span>Avg CR: <span class="text-green-600"><%= prediction[:good_details][:avg_cr] %></span> | Eff: <span class="text-green-600"><%= prediction[:good_details][:avg_effective_cr] %></span></span>
             <span>Avg CR: <span class="text-red-600"><%= prediction[:evil_details][:avg_cr] %></span> | Eff: <span class="text-red-600"><%= prediction[:evil_details][:avg_effective_cr] %></span></span>
           </div>
+
+          <% if prediction[:true_good_win_pct] %>
+            <div class="mt-3 pt-3 border-t border-gray-200">
+              <h3 class="text-sm font-medium text-gray-700 mb-2" title="How often the favoured side actually wins lobbies like this one, based on all past matches">
+                Actual Win Chance
+              </h3>
+              <div class="flex items-center gap-2">
+                <span class="text-green-700 font-bold text-sm w-12">Good</span>
+                <div class="relative flex-1 h-6 bg-red-500 rounded-full overflow-hidden">
+                  <div class="h-full bg-green-500" style="width: <%= prediction[:true_good_win_pct] %>%"></div>
+                  <% low = prediction[:true_good_low_pct] %>
+                  <% high = prediction[:true_good_high_pct] %>
+                  <% if low && high %>
+                    <div class="absolute inset-y-0 bg-white/30 border-x-2 border-white/70"
+                         title="Range the true chance is likely to fall in, given how well we know these players' ratings"
+                         style="left: <%= low %>%; width: <%= (high - low).round(1) %>%"></div>
+                  <% end %>
+                </div>
+                <span class="text-red-700 font-bold text-sm w-12 text-right">Evil</span>
+              </div>
+              <div class="flex justify-between text-sm mt-1">
+                <span class="text-green-700 font-medium"><%= prediction[:true_good_win_pct] %>%</span>
+                <% if prediction[:true_margin_pct] %>
+                  <span class="text-xs text-gray-400" title="Good <%= prediction[:true_good_low_pct] %>-<%= prediction[:true_good_high_pct] %>%">
+                    &plusmn;<%= prediction[:true_margin_pct] %>
+                  </span>
+                <% end %>
+                <span class="text-red-700 font-medium"><%= prediction[:true_evil_win_pct] %>%</span>
+              </div>
+            </div>
+          <% end %>
         </div>
       <% end %>
     <% end %>

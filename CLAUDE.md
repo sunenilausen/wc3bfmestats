@@ -291,6 +291,64 @@ Analysis shows the PERF-based penalty provides minimal predictive value:
 
 The penalty is kept for conservative estimation but CR-only would perform equally well.
 
+### Calibrated Win Chance (Actual Win Chance meter)
+
+The raw prediction above is **underconfident**: lobbies the model calls 57% are won by the favoured team 66% of the time. `PredictionCalibrator` corrects this for display by stretching the logit:
+
+```
+calibrated_logit = K * raw_logit     # K = 1.7
+```
+
+K was fitted by maximum likelihood over all stored match predictions and validated walk-forward (fit on the past, score the next 200 matches): out-of-sample Brier improves 0.2164 → 0.2113 over 1,253 matches, with the fitted K staying between 1.60 and 1.80 in every window.
+
+| Raw | Calibrated | Actually won |
+|-----|------------|--------------|
+| 52.5% | 54.2% | 56.3% (n=625) |
+| 57.3% | 62.3% | 65.7% (n=492) |
+| 62.3% | 70.1% | 72.4% (n=312) |
+| 67.2% | 77.2% | 77.8% (n=221) |
+
+**This is display-only.** The raw scale still defines "balanced" (`Match.balanced`, `LobbyBalancer`) and drives CR changes — restretching it there would silently redefine what a balanced lobby is.
+
+Output is capped at `MAX_PCT = 95` since there are fewer than 100 matches above 75% raw confidence.
+
+**Margin of error:**
+
+The lobby page also shows a band around the calibrated chance, derived from how well the players' ratings are actually known. Per-player uncertainty (`LobbyWinPredictor::CR_UNCERTAINTY_BY_GAMES`) is the measured SD of how much a player's CR moves over their next 30 games:
+
+| Games played | SD of CR change |
+|--------------|-----------------|
+| 0–4 | 88 |
+| 5–9 | 81 |
+| 10–19 | 72 |
+| 20–29 | 63 |
+| 120+ | 61 |
+
+Adjustments applied on top:
+- `SURVIVORSHIP_INFLATION = 1.25` on the under-30-games buckets — the measurement only covers players who stayed long enough to play 30 more games, which truncates the spread
+- `UNKNOWN_PLAYER_CR_UNCERTAINTY = 140` for "New Player" slots
+- Inactivity multiplier: 1.0 (<14 days), 1.05 (14–60 days), 1.25 (60+ days or never played)
+- Up to +20 for playing an unfamiliar faction, scaled by the same ratio as the familiarity CR penalty
+
+Variances add across players, then the team-average uncertainty is converted to a probability band through the calibrated sigmoid. In practice this gives about ±11pp for a lobby of veterans and ±15pp for a green one.
+
+**Caveat:** accuracy does *not* measurably degrade with new players (67.0% with none vs 68.2% with two, flat within noise). The band represents uncertainty in the rating inputs, not a measured drop in prediction accuracy.
+
+**Where it's shown:**
+- **Lobby page** — "Actual Win Chance" meter below "Balance of Power", with the band drawn as a pale zone. Live-updating on the edit page.
+- **Match show page** — "Actual win chance" line above the CR+ / CR-only prediction lines. Uses `MatchesHelper#calibrated_prediction`, with the margin computed from each appearance's `games_played_before_match` and `faction_games_before_match`, so it reflects how well the players were known *at the time* rather than today. Falls back to no band when those columns were never backfilled (667 of 19,267 appearances).
+- **Statistics page** — "Claimed" column in the Prediction Accuracy table, showing what the calibrated meter says for each bucket next to what actually happened. The closer the two columns sit, the better calibrated the meter.
+
+Shared uncertainty maths live in `RatingUncertainty` (used by both `LobbyWinPredictor` and `MatchesHelper`). The faction-familiarity formula lives in `LobbyWinPredictor.unfamiliarity_ratio` and feeds both the CR penalty and the extra uncertainty, so they can't drift apart.
+
+Note: `match_show` fragment cache key was bumped to "v2" when this line was added.
+
+Refit and inspect both with:
+```bash
+bin/rails prediction:calibrate    # refit K, walk-forward validation, reliability table
+bin/rails prediction:uncertainty  # recompute the CR movement SD table
+```
+
 **New player defaults:**
 When adding an unknown player to a lobby (via "New Player" option), the defaults are:
 - Custom Rating: 1300

@@ -315,7 +315,7 @@ class HomeController < ApplicationController
     buckets = {}
     (50..95).step(5).each do |start|
       label = "#{start}-#{start + 5}"
-      buckets[label] = { correct: 0, total: 0, cr_correct: 0, cr_total: 0 }
+      buckets[label] = { correct: 0, total: 0, calibrated_sum: 0.0, cr_correct: 0, cr_total: 0 }
     end
 
     matches.find_each do |match|
@@ -328,6 +328,11 @@ class HomeController < ApplicationController
       bucket_key = bucket_for_confidence(confidence_pct)
       buckets[bucket_key][:total] += 1
       buckets[bucket_key][:correct] += 1 if prediction_correct
+
+      # What the calibrated meter claims for this match, so the claim can be
+      # read against what actually happened
+      calibrated_good_pct = PredictionCalibrator.calibrate(good_pct)
+      buckets[bucket_key][:calibrated_sum] += [ calibrated_good_pct, 100 - calibrated_good_pct ].max
 
       # CR-only prediction (calculated from appearances)
       good_crs = match.appearances.select { |a| a.faction&.good? }.filter_map(&:custom_rating)
@@ -355,6 +360,7 @@ class HomeController < ApplicationController
       {
         label: label,
         accuracy: data[:total] > 0 ? (data[:correct].to_f / data[:total] * 100).round(1) : nil,
+        calibrated: data[:total] > 0 ? (data[:calibrated_sum] / data[:total]).round(1) : nil,
         total: data[:total],
         cr_accuracy: data[:cr_total] > 0 ? (data[:cr_correct].to_f / data[:cr_total] * 100).round(1) : nil,
         cr_total: data[:cr_total]

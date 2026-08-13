@@ -47,6 +47,18 @@ class LobbyWinPredictor
     @lobby = lobby
   end
 
+  # How far outside their usual factions a player is: 0 when the faction is one
+  # they play as often as any other, 1 when they have never played it.
+  # Drives both the CR penalty and the extra prediction uncertainty.
+  def self.unfamiliarity_ratio(total_games, faction_games)
+    return 0.0 if total_games.to_i < MIN_FACTION_GAMES_THRESHOLD
+
+    threshold = [ total_games.to_i / 10.0, MIN_FACTION_GAMES_THRESHOLD.to_f ].max
+    ratio = [ faction_games.to_i / threshold, 1.0 ].min
+
+    1.0 - Math.sqrt(ratio)
+  end
+
   def predict
     good_players = lobby.lobby_players.select { |lp| lp.faction&.good? }
     evil_players = lobby.lobby_players.reject { |lp| lp.faction&.good? }
@@ -63,12 +75,26 @@ class LobbyWinPredictor
     # 100 CR difference ≈ 64% win chance for higher rated team
     cr_diff = good_avg - evil_avg
     good_win_prob = 1.0 / (1 + Math.exp(-cr_diff / 150.0))
+    raw_good_pct = (good_win_prob * 100).round(1)
+
+    # Statistically calibrated win chance, plus the band implied by how well we
+    # actually know these players' ratings. Display only - the raw percentage
+    # above is what defines "balanced" and drives ratings.
+    cr_sigma = combined_cr_uncertainty(good_players, evil_players)
+    true_good_pct = PredictionCalibrator.calibrate(raw_good_pct)
+    low_pct, high_pct = PredictionCalibrator.band(raw_good_pct, cr_sigma)
 
     {
-      good_win_pct: (good_win_prob * 100).round(1),
+      good_win_pct: raw_good_pct,
       evil_win_pct: ((1 - good_win_prob) * 100).round(1),
       good_avg_cr: good_avg.round,
       evil_avg_cr: evil_avg.round,
+      true_good_win_pct: true_good_pct,
+      true_evil_win_pct: (100 - true_good_pct).round(1),
+      true_good_low_pct: low_pct,
+      true_good_high_pct: high_pct,
+      true_margin_pct: low_pct && high_pct ? ((high_pct - low_pct) / 2).round(1) : nil,
+      cr_uncertainty: cr_sigma.round,
       good_details: compute_team_details(good_players),
       evil_details: compute_team_details(evil_players)
     }
@@ -125,6 +151,55 @@ class LobbyWinPredictor
     end
   end
 
+  # Uncertainty (in CR) of the difference between the two team averages
+  def combined_cr_uncertainty(good_players, evil_players)
+    RatingUncertainty.combined_sigma(team_cr_uncertainties(good_players), team_cr_uncertainties(evil_players))
+  end
+
+  # Per-player CR uncertainty for a team, weighted the same way their CR is
+  def team_cr_uncertainties(lobby_players)
+    lobby_players.filter_map do |lp|
+      next unless lp.player || lp.is_new_player?
+      player_cr_uncertainty(lp.player, lp.faction) * faction_impact_weight(lp.faction)
+    end
+  end
+
+  # How far off a single player's CR could plausibly be
+  def player_cr_uncertainty(player, faction)
+    return RatingUncertainty.unknown_player_sigma unless player
+
+    RatingUncertainty.player_sigma(
+      games: player.custom_rating_games_played.to_i,
+      unfamiliarity: unfamiliarity(player, faction),
+      inactivity_multiplier: RatingUncertainty.inactivity_multiplier(last_played_at[player.id])
+    )
+  end
+
+  # Most recent match date per player in the lobby, in one query
+  def last_played_at
+    @last_played_at ||= begin
+      player_ids = lobby.lobby_players.filter_map(&:player_id)
+
+      if player_ids.empty?
+        {}
+      else
+        Appearance.joins(:match)
+          .where(player_id: player_ids, matches: { ignored: false })
+          .group(:player_id)
+          .maximum("matches.played_at")
+      end
+    end
+  end
+
+  # How far outside their usual factions this player is, 0 (their regular
+  # faction) to 1 (never played it). Derived from the CR penalty so the penalty
+  # and the extra uncertainty always move together.
+  def unfamiliarity(player, faction)
+    return 0.0 unless faction
+
+    faction_familiarity_adjustment(player, faction).abs / MAX_FACTION_FAMILIARITY_PENALTY
+  end
+
   def faction_impact_weight(faction)
     return DEFAULT_FACTION_WEIGHT unless faction
     FACTION_IMPACT_WEIGHTS[faction.name] || DEFAULT_FACTION_WEIGHT
@@ -135,19 +210,21 @@ class LobbyWinPredictor
   def faction_familiarity_adjustment(player, faction)
     return 0 unless player && faction
 
+    @familiarity_adjustments ||= {}
+    key = [ player.id, faction.id ]
+    return @familiarity_adjustments[key] if @familiarity_adjustments.key?(key)
+
+    @familiarity_adjustments[key] = compute_faction_familiarity_adjustment(player, faction)
+  end
+
+  def compute_faction_familiarity_adjustment(player, faction)
     total_games = player.custom_rating_games_played.to_i
     return 0 if total_games < MIN_FACTION_GAMES_THRESHOLD
 
     faction_stat = player.player_faction_stats.find_by(faction: faction)
     faction_games = faction_stat&.games_played.to_i
 
-    avg_games = total_games / 10.0
-    threshold = [ avg_games, MIN_FACTION_GAMES_THRESHOLD.to_f ].max
-
-    ratio = [ faction_games / threshold, 1.0 ].min
-    eased = Math.sqrt(ratio)
-
-    -((1.0 - eased) * MAX_FACTION_FAMILIARITY_PENALTY)
+    -(self.class.unfamiliarity_ratio(total_games, faction_games) * MAX_FACTION_FAMILIARITY_PENALTY)
   end
 
   # Calculate effective CR with ML score adjustment for new players

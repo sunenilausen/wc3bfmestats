@@ -191,4 +191,61 @@ class LobbyWinPredictorTest < ActiveSupport::TestCase
     # Evil should be favored since Good player has effective CR of 1180 vs 1300
     assert prediction[:evil_win_pct] > 50, "Team with actual 1300 CR should beat team with effective 1180 CR"
   end
+
+  test "calibrated win chance is further from even than the raw balance of power" do
+    strong = Player.create!(nickname: "Strong", custom_rating: 1700, ml_score: 0, custom_rating_games_played: 100)
+    weak = Player.create!(nickname: "Weak", custom_rating: 1400, ml_score: 0, custom_rating_games_played: 100)
+
+    @lobby.lobby_players.create!(faction: factions(:gondor), player: strong)
+    @lobby.lobby_players.create!(faction: factions(:mordor), player: weak)
+
+    prediction = LobbyWinPredictor.new(@lobby).predict
+
+    assert prediction[:good_win_pct] > 50
+    assert prediction[:true_good_win_pct] > prediction[:good_win_pct],
+      "calibration should sharpen the favourite's chance"
+    assert_in_delta 100.0, prediction[:true_good_win_pct] + prediction[:true_evil_win_pct], 0.2
+  end
+
+  test "margin of error is wider for inexperienced lobbies" do
+    veteran_lobby = build_lobby(games_played: 200)
+    rookie_lobby = build_lobby(games_played: 1)
+
+    veteran = LobbyWinPredictor.new(veteran_lobby).predict
+    rookie = LobbyWinPredictor.new(rookie_lobby).predict
+
+    assert rookie[:cr_uncertainty] > veteran[:cr_uncertainty],
+      "new players should make the rating estimate less certain"
+    assert rookie[:true_margin_pct] > veteran[:true_margin_pct],
+      "less certain ratings should widen the win chance band"
+  end
+
+  test "unknown new player slots carry the most uncertainty" do
+    known_lobby = build_lobby(games_played: 1)
+    unknown_lobby = Lobby.create!(session_token: "unknown-token")
+    unknown_lobby.lobby_players.create!(faction: factions(:gondor), player: nil, is_new_player: true)
+    unknown_lobby.lobby_players.create!(faction: factions(:mordor), player: nil, is_new_player: true)
+
+    known = LobbyWinPredictor.new(known_lobby).predict
+    unknown = LobbyWinPredictor.new(unknown_lobby).predict
+
+    assert unknown[:cr_uncertainty] > known[:cr_uncertainty],
+      "a completely unknown player should be less certain than a player with one game"
+  end
+
+  private
+
+  def build_lobby(games_played:)
+    lobby = Lobby.create!(session_token: "lobby-#{games_played}-#{SecureRandom.hex(4)}")
+    [ factions(:gondor), factions(:mordor) ].each_with_index do |faction, i|
+      player = Player.create!(
+        nickname: "P#{games_played}-#{i}-#{SecureRandom.hex(3)}",
+        custom_rating: 1500,
+        ml_score: 0,
+        custom_rating_games_played: games_played
+      )
+      lobby.lobby_players.create!(faction: faction, player: player)
+    end
+    lobby
+  end
 end

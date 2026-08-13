@@ -1,4 +1,48 @@
 module MatchesHelper
+  # The stored prediction restated as a calibrated win chance, with the margin
+  # of error implied by how well the players were known at the time.
+  # Returns nil when the match has no stored prediction.
+  def calibrated_prediction(match)
+    return nil if match.predicted_good_win_pct.nil?
+
+    raw_good_pct = match.predicted_good_win_pct.to_f
+    good_pct = PredictionCalibrator.calibrate(raw_good_pct)
+    low, high = PredictionCalibrator.band(raw_good_pct, historical_cr_uncertainty(match))
+
+    {
+      good_pct: good_pct,
+      evil_pct: (100 - good_pct).round(1),
+      low_pct: low,
+      high_pct: high,
+      margin_pct: low && high ? ((high - low) / 2).round(1) : nil
+    }
+  end
+
+  # Uncertainty in the two teams' average CR at the time the match was played,
+  # from each player's game counts going into it. Nil when those counts were
+  # never backfilled for this match.
+  def historical_cr_uncertainty(match)
+    good_sigmas = []
+    evil_sigmas = []
+
+    match.appearances.each do |appearance|
+      faction = appearance.faction
+      next unless faction
+      return nil if appearance.games_played_before_match.nil?
+
+      games = appearance.games_played_before_match
+      sigma = RatingUncertainty.player_sigma(
+        games: games,
+        unfamiliarity: LobbyWinPredictor.unfamiliarity_ratio(games, appearance.faction_games_before_match)
+      ) * (LobbyWinPredictor::FACTION_IMPACT_WEIGHTS[faction.name] || LobbyWinPredictor::DEFAULT_FACTION_WEIGHT)
+
+      faction.good? ? good_sigmas << sigma : evil_sigmas << sigma
+    end
+    return nil if good_sigmas.empty? || evil_sigmas.empty?
+
+    RatingUncertainty.combined_sigma(good_sigmas, evil_sigmas)
+  end
+
   # Calculate win/loss record for a player before this match
   def previous_record_for_appearance(appearance)
     match = appearance.match

@@ -1,3 +1,5 @@
+<% player_form ||= {} %>
+<% player_recent_leaves ||= {} %>
 <% index = lobby.lobby_players.index(lp) %>
 <% player_stats = lobby_player_stats[lp.player_id] if lp.player_id %>
 <% fac_stats = faction_specific_stats[lp.id] %>
@@ -53,6 +55,7 @@
               ondragstart="handleSlotDragStart(event, <%= lp.player_id %>, '<%= j player_display_name(lp.player) %>', <%= index %>)"
               ondragend="handlePlayerDragEnd(event)">
           <%= player_display_name_html(lp.player) %>
+          <%= leaver_warning_badge(lp.player.leave_pct, player_recent_leaves[lp.player_id]) %>
           <% if lp.player.custom_rating_games_played.to_i < 30 %>
             <span class="text-xs bg-yellow-100 text-yellow-800 px-1 py-0.5 rounded">NEW</span>
           <% end %>
@@ -81,6 +84,7 @@
       <% end %>
     <% elsif lp.player %>
       <%= link_to player_display_name_html(lp.player), player_path(lp.player), class: "text-blue-600 hover:underline" %>
+      <%= leaver_warning_badge(lp.player.leave_pct, player_recent_leaves[lp.player_id]) %>
       <% if lp.player.custom_rating_games_played.to_i < 30 %>
         <span class="text-xs bg-yellow-100 text-yellow-800 px-1 py-0.5 rounded ml-1">NEW</span>
       <% end %>
@@ -91,44 +95,21 @@
     <% end %>
   </td>
   <%# Leave % column %>
-  <td class="px-4 py-2 whitespace-nowrap text-sm" id="leave-<%= index %>">
-    <% if lp.player %>
-      <% leave = lp.player.leave_pct %>
-      <% if leave %>
-        <span class="<%= leave == 0 ? 'text-green-600' : (leave >= 20 ? 'text-red-600' : 'text-yellow-600') %>">
-          <%= leave.round %>%
-        </span>
-        <% if lp.player.games_left.to_i > 0 %>
-          <span class="text-gray-400 text-xs">(<%= lp.player.games_left %>)</span>
-        <% end %>
-      <% else %>
-        -
-      <% end %>
-    <% elsif lp.is_new_player? %>
-      <span class="text-gray-400">-</span>
+  <%# Rating column - performance score and contribution rank live in the tooltip %>
+  <% if lp.player %>
+    <% ml_score = lp.player.ml_score %>
+    <% if editable %>
+      <% fac_perf = @faction_perf_stats&.dig([lp.player_id, lp.faction_id]) %>
+      <% avg_rank_val = @players_search_data_by_id&.dig(lp.player_id, :avgRank) %>
+      <% fac_rank = @faction_rank_stats&.dig([lp.player_id, lp.faction_id]) %>
     <% else %>
-      -
+      <% fac_perf = faction_perf_stats[[lp.player_id, lp.faction_id]] if defined?(faction_perf_stats) %>
+      <% avg_rank_val = overall_avg_ranks[lp.player_id] if defined?(overall_avg_ranks) %>
+      <% fac_rank = faction_rank_data[[lp.player_id, lp.faction_id]] if defined?(faction_rank_data) %>
     <% end %>
-  </td>
-  <%# PERF column - performance score (overall/faction) %>
-  <td class="px-4 py-2 whitespace-nowrap text-sm" id="ml-score-<%= index %>">
-    <% if lp.player %>
-      <% ml_score = lp.player.ml_score %>
-      <% fac_perf = nil %>
-      <% if editable && defined?(@faction_perf_stats) %>
-        <% fac_perf = @faction_perf_stats[[lp.player_id, lp.faction_id]] %>
-      <% elsif !editable && defined?(faction_perf_stats) %>
-        <% fac_perf = faction_perf_stats[[lp.player_id, lp.faction_id]] %>
-      <% end %>
-      <span class="<%= ml_score_color_class(ml_score) %> font-medium"><%= format_perf_score(ml_score&.round) %></span><% if fac_perf %><span class="text-gray-400">/<%= format_perf_score(fac_perf) %></span><% end %>
-    <% elsif lp.is_new_player? %>
-      <span class="<%= ml_score_color_class(NewPlayerDefaults.ml_score) %> font-medium"><%= format_perf_score(NewPlayerDefaults.ml_score) %></span>
-    <% else %>
-      -
-    <% end %>
-  </td>
-  <%# Custom Rating column %>
-  <td class="px-4 py-2 whitespace-nowrap text-sm" id="cr-<%= index %>">
+  <% end %>
+  <td class="px-4 py-2 whitespace-nowrap text-sm" id="cr-<%= index %>"
+      title="<%= lp.player ? rating_tooltip(ml_score, fac_perf, avg_rank_val, fac_rank&.dig(:avg)) : "" %>">
     <% if lp.player %>
       <%= lp.player.custom_rating&.round || "-" %>
     <% elsif lp.is_new_player? %>
@@ -154,6 +135,14 @@
       -
     <% end %>
   </td>
+  <%# Form: last 5 results, most recent first %>
+  <td class="px-4 py-2 whitespace-nowrap text-sm" id="form-<%= index %>">
+    <% if lp.player %>
+      <%= player_form_badges(player_form[lp.player_id]) %>
+    <% else %>
+      <span class="text-gray-400">-</span>
+    <% end %>
+  </td>
   <%# Faction W/L %>
   <td class="px-4 py-2 whitespace-nowrap text-sm" id="fac-wl-<%= index %>">
     <% if lp.player %>
@@ -176,28 +165,6 @@
     <% end %>
   </td>
   <%# Combined Rank column - overall/faction rank %>
-  <td class="px-4 py-2 whitespace-nowrap text-sm" id="rank-<%= index %>">
-    <% if lp.player %>
-      <%# Get overall avg rank %>
-      <% if editable %>
-        <% avg_rank_val = @players_search_data_by_id&.dig(lp.player_id, :avgRank) %>
-        <% fac_data = @faction_rank_stats&.dig([lp.player_id, lp.faction_id]) %>
-      <% else %>
-        <% avg_rank_val = overall_avg_ranks[lp.player_id] if defined?(overall_avg_ranks) %>
-        <% fac_data = faction_rank_data[[lp.player_id, lp.faction_id]] if defined?(faction_rank_data) %>
-      <% end %>
-      <% if avg_rank_val %>
-        <% color_class = avg_rank_val <= 2.5 ? 'text-green-600' : (avg_rank_val >= 3.5 ? 'text-red-600' : '') %>
-        <span class="<%= color_class %>"><%= avg_rank_val.round(1) %></span><% if fac_data %><span class="text-gray-400">/<%= fac_data[:avg].round(1) %></span><% end %>
-      <% else %>
-        <span class="text-gray-400">-</span>
-      <% end %>
-    <% elsif lp.is_new_player? %>
-      <span class="text-gray-400">-</span>
-    <% else %>
-      -
-    <% end %>
-  </td>
   <% unless editable %>
     <%# Last Played %>
     <td class="px-4 py-2 whitespace-nowrap text-sm" title="<%= lp.player&.last_seen&.strftime('%Y-%m-%d') %>">

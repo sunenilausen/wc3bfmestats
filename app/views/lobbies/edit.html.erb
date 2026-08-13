@@ -20,9 +20,9 @@
     <%= render partial: "lobby", locals: { lobby: @lobby, editable: true } %>
   </div>
 
-  <div class="w-56 flex-shrink-0">
+  <div class="w-[28rem] flex-shrink-0">
     <div class="sticky top-4">
-      <h2 class="font-bold text-lg mb-3">Player Search</h2>
+      <h2 class="font-bold text-lg mb-3">Players</h2>
 
       <div class="mb-3">
         <input type="text"
@@ -32,21 +32,11 @@
                onkeydown="if(event.key === 'Enter') event.preventDefault();">
       </div>
 
-      <div id="player-search-results" class="space-y-1 h-[728px] overflow-y-auto">
+      <div id="player-search-results" class="space-y-1 h-[780px] overflow-y-auto">
         <!-- Results populated by JS -->
       </div>
 
       <p id="player-count" class="text-xs text-gray-400 mt-2"></p>
-    </div>
-  </div>
-
-  <div class="w-80 flex-shrink-0">
-    <div class="sticky top-4">
-      <h2 class="font-bold text-lg mb-3">28 Recent Players</h2>
-
-      <div id="recent-players-list" class="grid grid-cols-2 gap-1 h-[780px]">
-        <!-- Populated by JS -->
-      </div>
     </div>
   </div>
 
@@ -65,10 +55,6 @@
 
 <script id="players-data" type="application/json">
   <%= raw @players_search_data.to_json %>
-</script>
-
-<script id="recent-players-data" type="application/json">
-  <%= raw @recent_players.to_json %>
 </script>
 
 <script id="new-player-defaults" type="application/json">
@@ -119,12 +105,53 @@
 
 <script>
   const allPlayers = JSON.parse(document.getElementById('players-data').textContent);
-  const recentPlayers = JSON.parse(document.getElementById('recent-players-data').textContent);
   const newPlayerDefaults = JSON.parse(document.getElementById('new-player-defaults').textContent);
   const factionStats = JSON.parse(document.getElementById('faction-stats-data').textContent);
   const factionRankStats = JSON.parse(document.getElementById('faction-rank-stats-data').textContent);
   const factionPerfStats = JSON.parse(document.getElementById('faction-perf-stats-data').textContent);
   const lastMatchPlayers = JSON.parse(document.getElementById('last-match-data').textContent);
+
+  // Last few results as coloured badges - mirrors LobbiesHelper#player_form_badges
+  const FORM_BADGE_CLASSES = { W: 'bg-green-500', L: 'bg-red-500', D: 'bg-gray-400' };
+
+  function formBadgesHtml(results) {
+    if (!results || !results.length) return '<span class="text-gray-400">-</span>';
+    const badges = results.map(r =>
+      `<span class="inline-flex items-center justify-center w-3.5 h-3.5 rounded-sm text-[9px] font-bold text-white ${FORM_BADGE_CLASSES[r] || 'bg-gray-400'}">${r}</span>`
+    ).join(' ');
+    return `<span class="inline-flex gap-0.5" title="Last ${results.length} results, most recent first">${badges}</span>`;
+  }
+
+  // PERF and rank now live on the rating cell's tooltip - mirrors LobbiesHelper#rating_tooltip
+  function ratingTooltip(mlScore, facPerf, avgRank, facRank) {
+    const parts = [];
+    if (mlScore !== null && mlScore !== undefined && !isNaN(mlScore)) {
+      const perf = [formatPerfScore(Math.round(mlScore))];
+      if (facPerf !== null && facPerf !== undefined) perf.push(formatPerfScore(facPerf));
+      parts.push(`PERF ${perf.join(' / ')} (overall / faction)`);
+    }
+    if (avgRank !== null && avgRank !== undefined && !isNaN(avgRank)) {
+      const rank = [Number(avgRank).toFixed(1)];
+      if (facRank !== null && facRank !== undefined) rank.push(Number(facRank).toFixed(1));
+      parts.push(`Rank ${rank.join(' / ')} (overall / faction, 1 = best)`);
+    }
+    return parts.join(' - ');
+  }
+
+
+  // Mirrors LobbiesHelper#leaver_warning_badge
+  function leaverWarningHtml(player) {
+    if (!player) return '';
+    const reasons = [];
+    if (Number(player.leavePct) > 5) reasons.push(`leaves ${Math.round(player.leavePct)}% of games`);
+    if (Number(player.recentLeaves) > 0) reasons.push(`left ${player.recentLeaves} of the last 5`);
+    if (!reasons.length) return '';
+    return `<span class="text-yellow-600 text-xs cursor-help" title="${reasons.join(', ')}">⚠</span>`;
+  }
+
+  function playerById(playerId) {
+    return allPlayers.find(p => String(p.id) === String(playerId));
+  }
 
   // Helper to get faction W/L for a player
   function getFactionWL(playerId, factionId) {
@@ -173,42 +200,6 @@
       });
     }
     return assignedIds;
-  }
-
-  function renderRecentPlayers() {
-    const assignedIds = getAssignedPlayerIds();
-    const container = document.getElementById('recent-players-list');
-
-    container.innerHTML = recentPlayers.map(p => {
-      const isAssigned = assignedIds.has(String(p.id));
-      const mlScoreColor = getPerfScoreColorClass(p.mlScore);
-      const displayName = p.alternativeName ? `${p.nickname} (${p.alternativeName})` : p.nickname;
-      return `
-        <div class="player-card p-2 bg-gray-50 border border-gray-200 rounded transition-colors ${isAssigned ? 'already-assigned' : ''}"
-             draggable="${!isAssigned}"
-             data-player-id="${p.id}"
-             data-player-name="${displayName}"
-             ondragstart="handlePlayerDragStart(event, ${p.id}, '${displayName.replace(/'/g, "\\'")}')"
-             ondragend="handlePlayerDragEnd(event)"
-             onclick="assignPlayer(${p.id}, this)">
-          <div class="flex justify-between items-center">
-            <span class="font-medium text-sm">${p.nickname}${p.alternativeName ? ` <span class="text-gray-400 font-normal">(${p.alternativeName})</span>` : ''}</span>
-            <div class="flex items-center gap-1">
-              <a href="/players/${p.id}" class="text-gray-400 hover:text-blue-600" title="View player" onclick="event.stopPropagation()">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </a>
-              <span class="text-xs ${mlScoreColor} font-medium">${formatPerfScore(p.mlScore)}</span>
-            </div>
-          </div>
-          <div class="text-xs text-gray-500">
-            <span class="text-green-600">${p.wins}W</span>/<span class="text-red-600">${p.losses}L</span>
-            <span class="ml-1 text-gray-400">${p.lastSeen || ''}</span>
-          </div>
-        </div>
-      `;
-    }).join('');
   }
 
   function renderObservers() {
@@ -268,7 +259,6 @@
 
       setTimeout(() => {
         renderPlayerResults();
-        renderRecentPlayers();
         renderObservers();
       }, 100);
     }
@@ -287,7 +277,6 @@
 
       setTimeout(() => {
         renderPlayerResults();
-        renderRecentPlayers();
         renderObservers();
       }, 100);
     }
@@ -297,14 +286,20 @@
     const searchTerm = document.getElementById('player-search-input').value.toLowerCase();
     const assignedIds = getAssignedPlayerIds();
 
-    const filtered = allPlayers.filter(p => {
-      if (searchTerm) {
+    // With an empty box, show the default list: whoever played most recently
+    // interleaved with whoever has played the most over the last three months.
+    // Typing searches everyone, most games first.
+    let filtered;
+    if (searchTerm) {
+      filtered = allPlayers.filter(p => {
         const matchesNickname = p.nickname.toLowerCase().includes(searchTerm);
         const matchesAltName = p.alternativeName && p.alternativeName.toLowerCase().includes(searchTerm);
-        if (!matchesNickname && !matchesAltName) return false;
-      }
-      return true;
-    });
+        return matchesNickname || matchesAltName;
+      });
+    } else {
+      filtered = allPlayers.filter(p => p.defaultRank !== null && p.defaultRank !== undefined)
+                           .sort((a, b) => a.defaultRank - b.defaultRank);
+    }
 
     const container = document.getElementById('player-search-results');
 
@@ -327,39 +322,36 @@
 
     html += filtered.slice(0, 50).map(p => {
       const isAssigned = assignedIds.has(String(p.id));
-      const mlScoreColor = getPerfScoreColorClass(p.mlScore);
       const displayName = p.alternativeName ? `${p.nickname} (${p.alternativeName})` : p.nickname;
       return `
-        <div class="player-card p-2 bg-gray-50 border border-gray-200 rounded transition-colors ${isAssigned ? 'already-assigned' : ''}"
+        <div class="player-card flex items-center gap-2 px-2 py-1 bg-gray-50 border border-gray-200 rounded transition-colors ${isAssigned ? 'already-assigned' : ''}"
              draggable="${!isAssigned}"
              data-player-id="${p.id}"
              data-player-name="${displayName}"
              ondragstart="handlePlayerDragStart(event, ${p.id}, '${displayName.replace(/'/g, "\\'")}')"
              ondragend="handlePlayerDragEnd(event)"
              onclick="assignPlayer(${p.id}, this)">
-          <div class="flex justify-between items-center">
-            <span class="font-medium text-sm">${p.nickname}${p.alternativeName ? ` <span class="text-gray-400 font-normal">(${p.alternativeName})</span>` : ''}</span>
-            <div class="flex items-center gap-1">
-              <a href="/players/${p.id}" class="text-gray-400 hover:text-blue-600" title="View player" onclick="event.stopPropagation()">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </a>
-              <span class="text-xs ${mlScoreColor} font-medium">${formatPerfScore(p.mlScore)}</span>
-            </div>
-          </div>
-          <div class="text-xs text-gray-500">
+          <span class="font-medium text-sm truncate flex-1 min-w-0" title="${displayName}">${p.nickname}${p.alternativeName ? ` <span class="text-gray-400 font-normal">(${p.alternativeName})</span>` : ''}</span>
+          <span class="text-xs whitespace-nowrap flex-shrink-0">
             <span class="text-green-600">${p.wins}W</span>/<span class="text-red-600">${p.losses}L</span>
-            <span class="ml-1 text-gray-400">${p.games}g</span>
-          </div>
+          </span>
+          <span class="text-xs text-gray-400 whitespace-nowrap flex-shrink-0 w-8 text-right" title="games in the last 3 months">${p.recentGames ? `${p.recentGames}g` : ''}</span>
+          <span class="text-xs text-gray-400 whitespace-nowrap flex-shrink-0 w-11 text-right" title="last game played">${p.lastSeen || ''}</span>
+          <span class="flex-shrink-0">${formBadgesHtml(p.form)}</span>
+          <a href="/players/${p.id}" class="text-gray-400 hover:text-blue-600 flex-shrink-0" title="View player" onclick="event.stopPropagation()">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </a>
         </div>
       `;
     }).join('');
 
     container.innerHTML = html;
 
-    document.getElementById('player-count').textContent =
-      `Showing ${Math.min(filtered.length, 50)} of ${filtered.length} players`;
+    document.getElementById('player-count').textContent = searchTerm
+      ? `Showing ${Math.min(filtered.length, 50)} of ${filtered.length} players`
+      : `${filtered.length} recent and most active players - search for anyone else`;
   }
 
   function assignPlayer(playerId, element) {
@@ -378,7 +370,6 @@
         // Update UI
         setTimeout(() => {
           renderPlayerResults();
-          renderRecentPlayers();
           renderObservers();
         }, 100);
         return;
@@ -444,20 +435,19 @@
       }
     }
 
-    // Set Performance Score, CR, W/L, and Rank to new player defaults
-    const mlScoreCell = document.getElementById('ml-score-' + slotIndex);
+    // Set rating, W/L and form to new player defaults
     const crCell = document.getElementById('cr-' + slotIndex);
     const wlCell = document.getElementById('wl-' + slotIndex);
     const facWlCell = document.getElementById('fac-wl-' + slotIndex);
-    const rankCell = document.getElementById('rank-' + slotIndex);
-    const facRankCell = document.getElementById('fac-rank-' + slotIndex);
+    const newFormCell = document.getElementById('form-' + slotIndex);
 
-    if (mlScoreCell) mlScoreCell.innerHTML = `<span class="${getPerfScoreColorClass(newPlayerDefaults.ml_score)} font-medium">${formatPerfScore(newPlayerDefaults.ml_score)}</span>`;
-    if (crCell) crCell.textContent = newPlayerDefaults.custom_rating || 1300;
+    if (crCell) {
+      crCell.textContent = newPlayerDefaults.custom_rating || 1300;
+      crCell.title = ratingTooltip(newPlayerDefaults.ml_score, null, null, null);
+    }
     if (wlCell) wlCell.innerHTML = '<span class="text-gray-400">0/0</span>';
     if (facWlCell) facWlCell.innerHTML = '<span class="text-gray-400">0/0</span>';
-    if (rankCell) rankCell.innerHTML = '<span class="text-gray-400">4.5</span>';
-    if (facRankCell) facRankCell.innerHTML = '<span class="text-gray-400">-</span>';
+    if (newFormCell) newFormCell.innerHTML = '<span class="text-gray-400">-</span>';
 
     // Mark this slot as a new player for prediction calculations
     const row = cell.closest('tr');
@@ -528,12 +518,10 @@
     const option = select.options[select.selectedIndex];
     const playerId = option.value;
     const factionId = select.dataset.factionId;
-    const mlScore = option.dataset.mlScore;
     const wins = option.dataset.wins;
     const losses = option.dataset.losses;
     const wlTarget = document.getElementById(targetId);
     const facWlTarget = document.getElementById(targetId.replace('wl-', 'fac-wl-'));
-    const mlScoreTarget = document.getElementById(targetId.replace('wl-', 'ml-score-'));
 
     // Overall W/L
     if (wins !== undefined && losses !== undefined && wins !== '' && losses !== '') {
@@ -552,17 +540,9 @@
       }
     }
 
-    if (mlScoreTarget && mlScore) {
-      const score = parseFloat(mlScore);
-      const colorClass = getPerfScoreColorClass(score);
-      mlScoreTarget.innerHTML = `<span class="${colorClass} font-medium">${formatPerfScore(Math.round(score))}</span>`;
-    } else if (mlScoreTarget) {
-      mlScoreTarget.innerHTML = '-';
-    }
     updateAverageElos();
     updatePrediction();
     renderPlayerResults();
-    renderRecentPlayers();
     renderObservers();
   }
 
@@ -917,7 +897,6 @@
       // Update all lists
       setTimeout(() => {
         renderPlayerResults();
-        renderRecentPlayers();
         renderObservers();
         updateAverageElos();
         updatePrediction();
@@ -943,6 +922,7 @@
               ondragstart="handleSlotDragStart(event, ${playerId}, '${playerName}', ${slotIndex})"
               ondragend="handlePlayerDragEnd(event)">
           ${playerName}
+          ${leaverWarningHtml(playerById(playerId))}
           <a href="/players/${playerId}" class="text-gray-400 hover:text-blue-600" title="View player" onclick="event.stopPropagation()">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -969,34 +949,31 @@
       const option = select.options[select.selectedIndex];
       const playerId = option ? option.value : null;
       const factionId = select.dataset.factionId;
-      const mlScoreCell = document.getElementById('ml-score-' + slotIndex);
       const crCell = document.getElementById('cr-' + slotIndex);
       const wlCell = document.getElementById('wl-' + slotIndex);
       const facWlCell = document.getElementById('fac-wl-' + slotIndex);
+      const formCell = document.getElementById('form-' + slotIndex);
 
-      if (mlScoreCell) {
-        if (option && option.dataset.mlScore) {
-          const score = parseFloat(option.dataset.mlScore);
-          const colorClass = getPerfScoreColorClass(score);
-          let html = `<span class="${colorClass} font-medium">${formatPerfScore(Math.round(score))}</span>`;
-          // Add faction perf if available
-          if (playerId && factionId) {
-            const facPerf = getFactionPerfScore(playerId, factionId);
-            if (facPerf) {
-              html += `<span class="text-gray-400">/${formatPerfScore(facPerf)}</span>`;
-            }
-          }
-          mlScoreCell.innerHTML = html;
-        } else {
-          mlScoreCell.textContent = '-';
-        }
+      if (formCell) {
+        const player = playerId ? playerById(playerId) : null;
+        formCell.innerHTML = player ? formBadgesHtml(player.form) : '<span class="text-gray-400">-</span>';
       }
-      // Custom Rating
+
+      // Rating, with PERF and rank on its tooltip
       if (crCell) {
         if (option && option.dataset.customRating) {
           crCell.textContent = option.dataset.customRating;
+          const facPerf = playerId && factionId ? getFactionPerfScore(playerId, factionId) : null;
+          const facRankData = playerId && factionId ? getFactionRankStats(playerId, factionId) : null;
+          crCell.title = ratingTooltip(
+            option.dataset.mlScore ? parseFloat(option.dataset.mlScore) : null,
+            facPerf,
+            option.dataset.avgRank ? parseFloat(option.dataset.avgRank) : null,
+            facRankData ? facRankData.avg : null
+          );
         } else {
           crCell.textContent = '-';
+          crCell.title = '';
         }
       }
       // Overall W/L
@@ -1016,43 +993,6 @@
           facWlCell.textContent = '-';
         }
       }
-
-      // Combined Rank (overall/faction)
-      const rankCell = document.getElementById('rank-' + slotIndex);
-      if (rankCell) {
-        if (option && option.dataset.avgRank) {
-          const avgRank = parseFloat(option.dataset.avgRank);
-          const colorClass = avgRank <= 2.5 ? 'text-green-600' : (avgRank >= 3.5 ? 'text-red-600' : '');
-          let html = `<span class="${colorClass}">${avgRank.toFixed(1)}</span>`;
-          // Add faction rank if available
-          if (playerId && factionId) {
-            const facData = getFactionRankStats(playerId, factionId);
-            if (facData) {
-              html += `<span class="text-gray-400">/${facData.avg.toFixed(1)}</span>`;
-            }
-          }
-          rankCell.innerHTML = html;
-        } else {
-          rankCell.innerHTML = '<span class="text-gray-400">-</span>';
-        }
-      }
-
-      // Leave %
-      const leaveCell = document.getElementById('leave-' + slotIndex);
-      if (leaveCell) {
-        if (option && option.dataset.leavePct !== undefined) {
-          const leavePct = parseFloat(option.dataset.leavePct);
-          const gamesLeft = parseInt(option.dataset.gamesLeft) || 0;
-          const colorClass = leavePct === 0 ? 'text-green-600' : (leavePct >= 20 ? 'text-red-600' : 'text-yellow-600');
-          let html = `<span class="${colorClass}">${leavePct}%</span>`;
-          if (gamesLeft > 0) {
-            html += ` <span class="text-gray-400 text-xs">(${gamesLeft})</span>`;
-          }
-          leaveCell.innerHTML = html;
-        } else {
-          leaveCell.textContent = '-';
-        }
-      }
     }
   }
 
@@ -1069,7 +1009,6 @@
   window.setSelectValue = setSelectValue;
   window.refreshObserverSelect = refreshObserverSelect;
   window.renderPlayerResults = renderPlayerResults;
-  window.renderRecentPlayers = renderRecentPlayers;
   window.renderObservers = renderObservers;
   window.addObserver = addObserver;
   window.removeObserver = removeObserver;
@@ -1326,7 +1265,6 @@
     if (e.target.matches('select[name*="player_id"]') || e.target.id === 'observer-select') {
       setTimeout(() => {
         renderPlayerResults();
-        renderRecentPlayers();
         renderObservers();
       }, 50);
     }
@@ -1334,7 +1272,6 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     renderPlayerResults();
-    renderRecentPlayers();
     renderObservers();
     updateAverageElos();
     updatePrediction();
@@ -1342,7 +1279,6 @@
   });
   document.addEventListener('turbo:load', () => {
     renderPlayerResults();
-    renderRecentPlayers();
     renderObservers();
     updateAverageElos();
     updatePrediction();

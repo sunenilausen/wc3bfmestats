@@ -10,6 +10,34 @@ class LobbiesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "edit page shows each player's recent form" do
+    # going through new gives this session ownership of the lobby
+    get new_lobby_url
+    lobby = Lobby.last
+    player = matches(:one).appearances.detect(&:player_id).player
+    lobby.lobby_players.first.update!(player: player)
+
+    get edit_lobby_url(lobby)
+
+    assert_response :success
+    assert_select "td[id=?]", "form-0" do |cell|
+      badges = cell.first.css("span").map(&:text).map(&:strip).reject(&:empty?)
+      assert badges.any?, "expected form badges in the cell, got #{cell.first.text.strip.inspect}"
+      assert badges.all? { |b| [ PlayerForm::WIN, PlayerForm::LOSS, PlayerForm::DRAW ].include?(b) },
+        "unexpected badge contents: #{badges.inspect}"
+    end
+  end
+
+  test "search payload carries the form strip for the client-side list" do
+    get new_lobby_url
+    get edit_lobby_url(Lobby.last)
+
+    payload = JSON.parse(response.body[/<script id="players-data"[^>]*>(.*?)<\/script>/m, 1])
+
+    assert payload.any? { |entry| entry["form"].present? },
+      "expected at least one player to ship a form strip"
+  end
+
   test "should get new" do
     get new_lobby_url
     # New lobby now instantly creates and redirects to edit

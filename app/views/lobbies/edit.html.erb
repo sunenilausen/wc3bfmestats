@@ -393,20 +393,62 @@
     }
   }
 
-  function setNewPlayerSlot(slotIndex) {
-    // Clear the select value (no real player)
+  // Who is currently in a slot. A "New Player" has no player_id, so the select
+  // alone cannot tell you a slot is occupied - hence the hidden flag.
+  function slotOccupant(slotIndex) {
     const select = document.getElementById('player-select-' + slotIndex);
-    if (select) {
-      select.value = '';
-      select.dispatchEvent(new Event('change', { bubbles: true }));
-    }
+    if (!select) return null;
 
-    // Set the is_new_player hidden field
     const isNewPlayerField = document.getElementById('is-new-player-' + slotIndex);
-    if (isNewPlayerField) {
-      isNewPlayerField.value = '1';
+    if (isNewPlayerField && isNewPlayerField.value === '1') return { isNew: true };
+    if (select.value) {
+      return { playerId: select.value, playerName: select.options[select.selectedIndex]?.text };
+    }
+    return null;
+  }
+
+  // Put an occupant (or nobody) into a slot without saving - callers submit once
+  // they have finished moving everyone around.
+  function setSlotOccupant(slotIndex, occupant) {
+    const select = document.getElementById('player-select-' + slotIndex);
+    if (!select) return;
+
+    const isNewPlayerField = document.getElementById('is-new-player-' + slotIndex);
+    const cell = document.getElementById('player-cell-' + slotIndex);
+    const row = cell?.closest('tr');
+
+    if (occupant && occupant.isNew) {
+      select.value = '';
+      if (isNewPlayerField) isNewPlayerField.value = '1';
+      if (row) row.dataset.isNewPlayer = 'true';
+      renderNewPlayerSlot(slotIndex);
+    } else if (occupant && occupant.playerId) {
+      select.value = String(occupant.playerId);
+      if (isNewPlayerField) isNewPlayerField.value = '0';
+      if (row) delete row.dataset.isNewPlayer;
+      updateSlotDisplay(slotIndex, occupant.playerId, occupant.playerName);
+    } else {
+      select.value = '';
+      if (isNewPlayerField) isNewPlayerField.value = '0';
+      if (row) delete row.dataset.isNewPlayer;
+      updateSlotDisplay(slotIndex, null, null);
     }
 
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  function setNewPlayerSlot(slotIndex) {
+    setSlotOccupant(slotIndex, { isNew: true });
+
+    // Submit the form to save the new player state
+    submitFormWithTracking();
+
+    // Update averages and prediction
+    updateAverageElos();
+    updatePrediction();
+  }
+
+  function renderNewPlayerSlot(slotIndex) {
     // Update display to show "New Player" with bottom 5% ELO
     const cell = document.getElementById('player-cell-' + slotIndex);
     if (cell) {
@@ -448,17 +490,6 @@
     if (wlCell) wlCell.innerHTML = '<span class="text-gray-400">0/0</span>';
     if (facWlCell) facWlCell.innerHTML = '<span class="text-gray-400">0/0</span>';
     if (newFormCell) newFormCell.innerHTML = '<span class="text-gray-400">-</span>';
-
-    // Mark this slot as a new player for prediction calculations
-    const row = cell.closest('tr');
-    if (row) row.dataset.isNewPlayer = 'true';
-
-    // Submit the form to save the new player state
-    submitFormWithTracking();
-
-    // Update averages and prediction
-    updateAverageElos();
-    updatePrediction();
   }
 
   function handleNewPlayerDragStart(e) {
@@ -1018,6 +1049,8 @@
   window.handleNewPlayerDragStart = handleNewPlayerDragStart;
   window.assignNewPlayer = assignNewPlayer;
   window.setNewPlayerSlot = setNewPlayerSlot;
+  window.slotOccupant = slotOccupant;
+  window.setSlotOccupant = setSlotOccupant;
 
   // Track pending form submissions
   let pendingSavePromise = null;

@@ -44,17 +44,13 @@ export default class extends Controller {
 
     if (!targetSelect) return
 
-    // Handle "new player" drop specially
-    if (data.isNew || data.playerId === 'new') {
-      if (typeof window.setNewPlayerSlot === "function") {
-        window.setNewPlayerSlot(targetIndex)
-      }
-      return
-    }
-
-    // Get existing player in target slot for potential swap
-    const existingPlayerId = targetSelect.value
-    const existingPlayerName = targetSelect.options[targetSelect.selectedIndex]?.text
+    // A "New Player" has no player_id, so read the slot through the helper
+    // rather than off the select - otherwise it looks like an empty slot and
+    // gets dropped on the floor during a swap.
+    const dragged = (data.isNew || data.playerId === 'new')
+      ? { isNew: true }
+      : { playerId: data.playerId, playerName: data.playerName }
+    const displaced = typeof window.slotOccupant === "function" ? window.slotOccupant(targetIndex) : null
 
     // If dragging from observer, remove from observers first
     if (data.sourceType === "observer") {
@@ -67,33 +63,18 @@ export default class extends Controller {
       }
     }
 
-    // If dragging from another slot, handle swap
-    if (data.sourceType === "slot" && data.sourceIndex !== undefined && String(data.sourceIndex) !== String(targetIndex)) {
-      const sourceSelect = document.getElementById('player-select-' + data.sourceIndex)
-      if (sourceSelect) {
-        // Set source slot to existing target player (swap)
-        sourceSelect.value = existingPlayerId || ''
-        sourceSelect.dispatchEvent(new Event('change', { bubbles: true }))
+    if (typeof window.setSlotOccupant !== "function") return
 
-        // Update source slot display
-        if (typeof window.updateSlotDisplay === "function") {
-          if (existingPlayerId && existingPlayerName) {
-            window.updateSlotDisplay(data.sourceIndex, existingPlayerId, existingPlayerName)
-          } else {
-            window.updateSlotDisplay(data.sourceIndex, null, null)
-          }
-        }
-      }
+    // Coming from another slot: whoever was in the target moves back into it,
+    // which also vacates the source when the target was empty
+    const fromSlot = data.sourceType === "slot" &&
+      data.sourceIndex !== undefined &&
+      String(data.sourceIndex) !== String(targetIndex)
+    if (fromSlot) {
+      window.setSlotOccupant(data.sourceIndex, displaced)
     }
 
-    // Set target slot to dragged player
-    targetSelect.value = data.playerId
-    targetSelect.dispatchEvent(new Event('change', { bubbles: true }))
-
-    // Update target slot display
-    if (typeof window.updateSlotDisplay === "function") {
-      window.updateSlotDisplay(targetIndex, data.playerId, data.playerName)
-    }
+    window.setSlotOccupant(targetIndex, dragged)
 
     // Trigger form submit using the tracked submit function or fallback to direct form
     if (typeof window.submitFormWithTracking === "function") {

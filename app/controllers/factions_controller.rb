@@ -1,5 +1,6 @@
 class FactionsController < ApplicationController
-  load_and_authorize_resource except: %i[index]
+  load_and_authorize_resource except: %i[index leaderboards]
+  before_action :set_faction, only: %i[leaderboards]
 
   # GET /factions or /factions.json
   def index
@@ -8,7 +9,41 @@ class FactionsController < ApplicationController
 
   # GET /factions/1 or /factions/1.json
   def show
-    @version_filter = params[:version_filter]
+    load_faction_stats
+  end
+
+  # GET /factions/1/leaderboards
+  def leaderboards
+    load_faction_stats
+  end
+
+  # GET /factions/1/edit
+  def edit
+  end
+
+  # PATCH/PUT /factions/1 or /factions/1.json
+  def update
+    respond_to do |format|
+      if @faction.update(faction_params)
+        format.html { redirect_to @faction, notice: "Faction was successfully updated.", status: :see_other }
+        format.json { render :show, status: :ok, location: @faction }
+      else
+        format.html { render :edit, status: :unprocessable_entity }
+        format.json { render json: @faction.errors, status: :unprocessable_entity }
+      end
+    end
+  end
+
+  private
+
+    def set_faction
+      @faction = Faction.find(params[:id])
+    end
+
+    # Everything both the overview and the leaderboards need: the version
+    # filter, the cached stat blocks, and the player rankings.
+    def load_faction_stats
+      @version_filter = params[:version_filter]
     @available_map_versions = Rails.cache.fetch([ "available_map_versions", StatsCacheKey.key ]) do
       Match.where(ignored: false)
         .where.not(map_version: nil)
@@ -119,26 +154,7 @@ class FactionsController < ApplicationController
 
       avg_ranks.map { |d| d.merge(player: players_by_id[d[:player_id]]) }
     end
-  end
-
-  # GET /factions/1/edit
-  def edit
-  end
-
-  # PATCH/PUT /factions/1 or /factions/1.json
-  def update
-    respond_to do |format|
-      if @faction.update(faction_params)
-        format.html { redirect_to @faction, notice: "Faction was successfully updated.", status: :see_other }
-        format.json { render :show, status: :ok, location: @faction }
-      else
-        format.html { render :edit, status: :unprocessable_entity }
-        format.json { render json: @faction.errors, status: :unprocessable_entity }
-      end
     end
-  end
-
-  private
 
     # Only allow a list of trusted parameters through.
     def faction_params

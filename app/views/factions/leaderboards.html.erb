@@ -1,0 +1,181 @@
+<% content_for :title, "#{@faction.name} leaderboards" %>
+
+<div class="w-full">
+  <div class="flex items-center justify-between mb-6">
+    <div class="flex items-center gap-3">
+      <span class="w-5 h-5 rounded-full inline-block" style="background-color: <%= @faction.color_hex %>"></span>
+      <h1 class="font-bold text-4xl"><%= @faction.name %> leaderboards</h1>
+    </div>
+
+    <%= form_with url: leaderboards_faction_path(@faction), method: :get, local: true, class: "flex flex-wrap items-center gap-4" do %>
+      <div class="flex items-center gap-2">
+        <label for="version_filter" class="text-sm text-gray-600">Stats:</label>
+        <select name="version_filter" id="version_filter" onchange="this.form.submit()" class="rounded-md border border-gray-300 px-3 py-1.5 text-sm">
+          <option value="">All versions</option>
+          <option value="last:100" <%= "selected" if @version_filter == "last:100" %>>Last 100 games</option>
+          <option value="last:50" <%= "selected" if @version_filter == "last:50" %>>Last 50 games</option>
+          <% @available_map_versions.each do |version| %>
+            <option value="from:<%= version %>" <%= "selected" if @version_filter == "from:#{version}" %>>from <%= version %></option>
+          <% end %>
+          <optgroup label="Single version">
+            <% @available_map_versions.each do |version| %>
+              <option value="only:<%= version %>" <%= "selected" if @version_filter == "only:#{version}" %>>only <%= version %></option>
+            <% end %>
+          </optgroup>
+        </select>
+      </div>
+    <% end %>
+  </div>
+
+  <% if @last_n_games.present? && @last_n_games > 0 %>
+    <div class="mb-4 px-3 py-2 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-700">
+      Showing stats for <strong>last <%= @last_n_games %> games</strong> (<%= @stats[:total_games] %> games)
+      &mdash; <%= link_to "Show all games", leaderboards_faction_path(@faction), class: "underline hover:no-underline" %>
+    </div>
+  <% end %>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+    <%# Highest Win Rate %>
+    <div class="bg-gray-50 rounded-md p-3">
+      <h3 class="font-semibold mb-2 text-gray-700">Highest Win Rate <span class="text-xs text-gray-400">(min 10 games)</span></h3>
+      <% if @stats[:top_winrate_players].any? %>
+        <table class="w-full text-sm">
+          <tbody>
+            <% @stats[:top_winrate_players].each_with_index do |data, i| %>
+              <tr class="<%= i < @stats[:top_winrate_players].size - 1 ? 'border-b border-gray-100' : '' %>">
+                <td class="py-1"><%= i + 1 %>. <%= link_to data[:player].nickname, player_path(data[:player]), class: "text-blue-600 hover:underline" %></td>
+                <td class="text-right py-1">
+                  <span class="text-green-600 font-medium"><%= data[:winrate] %>%</span>
+                  <span class="text-gray-400 text-xs">(<%= data[:wins] %>W/<%= data[:games] %>G)</span>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <p class="text-gray-400 text-sm">No players with 10+ games yet.</p>
+      <% end %>
+    </div>
+
+    <%# Most Wins %>
+    <div class="bg-gray-50 rounded-md p-3">
+      <h3 class="font-semibold mb-2 text-gray-700">Most Wins</h3>
+      <% if @stats[:most_wins_players].any? %>
+        <table class="w-full text-sm">
+          <tbody>
+            <% @stats[:most_wins_players].each_with_index do |data, i| %>
+              <tr class="<%= i < @stats[:most_wins_players].size - 1 ? 'border-b border-gray-100' : '' %>">
+                <td class="py-1"><%= i + 1 %>. <%= link_to data[:player].nickname, player_path(data[:player]), class: "text-blue-600 hover:underline" %></td>
+                <td class="text-right py-1">
+                  <span class="text-green-600 font-medium"><%= data[:wins] %></span>
+                  <span class="text-gray-400 text-xs">(<%= data[:games] %> games)</span>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <p class="text-gray-400 text-sm">No players found.</p>
+      <% end %>
+    </div>
+
+    <%# Top Hero Killers %>
+    <div class="bg-gray-50 rounded-md p-3">
+      <h3 class="font-semibold mb-2 text-gray-700">Top Hero Killers <span class="text-xs text-gray-400">(min 5 games)</span></h3>
+      <% if @stats[:top_hero_killers].any? %>
+        <table class="w-full text-sm">
+          <tbody>
+            <% @stats[:top_hero_killers].each_with_index do |data, i| %>
+              <tr class="<%= i < @stats[:top_hero_killers].size - 1 ? 'border-b border-gray-100' : '' %>">
+                <td class="py-1"><%= i + 1 %>. <%= link_to data[:player].nickname, player_path(data[:player]), class: "text-blue-600 hover:underline" %></td>
+                <td class="text-right py-1">
+                  <span class="font-medium"><%= data[:top_pct] %>%</span>
+                  <span class="text-gray-400 text-xs">(<%= number_with_precision(data[:top_hero], precision: 1) %>/<%= data[:games] %>)</span>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <p class="text-gray-400 text-sm">No players with 5+ games yet.</p>
+      <% end %>
+    </div>
+
+    <%# Top Unit Killers %>
+    <div class="bg-gray-50 rounded-md p-3">
+      <h3 class="font-semibold mb-2 text-gray-700">Top Unit Killers <span class="text-xs text-gray-400">(min 5 games)</span></h3>
+      <% if @stats[:top_unit_killers].any? %>
+        <table class="w-full text-sm">
+          <tbody>
+            <% @stats[:top_unit_killers].each_with_index do |data, i| %>
+              <tr class="<%= i < @stats[:top_unit_killers].size - 1 ? 'border-b border-gray-100' : '' %>">
+                <td class="py-1"><%= i + 1 %>. <%= link_to data[:player].nickname, player_path(data[:player]), class: "text-blue-600 hover:underline" %></td>
+                <td class="text-right py-1">
+                  <span class="font-medium"><%= data[:top_pct] %>%</span>
+                  <span class="text-gray-400 text-xs">(<%= number_with_precision(data[:top_unit], precision: 1) %>/<%= data[:games] %>)</span>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <p class="text-gray-400 text-sm">No players with 5+ games yet.</p>
+      <% end %>
+    </div>
+
+    <%# Top Faction Performance %>
+    <div class="bg-gray-50 rounded-md p-3">
+      <h3 class="font-semibold mb-2 text-gray-700">Top Faction Performance <span class="text-xs text-gray-400">(min 10 games)</span></h3>
+      <% if @top_performers.any? %>
+        <table class="w-full text-sm">
+          <tbody>
+            <% @top_performers.each_with_index do |pfs, i| %>
+              <tr class="<%= pfs != @top_performers.last ? 'border-b border-gray-100' : '' %>">
+                <td class="py-1">
+                  <span class="<%= i < 3 ? 'text-yellow-600 font-semibold' : '' %>"><%= i + 1 %>.</span>
+                  <%= link_to pfs.player.nickname, player_path(pfs.player), class: "text-blue-600 hover:underline" %>
+                </td>
+                <td class="text-right py-1">
+                  <span class="<%= ml_score_color_class(pfs.faction_score) %> font-medium"><%= pfs.faction_score ? format_perf_score(pfs.faction_score.round(1)) : "-" %></span>
+                  <span class="text-gray-400 text-xs">(<%= pfs.games_played %> games)</span>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <p class="text-gray-400 text-sm">No players with 10+ games yet.</p>
+      <% end %>
+    </div>
+
+    <%# Best Average Rank %>
+    <div class="bg-gray-50 rounded-md p-3">
+      <h3 class="font-semibold mb-2 text-gray-700">Best Average Rank <span class="text-xs text-gray-400">(min 10 games)</span></h3>
+      <% if @top_rank_players.any? %>
+        <table class="w-full text-sm">
+          <tbody>
+            <% @top_rank_players.each_with_index do |data, i| %>
+              <tr class="<%= i < @top_rank_players.size - 1 ? 'border-b border-gray-100' : '' %>">
+                <td class="py-1">
+                  <span class="<%= i < 3 ? 'text-yellow-600 font-semibold' : '' %>"><%= i + 1 %>.</span>
+                  <%= link_to data[:player].nickname, player_path(data[:player]), class: "text-blue-600 hover:underline" %>
+                </td>
+                <td class="text-right py-1">
+                  <span class="<%= data[:avg_rank] <= 2 ? 'text-green-600' : (data[:avg_rank] >= 4 ? 'text-red-600' : '') %> font-medium">#<%= data[:avg_rank] %></span>
+                  <span class="text-gray-400 text-xs">(<%= data[:games] %> games)</span>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <p class="text-gray-400 text-sm">No players with 10+ games yet.</p>
+      <% end %>
+    </div>
+  </div>
+
+
+  <div class="mt-6">
+    <%= link_to "← Back to #{@faction.name}", faction_path(@faction, version_filter: @version_filter), class: "text-blue-600 hover:underline" %>
+  </div>
+</div>

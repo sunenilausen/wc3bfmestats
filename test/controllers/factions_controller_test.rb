@@ -37,4 +37,15 @@ class FactionsControllerTest < ActionDispatch::IntegrationTest
     patch faction_url(@faction), params: { faction: { name: "hacked" } }
     assert_redirected_to root_path
   end
+
+  test "should get leaderboards" do
+    get leaderboards_faction_url(@faction)
+    assert_response :success
+    assert_select "h1", /leaderboards/i
+  end
+
+  test "leaderboards keeps the version filter" do
+    get leaderboards_faction_url(@faction, version_filter: "last:100")
+    assert_response :success
+  end
 end

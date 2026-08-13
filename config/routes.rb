@@ -17,7 +17,11 @@ Rails.application.routes.draw do
       post :toggle_reviewed
     end
   end
-  resources :factions, except: [ :new, :create, :destroy ]
+  resources :factions, except: [ :new, :create, :destroy ] do
+    member do
+      get :leaderboards
+    end
+  end
   resources :players, constraints: { id: /[^\/]+/ } do
     resource :relationships, only: [ :show ], controller: "player_relationships"
     member do

@@ -227,10 +227,7 @@
                 <span class="text-green-700 font-medium"><%= prediction[:true_good_win_pct] %>%</span>
                 <% margin_title = "How often the favoured side actually wins lobbies like this one, based on all past matches" %>
                 <% if prediction[:true_margin_pct] %>
-                  <% margin_title += " - likely range Good #{prediction[:true_good_low_pct]}-#{prediction[:true_good_high_pct]}%" %>
-                <% end %>
-                <% if prediction[:streak_shift_pct].abs >= 0.5 %>
-                  <% margin_title += " - win/loss streaks moved Good's chance by #{prediction[:streak_shift_pct]} points" %>
+                  <% margin_title += " - likely range Good #{prediction[:true_good_low_pct]}-#{prediction[:true_good_high_pct]}%. Players on win/loss streaks widen this range" %>
                 <% end %>
                 <span class="text-xs text-gray-500" title="<%= margin_title %>">
                   Actual Win Chance

@@ -343,29 +343,19 @@ So uncertainty must never be used to move the point estimate, only to draw the b
 
 The `MAX_FAMILIARITY_UNCERTAINTY = 20` term is the least-evidenced constant here. Sorting matches by how off-role the established players were gives a monotone Brier trend (0.2051 → 0.2193 across quartiles), but at ~1.5 standard errors it is suggestive only, and the trend vanishes when new players are included. It is kept because it is small and directionally sensible — don't grow it without better evidence.
 
-**Streak adjustment (display only):**
+**Streak adjustment (uncertainty only):**
 
-Players on a losing streak are underrated and players on a winning streak are overrated. Measured on established players (30+ games), by streak going into a game, looking at CR movement over the next 30 games:
+Players on a streak get a wider band, never a different percentage. `RatingUncertainty::STREAK_UNCERTAINTY_PER_STEP = 8.0` CR per game of the streak, capped at `MAX_STREAK_STEPS = 4`, so up to +32 CR of uncertainty per player. Winning and losing streaks count the same — the point is that the rating is moving, not which way.
 
-| Streak going in | n | mean drift | SD |
-|---|---|---|---|
-| losing 4+ | 715 | **+31.8** | 60.3 |
-| losing 2 | 1475 | +16.7 | 61.8 |
-| none | 6016 | +11.0 | 61.1 |
-| winning 2 | 1539 | +7.3 | 62.3 |
-| winning 4+ | 887 | **-4.0** | 61.9 |
+**This one is not measured.** The spread of future CR movement is flat across streak lengths (SD 60–62 in every bucket, n=715 to 6,016), so unlike the games-played table it reflects a display decision rather than an observed effect. Kept small for that reason.
 
-**The SD column is flat**, so a streak says which way a rating is displaced, never that it is less reliable — it shifts the centre of the meter and must never widen the band.
-
-`StreakAdjustment::CR_PER_STEP = 6.0`, capped at `MAX_STEPS = 4`, fitted by maximum likelihood: adding the term improves log-likelihood by 3.31 (a parameter needs ~1.9) and holds on a 70/30 holdout (Brier 0.2152 → 0.2147). Effect on the displayed chance: median 1.6pp, 99th percentile 6.4pp, max 10.2pp.
-
-Applied **only to the calibrated meter**. The raw `good_win_pct`, `Match.balanced`, `LobbyBalancer` and CR changes are all untouched — a mean-reversion term fed back into ratings would fight the rating system's own dynamics.
+There *is* a measurable directional effect that was deliberately left out: established players on a 4+ losing streak gain ~32 CR over their next 30 games while those on a 4+ winning streak lose ~4, and feeding that into the meter improved prediction (log-likelihood +3.31, holdout Brier 0.2152 → 0.2147). It was removed anyway — the displayed chance should say what the ratings say, and a streak is a reason to trust that number less rather than to redraw it. Don't reintroduce it without revisiting that decision.
 
 Streak data: `players.current_streak` (lobbies) and `appearances.streak_before_match` (history), both maintained by `CustomRatingRecalculator` during its chronological walk and backfilled by `BackfillStreaks`. Draws neither extend nor break a streak. A full recalculation reproduces the backfill exactly (verified on all 18,760 appearances).
 
 **Where it's shown:**
 - **Lobby page** — "Actual Win Chance" meter below "Balance of Power", with the band drawn as a pale zone. Live-updating on the edit page.
-- **Match show page** — "Actual win chance" line above the CR+ / CR-only prediction lines. Uses `MatchesHelper#calibrated_prediction`, with the margin computed from each appearance's `games_played_before_match` and `faction_games_before_match`, so it reflects how well the players were known *at the time* rather than today. Falls back to no band when those columns were never backfilled (667 of 19,267 appearances).
+- **Match show page** — "Actual win chance" line above the CR+ / CR-only prediction lines. Uses `MatchesHelper#calibrated_prediction`, with the margin computed from each appearance's `games_played_before_match`, `faction_games_before_match` and `streak_before_match`, so it reflects how well the players were known *at the time* rather than today. Falls back to no band when those columns were never backfilled (667 of 19,267 appearances).
 - **Statistics page** — "Claimed" column in the Prediction Accuracy table, showing what the calibrated meter says for each bucket next to what actually happened. The closer the two columns sit, the better calibrated the meter.
 
 Shared uncertainty maths live in `RatingUncertainty` (used by both `LobbyWinPredictor` and `MatchesHelper`). The faction-familiarity formula lives in `LobbyWinPredictor.unfamiliarity_ratio` and feeds both the CR penalty and the extra uncertainty, so they can't drift apart.

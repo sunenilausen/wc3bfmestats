@@ -676,13 +676,8 @@
         }
 
         if (trueMargin && prediction.true_margin_pct != null) {
-          const streakShift = Number(prediction.streak_shift_pct);
-          let title = `Good ${trueLow.toFixed(1)}-${trueHigh.toFixed(1)}%`;
-          if (!isNaN(streakShift) && Math.abs(streakShift) >= 0.5) {
-            title += ` - win/loss streaks moved Good's chance by ${streakShift.toFixed(1)} points`;
-          }
           trueMargin.textContent = '±' + Number(prediction.true_margin_pct).toFixed(1);
-          trueMargin.title = title;
+          trueMargin.title = `Good ${trueLow.toFixed(1)}-${trueHigh.toFixed(1)}% - players on win/loss streaks widen this range`;
         }
 
         // Update detail display with weighted averages from server

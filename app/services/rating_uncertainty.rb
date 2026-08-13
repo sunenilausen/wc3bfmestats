@@ -30,12 +30,32 @@ class RatingUncertainty
   # Extra uncertainty for a player on a faction they rarely play
   MAX_FAMILIARITY_UNCERTAINTY = 20.0
 
+  # Extra uncertainty for a player on a run of wins or losses. A streak means
+  # their rating is being pushed around faster than usual, so how well it
+  # describes them right now is less clear.
+  #
+  # Unlike the numbers above this one is not measured: the spread of future CR
+  # movement is flat across streak lengths (SD 60-62 in every bucket, n=715 to
+  # 6016). It is a deliberate display choice, kept small for that reason.
+  STREAK_UNCERTAINTY_PER_STEP = 8.0
+  MAX_STREAK_STEPS = 4
+
   class << self
     # Uncertainty of a single player's CR.
     # unfamiliarity: 0 (their usual faction) to 1 (never played it)
-    def player_sigma(games:, unfamiliarity: 0.0, inactivity_multiplier: 1.0)
+    # streak: wins (positive) or losses (negative) in a row going in
+    def player_sigma(games:, unfamiliarity: 0.0, inactivity_multiplier: 1.0, streak: 0)
       base_sigma(games) * inactivity_multiplier +
-        unfamiliarity.clamp(0.0, 1.0) * MAX_FAMILIARITY_UNCERTAINTY
+        unfamiliarity.clamp(0.0, 1.0) * MAX_FAMILIARITY_UNCERTAINTY +
+        streak_sigma(streak)
+    end
+
+    # Either direction counts - the point is that the rating is moving, not
+    # which way it is heading
+    def streak_sigma(streak)
+      return 0.0 if streak.nil?
+
+      [ streak.abs, MAX_STREAK_STEPS ].min * STREAK_UNCERTAINTY_PER_STEP
     end
 
     def unknown_player_sigma

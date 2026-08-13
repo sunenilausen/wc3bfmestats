@@ -6,39 +6,16 @@ module MatchesHelper
     return nil if match.predicted_good_win_pct.nil?
 
     raw_good_pct = match.predicted_good_win_pct.to_f
-    shifted_pct = streak_shifted_pct(match, raw_good_pct)
-    good_pct = PredictionCalibrator.calibrate(shifted_pct)
-    low, high = PredictionCalibrator.band(shifted_pct, historical_cr_uncertainty(match))
+    good_pct = PredictionCalibrator.calibrate(raw_good_pct)
+    low, high = PredictionCalibrator.band(raw_good_pct, historical_cr_uncertainty(match))
 
     {
       good_pct: good_pct,
       evil_pct: (100 - good_pct).round(1),
       low_pct: low,
       high_pct: high,
-      margin_pct: low && high ? ((high - low) / 2).round(1) : nil,
-      streak_shift_pct: (good_pct - PredictionCalibrator.calibrate(raw_good_pct)).round(1)
+      margin_pct: low && high ? ((high - low) / 2).round(1) : nil
     }
-  end
-
-  # The raw prediction nudged by the streaks the players carried into the match
-  def streak_shifted_pct(match, raw_good_pct)
-    good_streaks = []
-    evil_streaks = []
-
-    match.appearances.each do |appearance|
-      next unless appearance.faction && appearance.player_id
-      streak = appearance.streak_before_match
-      next if streak.nil?
-      appearance.faction.good? ? good_streaks << streak : evil_streaks << streak
-    end
-
-    shift = StreakAdjustment.team_cr_shift(good_streaks, evil_streaks)
-    return raw_good_pct if shift.zero?
-
-    p = (raw_good_pct / 100.0).clamp(0.001, 0.999)
-    z = Math.log(p / (1 - p)) + shift / PredictionCalibrator::RAW_DIVISOR
-
-    100.0 / (1 + Math.exp(-z))
   end
 
   # Uncertainty in the two teams' average CR at the time the match was played,
@@ -56,7 +33,8 @@ module MatchesHelper
       games = appearance.games_played_before_match
       sigma = RatingUncertainty.player_sigma(
         games: games,
-        unfamiliarity: LobbyWinPredictor.unfamiliarity_ratio(games, appearance.faction_games_before_match)
+        unfamiliarity: LobbyWinPredictor.unfamiliarity_ratio(games, appearance.faction_games_before_match),
+        streak: appearance.streak_before_match
       ) * (LobbyWinPredictor::FACTION_IMPACT_WEIGHTS[faction.name] || LobbyWinPredictor::DEFAULT_FACTION_WEIGHT)
 
       faction.good? ? good_sigmas << sigma : evil_sigmas << sigma

@@ -81,9 +81,8 @@ class LobbyWinPredictor
     # actually know these players' ratings. Display only - the raw percentage
     # above is what defines "balanced" and drives ratings.
     cr_sigma = combined_cr_uncertainty(good_players, evil_players)
-    shifted_pct = apply_streak_shift(raw_good_pct, good_players, evil_players)
-    true_good_pct = PredictionCalibrator.calibrate(shifted_pct)
-    low_pct, high_pct = PredictionCalibrator.band(shifted_pct, cr_sigma)
+    true_good_pct = PredictionCalibrator.calibrate(raw_good_pct)
+    low_pct, high_pct = PredictionCalibrator.band(raw_good_pct, cr_sigma)
 
     {
       good_win_pct: raw_good_pct,
@@ -96,7 +95,6 @@ class LobbyWinPredictor
       true_good_high_pct: high_pct,
       true_margin_pct: low_pct && high_pct ? ((high_pct - low_pct) / 2).round(1) : nil,
       cr_uncertainty: cr_sigma.round,
-      streak_shift_pct: (true_good_pct - PredictionCalibrator.calibrate(raw_good_pct)).round(1),
       good_details: compute_team_details(good_players),
       evil_details: compute_team_details(evil_players)
     }
@@ -153,22 +151,6 @@ class LobbyWinPredictor
     end
   end
 
-  # Nudge the raw percentage by how much the two teams' streaks say their
-  # ratings are displaced. Applied to the displayed win chance only.
-  def apply_streak_shift(raw_good_pct, good_players, evil_players)
-    shift = StreakAdjustment.team_cr_shift(team_streaks(good_players), team_streaks(evil_players))
-    return raw_good_pct if shift.zero?
-
-    p = (raw_good_pct / 100.0).clamp(0.001, 0.999)
-    z = Math.log(p / (1 - p)) + shift / PredictionCalibrator::RAW_DIVISOR
-
-    100.0 / (1 + Math.exp(-z))
-  end
-
-  def team_streaks(lobby_players)
-    lobby_players.filter_map { |lp| lp.player&.current_streak.to_i if lp.player }
-  end
-
   # Uncertainty (in CR) of the difference between the two team averages
   def combined_cr_uncertainty(good_players, evil_players)
     RatingUncertainty.combined_sigma(team_cr_uncertainties(good_players), team_cr_uncertainties(evil_players))
@@ -189,7 +171,8 @@ class LobbyWinPredictor
     RatingUncertainty.player_sigma(
       games: player.custom_rating_games_played.to_i,
       unfamiliarity: unfamiliarity(player, faction),
-      inactivity_multiplier: RatingUncertainty.inactivity_multiplier(last_played_at[player.id])
+      inactivity_multiplier: RatingUncertainty.inactivity_multiplier(last_played_at[player.id]),
+      streak: player.current_streak
     )
   end
 

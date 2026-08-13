@@ -19,6 +19,17 @@
     <link rel="apple-touch-icon" href="/icon.png">
 
     <%# Includes all stylesheet files in app/assets/stylesheets %>
+    <script>
+      // Runs before paint: without this the page flashes light before the
+      // stored preference is applied.
+      (function () {
+        var saved = localStorage.getItem('theme');
+        if (saved === 'dark' || saved === 'light') {
+          document.documentElement.setAttribute('data-theme', saved);
+        }
+      })();
+    </script>
+
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
@@ -62,6 +73,12 @@
             <%= link_to "Admin", admin_root_path, class: "text-gray-700 hover:text-blue-600 font-semibold px-4 py-2 rounded transition-colors duration-200" %>
           </li>
         <% end %>
+        <li class="flex items-center">
+          <button type="button" id="theme-toggle" onclick="toggleTheme()" title="Switch between light and dark"
+                  class="text-gray-500 hover:text-blue-600 px-2 py-2 rounded transition-colors duration-200 cursor-pointer">
+            <span id="theme-toggle-icon">🌙</span>
+          </button>
+        </li>
       </ul>
       </div>
     </nav>
@@ -76,5 +93,29 @@
     <main class="container mx-auto mt-28 px-5 <%= 'mt-36' if RatingRecalculationStatus.in_progress? %>">
       <%= yield %>
     </main>
+
+    <script>
+      // Explicit choice wins over the system preference and survives reloads.
+      function currentTheme() {
+        var attr = document.documentElement.getAttribute('data-theme');
+        if (attr) return attr;
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+
+      function toggleTheme() {
+        var next = currentTheme() === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+        updateThemeIcon();
+      }
+
+      function updateThemeIcon() {
+        var icon = document.getElementById('theme-toggle-icon');
+        if (icon) icon.textContent = currentTheme() === 'dark' ? '☀️' : '🌙';
+      }
+
+      updateThemeIcon();
+      document.addEventListener('turbo:load', updateThemeIcon);
+    </script>
   </body>
 </html>

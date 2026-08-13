@@ -79,27 +79,28 @@
 
 <style>
   .drop-zone-active {
-    outline: 2px dashed #cbd5e1;
+    outline: 2px dashed var(--color-gray-300);
     outline-offset: -2px;
   }
   .drop-zone-hover {
-    background-color: #dbeafe !important;
-    outline-color: #3b82f6 !important;
+    background-color: var(--card-hover-bg) !important;
+    outline-color: var(--card-hover-border) !important;
   }
   .dragging {
     opacity: 0.5;
   }
+  /* Theme-aware: a literal light grey here was almost unreadable in dark mode */
   .already-assigned {
-    opacity: 0.4;
-    background-color: #f3f4f6 !important;
+    opacity: 0.55;
+    background-color: var(--color-gray-100) !important;
     cursor: default;
   }
   .player-card {
     cursor: pointer;
   }
   .player-card:not(.already-assigned):hover {
-    background-color: #dbeafe;
-    border-color: #3b82f6;
+    background-color: var(--card-hover-bg);
+    border-color: var(--card-hover-border);
   }
 </style>
 

@@ -20,3 +20,48 @@
 .searchable-select-option { padding: 8px 12px; cursor: pointer; }
 .searchable-select-option:hover { background: #eff6ff; }
 .searchable-select-option.selected { background: #dbeafe; }
+
+/* Dark mode for the hand-written components above, which use literal colours
+ * rather than Tailwind utilities. Kept in step with app/assets/tailwind/application.css.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .searchable-select-display { background: #1a1f2b; border-color: #3b4354; color: #e8eaf0; }
+  :root:not([data-theme="light"]) .searchable-select-input { color: #e8eaf0; }
+  :root:not([data-theme="light"]) .searchable-select-dropdown { background: #1a1f2b; border-color: #3b4354; color: #e8eaf0; }
+  :root:not([data-theme="light"]) .searchable-select-option:hover { background: #26304a; }
+  :root:not([data-theme="light"]) .searchable-select-option.selected { background: #2b3a5c; }
+  :root:not([data-theme="light"]) .searchable-select-tag { background: #2b3a5c; color: #cfe0ff; }
+}
+
+:root[data-theme="dark"] .searchable-select-display { background: #1a1f2b; border-color: #3b4354; color: #e8eaf0; }
+:root[data-theme="dark"] .searchable-select-input { color: #e8eaf0; }
+:root[data-theme="dark"] .searchable-select-dropdown { background: #1a1f2b; border-color: #3b4354; color: #e8eaf0; }
+:root[data-theme="dark"] .searchable-select-option:hover { background: #26304a; }
+:root[data-theme="dark"] .searchable-select-option.selected { background: #2b3a5c; }
+:root[data-theme="dark"] .searchable-select-tag { background: #2b3a5c; color: #cfe0ff; }
+
+/* Form controls and the drag-and-drop highlights in the lobby editor */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) input,
+  :root:not([data-theme="light"]) select,
+  :root:not([data-theme="light"]) textarea {
+    background-color: #1a1f2b;
+    color: #e8eaf0;
+    border-color: #3b4354;
+  }
+}
+
+:root[data-theme="dark"] input,
+:root[data-theme="dark"] select,
+:root[data-theme="dark"] textarea {
+  background-color: #1a1f2b;
+  color: #e8eaf0;
+  border-color: #3b4354;
+}
+
+/* Let the browser paint native widgets (scrollbars, date pickers) to match */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { color-scheme: dark; }
+}
+:root[data-theme="dark"] { color-scheme: dark; }
+:root[data-theme="light"] { color-scheme: light; }

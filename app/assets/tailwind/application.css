@@ -1,1 +1,180 @@
 @import "tailwindcss";
+
+/* Semantic tokens for the lobby editor's hover and drop-zone highlights.
+ * They can't use --color-blue-* directly: accent variables keep their light
+ * values in dark mode (only the utilities are overridden), so a raw blue-100
+ * would flash bright on a dark page.
+ */
+:root {
+  --card-hover-bg: var(--color-blue-100);
+  --card-hover-border: var(--color-blue-500);
+}
+
+/* Dark mode.
+ *
+ * Tailwind v4 compiles every colour utility to var(--color-*), so inverting the
+ * grey ramp flips every surface, border and neutral text in the app at once -
+ * no dark: variant needed on the hundreds of utilities across the views.
+ *
+ * Accent colours can't be done that way: the same shade is used both as text
+ * (text-red-600 on a card) and as a button fill (bg-red-600 under white text).
+ * Lightening the variable fixes the first and ruins the second, so the accent
+ * utilities are overridden individually below - text and light tints only,
+ * leaving the 500/600 fills at their stock values.
+ *
+ * Everything is defined twice: once under the system preference (for visitors
+ * who never touch the toggle) and once under [data-theme="dark"] (for those who
+ * did). [data-theme="light"] opts out of the system preference.
+ */
+
+@layer theme {
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --color-gray-50: oklch(21% 0.012 258);
+      --color-gray-100: oklch(25% 0.014 258);
+      --color-gray-200: oklch(31% 0.016 258);
+      --color-gray-300: oklch(39% 0.018 258);
+      --color-gray-400: oklch(64% 0.021 258);
+      --color-gray-500: oklch(72% 0.019 258);
+      --color-gray-600: oklch(82% 0.014 258);
+      --color-gray-700: oklch(88% 0.010 258);
+      --color-gray-800: oklch(93% 0.006 258);
+      --color-gray-900: oklch(97% 0.003 258);
+      --color-gray-950: oklch(99% 0.001 258);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --color-gray-50: oklch(21% 0.012 258);
+    --color-gray-100: oklch(25% 0.014 258);
+    --color-gray-200: oklch(31% 0.016 258);
+    --color-gray-300: oklch(39% 0.018 258);
+    --color-gray-400: oklch(64% 0.021 258);
+    --color-gray-500: oklch(72% 0.019 258);
+    --color-gray-600: oklch(82% 0.014 258);
+    --color-gray-700: oklch(88% 0.010 258);
+    --color-gray-800: oklch(93% 0.006 258);
+    --color-gray-900: oklch(97% 0.003 258);
+    --color-gray-950: oklch(99% 0.001 258);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --card-hover-bg: oklch(32% 0.07 255);
+    --card-hover-border: oklch(62% 0.14 255);
+
+    body {
+      background-color: var(--color-gray-100);
+      color: var(--color-gray-800);
+    }
+
+    /* bg-white is a card surface, so it moves with the theme. text-white is left
+     * alone - it sits on coloured buttons and badges, where white is still right. */
+    .bg-white { background-color: var(--color-gray-50); }
+    .hover\:bg-white:hover { background-color: var(--color-gray-50); }
+
+    .bg-blue-100 { background-color: oklch(30% 0.055 255); }
+    .bg-blue-50 { background-color: oklch(26% 0.045 255); }
+    .bg-green-100 { background-color: oklch(30% 0.055 150); }
+    .bg-green-50 { background-color: oklch(26% 0.045 150); }
+    .bg-orange-100 { background-color: oklch(30% 0.055 60); }
+    .bg-orange-200 { background-color: oklch(35% 0.065 60); }
+    .bg-orange-50 { background-color: oklch(26% 0.045 60); }
+    .bg-red-100 { background-color: oklch(30% 0.055 25); }
+    .bg-red-50 { background-color: oklch(26% 0.045 25); }
+    .bg-yellow-100 { background-color: oklch(30% 0.055 85); }
+    .bg-yellow-50 { background-color: oklch(26% 0.045 85); }
+    .border-blue-200 { border-color: oklch(36% 0.05 255); }
+    .border-blue-300 { border-color: oklch(43% 0.07 255); }
+    .border-green-200 { border-color: oklch(36% 0.05 150); }
+    .border-green-300 { border-color: oklch(43% 0.07 150); }
+    .border-red-200 { border-color: oklch(36% 0.05 25); }
+    .border-yellow-200 { border-color: oklch(36% 0.05 85); }
+    .border-yellow-300 { border-color: oklch(43% 0.07 85); }
+    .divide-green-200 > :not(:last-child) { border-color: oklch(36% 0.05 150); }
+    .divide-red-200 > :not(:last-child) { border-color: oklch(36% 0.05 25); }
+    .text-blue-500 { color: oklch(78% 0.17 255); }
+    .text-blue-600 { color: oklch(78% 0.16 255); }
+    .text-blue-700 { color: oklch(83% 0.14 255); }
+    .text-blue-800 { color: oklch(88% 0.12 255); }
+    .text-green-100 { color: oklch(90% 0.09 150); }
+    .text-green-200 { color: oklch(86% 0.11 150); }
+    .text-green-500 { color: oklch(78% 0.17 150); }
+    .text-green-600 { color: oklch(78% 0.16 150); }
+    .text-green-700 { color: oklch(83% 0.14 150); }
+    .text-green-800 { color: oklch(88% 0.12 150); }
+    .text-orange-600 { color: oklch(78% 0.16 60); }
+    .text-orange-700 { color: oklch(83% 0.14 60); }
+    .text-orange-800 { color: oklch(88% 0.12 60); }
+    .text-purple-600 { color: oklch(78% 0.16 300); }
+    .text-red-500 { color: oklch(78% 0.17 25); }
+    .text-red-600 { color: oklch(78% 0.16 25); }
+    .text-red-700 { color: oklch(83% 0.14 25); }
+    .text-red-800 { color: oklch(88% 0.12 25); }
+    .text-teal-600 { color: oklch(78% 0.16 190); }
+    .text-yellow-500 { color: oklch(78% 0.17 85); }
+    .text-yellow-600 { color: oklch(78% 0.16 85); }
+    .text-yellow-700 { color: oklch(83% 0.14 85); }
+    .text-yellow-800 { color: oklch(88% 0.12 85); }
+  }
+}
+
+:root[data-theme="dark"] {
+  --card-hover-bg: oklch(32% 0.07 255);
+  --card-hover-border: oklch(62% 0.14 255);
+
+  body {
+    background-color: var(--color-gray-100);
+    color: var(--color-gray-800);
+  }
+
+  /* bg-white is a card surface, so it moves with the theme. text-white is left
+   * alone - it sits on coloured buttons and badges, where white is still right. */
+  .bg-white { background-color: var(--color-gray-50); }
+  .hover\:bg-white:hover { background-color: var(--color-gray-50); }
+
+  .bg-blue-100 { background-color: oklch(30% 0.055 255); }
+  .bg-blue-50 { background-color: oklch(26% 0.045 255); }
+  .bg-green-100 { background-color: oklch(30% 0.055 150); }
+  .bg-green-50 { background-color: oklch(26% 0.045 150); }
+  .bg-orange-100 { background-color: oklch(30% 0.055 60); }
+  .bg-orange-200 { background-color: oklch(35% 0.065 60); }
+  .bg-orange-50 { background-color: oklch(26% 0.045 60); }
+  .bg-red-100 { background-color: oklch(30% 0.055 25); }
+  .bg-red-50 { background-color: oklch(26% 0.045 25); }
+  .bg-yellow-100 { background-color: oklch(30% 0.055 85); }
+  .bg-yellow-50 { background-color: oklch(26% 0.045 85); }
+  .border-blue-200 { border-color: oklch(36% 0.05 255); }
+  .border-blue-300 { border-color: oklch(43% 0.07 255); }
+  .border-green-200 { border-color: oklch(36% 0.05 150); }
+  .border-green-300 { border-color: oklch(43% 0.07 150); }
+  .border-red-200 { border-color: oklch(36% 0.05 25); }
+  .border-yellow-200 { border-color: oklch(36% 0.05 85); }
+  .border-yellow-300 { border-color: oklch(43% 0.07 85); }
+  .divide-green-200 > :not(:last-child) { border-color: oklch(36% 0.05 150); }
+  .divide-red-200 > :not(:last-child) { border-color: oklch(36% 0.05 25); }
+  .text-blue-500 { color: oklch(78% 0.17 255); }
+  .text-blue-600 { color: oklch(78% 0.16 255); }
+  .text-blue-700 { color: oklch(83% 0.14 255); }
+  .text-blue-800 { color: oklch(88% 0.12 255); }
+  .text-green-100 { color: oklch(90% 0.09 150); }
+  .text-green-200 { color: oklch(86% 0.11 150); }
+  .text-green-500 { color: oklch(78% 0.17 150); }
+  .text-green-600 { color: oklch(78% 0.16 150); }
+  .text-green-700 { color: oklch(83% 0.14 150); }
+  .text-green-800 { color: oklch(88% 0.12 150); }
+  .text-orange-600 { color: oklch(78% 0.16 60); }
+  .text-orange-700 { color: oklch(83% 0.14 60); }
+  .text-orange-800 { color: oklch(88% 0.12 60); }
+  .text-purple-600 { color: oklch(78% 0.16 300); }
+  .text-red-500 { color: oklch(78% 0.17 25); }
+  .text-red-600 { color: oklch(78% 0.16 25); }
+  .text-red-700 { color: oklch(83% 0.14 25); }
+  .text-red-800 { color: oklch(88% 0.12 25); }
+  .text-teal-600 { color: oklch(78% 0.16 190); }
+  .text-yellow-500 { color: oklch(78% 0.17 85); }
+  .text-yellow-600 { color: oklch(78% 0.16 85); }
+  .text-yellow-700 { color: oklch(83% 0.14 85); }
+  .text-yellow-800 { color: oklch(88% 0.12 85); }
+}

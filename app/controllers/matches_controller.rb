@@ -138,8 +138,13 @@ class MatchesController < ApplicationController
   def destroy
     @match.destroy!
 
+    # Every later match was rated against the ratings this one produced, so the
+    # whole history has to be walked again - without this, players keep the
+    # rating, games played and streak they earned in the deleted match.
+    RatingRecalculationJob.enqueue_and_cancel_pending
+
     respond_to do |format|
-      format.html { redirect_to matches_path, notice: "Match was successfully destroyed.", status: :see_other }
+      format.html { redirect_to matches_path, notice: "Match was successfully destroyed. Ratings are being recalculated.", status: :see_other }
       format.json { head :no_content }
     end
   end

@@ -161,6 +161,16 @@ class MatchesControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to matches_url
   end
 
+  test "destroying a match recalculates ratings" do
+    sign_in @admin
+
+    # without this, players keep the rating and games played they earned in the
+    # deleted match - every later match was rated against those numbers
+    assert_enqueued_with(job: RatingRecalculationJob) do
+      delete match_url(@match)
+    end
+  end
+
   test "should not destroy match when not admin" do
     assert_no_difference("Match.count") do
       delete match_url(@match)

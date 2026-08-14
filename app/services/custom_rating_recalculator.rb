@@ -956,6 +956,14 @@ class CustomRatingRecalculator
   # prediction is reproducible from per-match data alone — re-running the
   # recalc later (with newer ml_score / player_faction_stats values) won't
   # silently change the historical prediction.
+  # A debut player has no performance history, so they are worth the new-player
+  # default rather than whatever ml_score they happen to carry now.
+  def debut_ml_score(appearance, player)
+    return NewPlayerDefaults.ml_score if appearance.games_played_before_match.to_i.zero?
+
+    player.ml_score || ML_BASELINE
+  end
+
   def snapshot_prediction_inputs(match)
     match.appearances.each do |app|
       next unless app.faction
@@ -969,7 +977,13 @@ class CustomRatingRecalculator
         # (ml_score drifts with every game played since), so freeze the value
         # from the first processing and never overwrite it. games/faction_games
         # ARE reproducible from match history, so they are always recomputed.
-        app.ml_score_at_match = player.ml_score || ML_BASELINE if app.ml_score_at_match.nil?
+        #
+        # A player with no prior games is the exception: they have no PERF to
+        # freeze, so the value IS knowable - it is the new-player default, the
+        # same figure a lobby uses for them. Reading player.ml_score here gave
+        # them their eventual career PERF, which both leaked hindsight into the
+        # prediction and disagreed with what the lobby had shown pre-game.
+        app.ml_score_at_match = debut_ml_score(app, player) if app.ml_score_at_match.nil?
       else
         app.games_played_before_match = 0
         app.faction_games_before_match = 0

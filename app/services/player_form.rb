@@ -23,15 +23,11 @@ class PlayerForm
     end
   end
 
-  def self.rows(player_ids, games)
-    scope = if player_ids
-      return [] if player_ids.empty?
-      "AND a.player_id IN (#{Array(player_ids).map(&:to_i).join(',')})"
-    else
-      ""
-    end
-
-    sql = <<~SQL.squish
+  # Two static statements rather than one with an OR switch: the OR stopped
+  # SQLite using the index on the all-players scan and cost 8x. Neither embeds
+  # a value - the ids and the game count are bound.
+  def self.build_sql(player_filter)
+    <<~SQL.squish
       SELECT player_id, good_victory, is_good, is_draw, is_early_leaver
       FROM (
         SELECT a.player_id AS player_id,
@@ -46,13 +42,29 @@ class PlayerForm
         FROM appearances a
         JOIN matches m ON m.id = a.match_id
         JOIN factions f ON f.id = a.faction_id
-        WHERE m.ignored = 0 AND m.good_victory IS NOT NULL #{scope}
+        WHERE m.ignored = 0 AND m.good_victory IS NOT NULL #{player_filter}
       ) ranked
-      WHERE position <= #{games.to_i}
+      WHERE position <= :games
       ORDER BY player_id, position
     SQL
+  end
 
-    ActiveRecord::Base.connection.select_all(sql)
+  EVERY_PLAYER_SQL = build_sql("").freeze
+  SELECTED_PLAYERS_SQL = build_sql("AND a.player_id IN (:player_ids)").freeze
+
+  def self.rows(player_ids, games)
+    binds = { games: games.to_i }
+
+    if player_ids
+      ids = Array(player_ids)
+      return [] if ids.empty?
+      template = SELECTED_PLAYERS_SQL
+      binds[:player_ids] = ids
+    else
+      template = EVERY_PLAYER_SQL
+    end
+
+    ActiveRecord::Base.connection.select_all(ActiveRecord::Base.sanitize_sql_array([ template, binds ]))
   end
 
   def self.result_for(row)

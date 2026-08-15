@@ -25,7 +25,7 @@
     <% end %>
   </div>
 
-  <% cache ["match_show", "v2", @match.id, @match.updated_at, StatsCacheKey.key] do %>
+  <% cache ["match_show", "v3", @match.id, @match.updated_at, StatsCacheKey.key] do %>
     <%= render @match %>
   <% end %>
 

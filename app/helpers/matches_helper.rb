@@ -1,4 +1,17 @@
 module MatchesHelper
+  # The player who hosted the lobby, resolved from the replay's host battletag.
+  # Prefers a player already in the match (no extra lookup) and falls back to a
+  # global battletag lookup for hosts who only observed. Nil when unresolvable.
+  def host_player(match)
+    tag = match.host_battletag
+    return nil if tag.blank?
+
+    in_match = match.appearances.map(&:player).compact.find do |player|
+      player.battletag == tag || player.alternative_battletags&.include?(tag)
+    end
+    in_match || Player.find_by_any_battletag(tag)
+  end
+
   # The stored prediction restated as a calibrated win chance, with the margin
   # of error implied by how well the players were known at the time.
   # Returns nil when the match has no stored prediction.

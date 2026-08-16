@@ -24,70 +24,78 @@
     <%= sort_link_for("duration", "Duration") %>
   </div>
 
-  <div id="matches" class="min-w-full divide-y divide-gray-200 space-y-5">
+  <div id="matches" class="space-y-3">
     <% if @matches.any? %>
       <% hosts = host_players_for(@matches) %>
       <% @matches.each do |match| %>
-        <div class="flex flex-col sm:flex-row justify-between items-start pb-5 sm:pb-0 gap-2">
-          <div class="flex-1">
-            <%
-              played_time = match.played_at || match.uploaded_at || match.created_at
-              has_time = played_time.present? && (played_time.hour != 0 || played_time.min != 0)
-              match_date = played_time&.strftime(has_time ? '%Y-%m-%d %H:%M' : '%Y-%m-%d') || 'Unknown'
-              date_verified = match.played_at.present? && match.uploaded_at.present? && match.played_at != match.uploaded_at
-            %>
-            <div class="mb-1">
-              <%= match_date %><% if date_verified %><svg class="inline-block w-3.5 h-3.5 ml-1 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Verified from replay filename"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg><% end %>
-              <% if match.is_draw? %>
-                <span class="ml-2 text-gray-600 font-medium">Draw</span>
-              <% else %>
-                <span class="ml-2 <%= match.good_victory ? 'text-green-600' : 'text-red-600' %> font-medium">
-                  <%= match.good_victory ? "Good Victory" : "Evil Victory" %>
+        <%
+          played_time = match.played_at || match.uploaded_at || match.created_at
+          has_time = played_time.present? && (played_time.hour != 0 || played_time.min != 0)
+          match_date = played_time&.strftime(has_time ? '%Y-%m-%d %H:%M' : '%Y-%m-%d') || 'Unknown'
+          date_verified = match.played_at.present? && match.uploaded_at.present? && match.played_at != match.uploaded_at
+          balance = match_balance(match)
+          good_players = match.appearances.select { |a| a.faction&.good? }.map { |a| a.player&.nickname }.compact
+          evil_players = match.appearances.select { |a| a.faction && !a.faction.good? }.map { |a| a.player&.nickname }.compact
+        %>
+        <div class="bg-white rounded-lg shadow border border-gray-200 border-l-4 <%= match_accent_class(match) %> p-4 hover:shadow-md transition-shadow">
+          <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span class="font-medium"><%= match_date %></span>
+                <% if date_verified %>
+                  <svg class="w-3.5 h-3.5 -ml-1 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Verified from replay filename"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                <% end %>
+                <span class="px-2 py-0.5 rounded text-xs font-semibold <%= match_result_badge_class(match) %>">
+                  <%= match_result_label(match) %>
                 </span>
-              <% end %>
-              <% if match.seconds.present? && match.seconds > 0 %>
-                <span class="ml-2 text-gray-500">(<%= ChronicDuration.output(match.seconds, format: :short) %>)</span>
-              <% end %>
-              <% if match.ignored? %>
-                <span class="ml-2 px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded">Ignored</span>
-              <% end %>
-              <% if match.victory_overridden? %>
-                <span class="ml-2 px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded">Victory Overridden</span>
-              <% end %>
-              <% balance = match_balance(match) %>
-              <% if balance %>
-                <span class="ml-2 text-sm text-gray-500" title="<%= balance_band_label(balance[:band]) %> - the side the lobby favoured, and by how much">
-                  Balance:
-                  <span class="<%= balance_band_class(balance[:band]) %>"><%= balance[:side] %> <%= balance[:pct].round(1) %>%</span>
-                </span>
-              <% end %>
-              <% if match.host_battletag.present? %>
-                <span class="ml-2 text-sm text-gray-500" title="The player who hosted this lobby">
-                  Host: <%= hosts[match.id]&.nickname || match.host_battletag %>
-                </span>
+                <% if match.ignored? %>
+                  <span class="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded">Ignored</span>
+                <% end %>
+                <% if match.victory_overridden? %>
+                  <span class="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded">Victory Overridden</span>
+                <% end %>
+              </div>
+
+              <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500">
+                <% if match.seconds.present? && match.seconds > 0 %>
+                  <span><%= ChronicDuration.output(match.seconds, format: :short) %></span>
+                <% end %>
+                <% if balance %>
+                  <span title="<%= balance_band_label(balance[:band]) %> - the side the lobby favoured, and by how much">
+                    Balance
+                    <span class="font-medium <%= balance_band_class(balance[:band]) %>"><%= balance[:side] %> <%= balance[:pct].round(1) %>%</span>
+                  </span>
+                <% end %>
+                <% if match.host_battletag.present? %>
+                  <span title="The player who hosted this lobby">
+                    Host <span class="text-gray-700"><%= hosts[match.id]&.nickname || match.host_battletag %></span>
+                  </span>
+                <% end %>
+              </div>
+
+              <% if good_players.any? || evil_players.any? %>
+                <div class="mt-2 grid gap-x-3 gap-y-0.5 text-sm sm:grid-cols-[1fr_auto_1fr] sm:items-baseline">
+                  <span class="text-green-700 sm:text-right"><%= good_players.any? ? good_players.join(", ") : content_tag(:span, "No players", class: "text-gray-400") %></span>
+                  <span class="text-gray-400 text-xs uppercase tracking-wide">vs</span>
+                  <span class="text-red-700"><%= evil_players.any? ? evil_players.join(", ") : content_tag(:span, "No players", class: "text-gray-400") %></span>
+                </div>
               <% end %>
             </div>
-            <% good_players = match.appearances.select { |a| a.faction&.good? }.map { |a| a.player&.nickname }.compact %>
-            <% evil_players = match.appearances.select { |a| a.faction && !a.faction.good? }.map { |a| a.player&.nickname }.compact %>
-            <div class="text-sm">
-              <span class="text-green-700"><%= good_players.join(", ") %></span>
-              <span class="text-gray-400 mx-1">vs</span>
-              <span class="text-red-700"><%= evil_players.join(", ") %></span>
+
+            <div class="flex gap-2 shrink-0">
+              <%= link_to "Show", match, class: "text-sm text-center rounded-md px-3 py-1.5 bg-gray-100 hover:bg-gray-50 font-medium" %>
+              <% if can? :update, match %>
+                <%= link_to "Edit", edit_match_path(match), class: "text-sm text-center rounded-md px-3 py-1.5 bg-gray-100 hover:bg-gray-50 font-medium" %>
+              <% end %>
+              <% if can? :destroy, match %>
+                <%= button_to "Destroy", match, method: :delete, class: "text-sm rounded-md px-3 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 font-medium cursor-pointer", data: { turbo_confirm: "Are you sure?" } %>
+              <% end %>
             </div>
-          </div>
-          <div class="w-full sm:w-auto flex flex-col sm:flex-row space-x-2 space-y-2">
-            <%= link_to "Show", match, class: "w-full sm:w-auto text-center rounded-md px-3.5 py-2.5 bg-gray-100 hover:bg-gray-50 inline-block font-medium" %>
-            <% if can? :update, match %>
-              <%= link_to "Edit", edit_match_path(match), class: "w-full sm:w-auto text-center rounded-md px-3.5 py-2.5 bg-gray-100 hover:bg-gray-50 inline-block font-medium" %>
-            <% end %>
-            <% if can? :destroy, match %>
-              <%= button_to "Destroy", match, method: :delete, class: "w-full sm:w-auto rounded-md px-3.5 py-2.5 text-white bg-red-600 hover:bg-red-500 font-medium cursor-pointer", data: { turbo_confirm: "Are you sure?" } %>
-            <% end %>
           </div>
         </div>
       <% end %>
     <% else %>
-      <p class="text-center my-10">No matches found.</p>
+      <p class="text-center my-10 text-gray-500">No matches found.</p>
     <% end %>
 
     <% if @total_pages > 1 %>

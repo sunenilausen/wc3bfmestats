@@ -40,9 +40,11 @@
 :root[data-theme="dark"] .searchable-select-option.selected { background: #2b3a5c; }
 :root[data-theme="dark"] .searchable-select-tag { background: #2b3a5c; color: #cfe0ff; }
 
-/* Form controls and the drag-and-drop highlights in the lobby editor */
+/* Form controls and the drag-and-drop highlights in the lobby editor.
+ * Submit and button inputs are excluded: they carry their own Tailwind fill
+ * (bg-blue-600 and friends), which this rule would paint over. */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) input,
+  :root:not([data-theme="light"]) input:not([type="submit"]):not([type="button"]),
   :root:not([data-theme="light"]) select,
   :root:not([data-theme="light"]) textarea {
     background-color: #1a1f2b;
@@ -51,7 +53,7 @@
   }
 }
 
-:root[data-theme="dark"] input,
+:root[data-theme="dark"] input:not([type="submit"]):not([type="button"]),
 :root[data-theme="dark"] select,
 :root[data-theme="dark"] textarea {
   background-color: #1a1f2b;

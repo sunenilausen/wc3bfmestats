@@ -133,6 +133,25 @@ module MatchesHelper
     TEAM_ROLE_CLASSES[role]
   end
 
+  # Who won, for the badge and the card's edge stripe
+  def match_result_label(match)
+    return "Draw" if match.is_draw?
+
+    match.good_victory? ? "Good Victory" : "Evil Victory"
+  end
+
+  def match_result_badge_class(match)
+    return "bg-gray-100 text-gray-700" if match.is_draw?
+
+    match.good_victory? ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+  end
+
+  def match_accent_class(match)
+    return "border-l-gray-300" if match.is_draw?
+
+    match.good_victory? ? "border-l-green-500" : "border-l-red-500"
+  end
+
   # How even the lobby was, with no player's side to take: which team the
   # prediction favoured and by how much, on the same raw CR+ scale. Nil when
   # the match carries no stored prediction.

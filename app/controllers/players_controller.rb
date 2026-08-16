@@ -409,10 +409,9 @@ class PlayersController < ApplicationController
         won = app.faction.good? == match.good_victory?
         record[:overall][won ? 0 : 1] += 1
 
-        next if match.predicted_good_win_pct.nil?
-        team_pct = app.faction.good? ? match.predicted_good_win_pct.to_f : 100 - match.predicted_good_win_pct.to_f
-        role = team_pct < 45 ? :underdog : (team_pct > 55 ? :favorite : :balanced)
-        record[role][won ? 0 : 1] += 1
+        team_pct = helpers.team_win_pct(app)
+        next if team_pct.nil?
+        record[helpers.team_prediction_role(team_pct)][won ? 0 : 1] += 1
       end
 
       wins, losses = record[:overall]

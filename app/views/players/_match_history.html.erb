@@ -7,6 +7,7 @@
             <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Played</th>
             <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Faction</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase">Result</th>
+            <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Predicted win chance for this player's team going into the match. 45-55% = balanced lobby.">Bal</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Stay percentage - how long the player stayed in the game">Stay</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Contribution Rank (1=best)">Rank</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Hero Kills">HK</th>
@@ -19,9 +20,11 @@
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Custom rating after match">CR</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase" title="Actions Per Minute">APM</th>
             <th class="px-2 py-1 text-center text-xs font-medium text-gray-500 uppercase">Duration</th>
+            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase" title="The player who hosted this lobby">Host</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200">
+          <% hosts = host_players_for(appearances.map(&:match)) %>
           <% appearances.each do |appearance| %>
             <% match = appearance.match %>
             <% faction = appearance.faction %>
@@ -51,6 +54,15 @@
                   <span class="text-green-600 font-medium">Win</span>
                 <% else %>
                   <span class="text-red-600 font-medium">Loss</span>
+                <% end %>
+              </td>
+              <td class="px-2 py-1 text-center whitespace-nowrap">
+                <% team_pct = team_win_pct(appearance) %>
+                <% if team_pct %>
+                  <% role = team_prediction_role(team_pct) %>
+                  <span class="<%= team_role_class(role) %>" title="<%= role.to_s.capitalize %>: this team was predicted to win <%= team_pct.round(1) %>%"><%= team_pct.round %>%</span>
+                <% else %>
+                  -
                 <% end %>
               </td>
               <td class="px-2 py-1 text-center whitespace-nowrap">
@@ -121,6 +133,14 @@
                   <%= "#{match.seconds / 60}m" %>
                 <% else %>
                   -
+                <% end %>
+              </td>
+              <td class="px-2 py-1 whitespace-nowrap">
+                <% host = hosts[match.id] %>
+                <% if host %>
+                  <span class="text-gray-700"><%= host.nickname %></span>
+                <% else %>
+                  <span class="text-gray-400"><%= match.host_battletag.presence || "-" %></span>
                 <% end %>
               </td>
             </tr>

@@ -26,6 +26,7 @@
 
   <div id="matches" class="min-w-full divide-y divide-gray-200 space-y-5">
     <% if @matches.any? %>
+      <% hosts = host_players_for(@matches) %>
       <% @matches.each do |match| %>
         <div class="flex flex-col sm:flex-row justify-between items-start pb-5 sm:pb-0 gap-2">
           <div class="flex-1">
@@ -52,6 +53,18 @@
               <% end %>
               <% if match.victory_overridden? %>
                 <span class="ml-2 px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded">Victory Overridden</span>
+              <% end %>
+              <% balance = match_balance(match) %>
+              <% if balance %>
+                <span class="ml-2 text-sm text-gray-500" title="<%= balance_band_label(balance[:band]) %> - the side the lobby favoured, and by how much">
+                  Balance:
+                  <span class="<%= balance_band_class(balance[:band]) %>"><%= balance[:side] %> <%= balance[:pct].round(1) %>%</span>
+                </span>
+              <% end %>
+              <% if match.host_battletag.present? %>
+                <span class="ml-2 text-sm text-gray-500" title="The player who hosted this lobby">
+                  Host: <%= hosts[match.id]&.nickname || match.host_battletag %>
+                </span>
               <% end %>
             </div>
             <% good_players = match.appearances.select { |a| a.faction&.good? }.map { |a| a.player&.nickname }.compact %>

@@ -1,15 +1,62 @@
 module MatchesHelper
   # The player who hosted the lobby, resolved from the replay's host battletag.
-  # Prefers a player already in the match (no extra lookup) and falls back to a
-  # global battletag lookup for hosts who only observed. Nil when unresolvable.
+  # Prefers a player already in the match and falls back to a global battletag
+  # lookup for hosts who only observed. Nil when unresolvable.
   def host_player(match)
-    tag = match.host_battletag
-    return nil if tag.blank?
+    host_players_for([ match ])[match.id]
+  end
 
-    in_match = match.appearances.map(&:player).compact.find do |player|
-      player.battletag == tag || player.alternative_battletags&.include?(tag)
+  # The same resolution for a list of matches, as {match_id => Player}, in a
+  # handful of queries however long the list is. Matches without a resolvable
+  # host are absent from the hash.
+  #
+  # A battletag can belong to more than one player record - a merge leaves it
+  # as someone's alternative tag while another player still holds it as their
+  # primary - so whoever actually played in the match wins.
+  def host_players_for(matches)
+    matches = matches.to_a.select { |match| match.host_battletag.present? }
+    return {} if matches.empty?
+
+    tags = matches.map(&:host_battletag).uniq
+    candidates = host_candidates_by_battletag(tags)
+    played = players_in_matches(matches, candidates.values.flatten.map(&:id).uniq)
+    fallbacks = {}
+
+    matches.each_with_object({}) do |match, hosts|
+      tag = match.host_battletag
+      host = candidates[tag]&.find { |player| played[match.id]&.include?(player.id) }
+      host ||= (fallbacks[tag] ||= Player.find_by_any_battletag(tag))
+      hosts[match.id] = host if host
     end
-    in_match || Player.find_by_any_battletag(tag)
+  end
+
+  # Every player who answers to one of these battletags, primary tag first
+  def host_candidates_by_battletag(tags)
+    candidates = Hash.new { |hash, tag| hash[tag] = [] }
+
+    Player.where(battletag: tags).each { |player| candidates[player.battletag] << player }
+    Player.where.not(alternative_battletags: [ nil, "[]" ]).each do |player|
+      (player.alternative_battletags & tags).each { |tag| candidates[tag] << player }
+    end
+
+    candidates
+  end
+
+  # Which of the candidates played in each match, as {match_id => Set(player_id)}.
+  # Reads appearances already loaded on the match rather than querying for them.
+  def players_in_matches(matches, player_ids)
+    loaded, unloaded = matches.partition { |match| match.association(:appearances).loaded? }
+
+    played = loaded.each_with_object({}) do |match, out|
+      out[match.id] = match.appearances.filter_map(&:player_id).to_set
+    end
+    return played if unloaded.empty? || player_ids.empty?
+
+    Appearance.where(match_id: unloaded.map(&:id), player_id: player_ids)
+      .pluck(:match_id, :player_id)
+      .each { |match_id, player_id| (played[match_id] ||= Set.new) << player_id }
+
+    played
   end
 
   # The stored prediction restated as a calibrated win chance, with the margin
@@ -55,6 +102,79 @@ module MatchesHelper
     return nil if good_sigmas.empty? || evil_sigmas.empty?
 
     RatingUncertainty.combined_sigma(good_sigmas, evil_sigmas)
+  end
+
+  # What the lobby was predicted to do for the team this player was on, on the
+  # raw CR+ scale that defines a balanced lobby (not the calibrated "actual win
+  # chance"). Nil when the match carries no stored prediction.
+  def team_win_pct(appearance)
+    pct = appearance.match&.predicted_good_win_pct
+    return nil if pct.nil?
+
+    appearance.faction&.good? ? pct.to_f : (100 - pct.to_f)
+  end
+
+  # Which side of an even lobby that chance put them on. Same thresholds as
+  # `Match.balanced` and the hosting record on the player details page.
+  def team_prediction_role(pct)
+    return :favorite if pct > Match::BALANCED_PCT_RANGE.max
+    return :underdog if pct < Match::BALANCED_PCT_RANGE.min
+
+    :balanced
+  end
+
+  TEAM_ROLE_CLASSES = {
+    favorite: "text-orange-600",
+    balanced: "text-teal-600",
+    underdog: "text-purple-600"
+  }.freeze
+
+  def team_role_class(role)
+    TEAM_ROLE_CLASSES[role]
+  end
+
+  # How even the lobby was, with no player's side to take: which team the
+  # prediction favoured and by how much, on the same raw CR+ scale. Nil when
+  # the match carries no stored prediction.
+  def match_balance(match)
+    pct = match.predicted_good_win_pct
+    return nil if pct.nil?
+
+    good_favored = pct >= 50
+    favored_pct = good_favored ? pct.to_f : (100 - pct.to_f)
+
+    { side: good_favored ? "Good" : "Evil", pct: favored_pct, band: balance_band(favored_pct) }
+  end
+
+  # The three states the lobby page's balance indicator uses, so a match reads
+  # the same after the fact as the lobby did before it.
+  POSSIBLY_UNBALANCED_PCT = 60
+
+  BALANCE_BAND_LABELS = {
+    balanced: "Balanced",
+    possibly_unbalanced: "Possibly unbalanced",
+    unbalanced: "Not balanced"
+  }.freeze
+
+  BALANCE_BAND_CLASSES = {
+    balanced: "text-teal-600",
+    possibly_unbalanced: "text-yellow-600",
+    unbalanced: "text-red-600"
+  }.freeze
+
+  def balance_band(favored_pct)
+    return :balanced if favored_pct <= Match::BALANCED_PCT_RANGE.max
+    return :possibly_unbalanced if favored_pct <= POSSIBLY_UNBALANCED_PCT
+
+    :unbalanced
+  end
+
+  def balance_band_label(band)
+    BALANCE_BAND_LABELS[band]
+  end
+
+  def balance_band_class(band)
+    BALANCE_BAND_CLASSES[band]
   end
 
   # How this player's CR was adjusted for the prediction of this match, from

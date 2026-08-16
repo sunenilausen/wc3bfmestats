@@ -12,14 +12,18 @@ class Match < ApplicationRecord
     StatsCacheKey.invalidate!
   end
 
+  # How close to even a lobby has to be predicted to count as balanced. On the
+  # raw CR+ scale, not the calibrated one - see CLAUDE.md.
+  BALANCED_PCT_RANGE = (45..55)
+
   # Balanced games: prediction between 45-55%
   scope :balanced, -> {
-    where("predicted_good_win_pct >= 45 AND predicted_good_win_pct <= 55")
+    where(predicted_good_win_pct: BALANCED_PCT_RANGE)
   }
 
   # Imbalanced games: prediction outside 45-55%
   scope :imbalanced, -> {
-    where("predicted_good_win_pct < 45 OR predicted_good_win_pct > 55")
+    where.not(predicted_good_win_pct: BALANCED_PCT_RANGE).where.not(predicted_good_win_pct: nil)
   }
 
   scope :by_uploaded_at, ->(direction = :asc) {

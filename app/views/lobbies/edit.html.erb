@@ -488,6 +488,7 @@
       crCell.textContent = newPlayerDefaults.custom_rating || 1300;
       crCell.title = ratingTooltip(newPlayerDefaults.ml_score, null, null, null);
     }
+    clearRatingAdjustment(slotIndex);
     if (wlCell) wlCell.innerHTML = '<span class="text-gray-400">0/0</span>';
     if (facWlCell) facWlCell.innerHTML = '<span class="text-gray-400">0/0</span>';
     if (newFormCell) newFormCell.innerHTML = '<span class="text-gray-400">-</span>';
@@ -727,6 +728,9 @@
         if (predGoodRank) predGoodRank.textContent = goodDetails.avg_ml_score || '-';
         if (predEvilRank) predEvilRank.textContent = evilDetails.avg_ml_score || '-';
 
+        // Show what each player's CR is adjusted by, next to the rating
+        updateRatingAdjustments(data.rating_adjustments || {});
+
         // Update faction perf/rank displays (these still use client-side data)
         updateFactionStatsDisplay();
 
@@ -736,6 +740,30 @@
         }
       }
     }, 150);
+  }
+
+  function clearRatingAdjustment(slotIndex) {
+    const cell = document.getElementById('cr-adj-' + slotIndex);
+    if (cell) cell.textContent = '';
+  }
+
+  // Fill in the "(-36)" next to each rating, keyed by the slot's faction
+  function updateRatingAdjustments(adjustments) {
+    document.querySelectorAll('tr.nested-fields').forEach(row => {
+      const select = row.querySelector('select.player-select');
+      const cell = row.querySelector('[id^="cr-adj-"]');
+      if (!select || !cell) return;
+
+      cell.textContent = '';
+      const adjustment = adjustments[select.dataset.factionId];
+      if (!adjustment) return;
+
+      const span = document.createElement('span');
+      span.className = 'text-gray-500';
+      span.textContent = adjustment.text;
+      span.title = adjustment.title;
+      cell.appendChild(span);
+    });
   }
 
   // Update faction-specific stats display (perf scores, ranks) - still client-side
@@ -985,6 +1013,9 @@
         const player = playerId ? playerById(playerId) : null;
         formCell.innerHTML = player ? formBadgesHtml(player.form) : '<span class="text-gray-400">-</span>';
       }
+
+      // The adjustment comes from the server; drop the previous player's until it does
+      clearRatingAdjustment(slotIndex);
 
       // Rating, with PERF and rank on its tooltip
       if (crCell) {

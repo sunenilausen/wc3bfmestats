@@ -108,15 +108,19 @@
       <% fac_rank = faction_rank_data[[lp.player_id, lp.faction_id]] if defined?(faction_rank_data) %>
     <% end %>
   <% end %>
-  <td class="px-4 py-2 whitespace-nowrap text-sm" id="cr-<%= index %>"
-      title="<%= lp.player ? rating_tooltip(ml_score, fac_perf, avg_rank_val, fac_rank&.dig(:avg)) : "" %>">
-    <% if lp.player %>
-      <%= lp.player.custom_rating&.round || "-" %>
-    <% elsif lp.is_new_player? %>
-      <%= NewPlayerDefaults.custom_rating %>
-    <% else %>
-      -
-    <% end %>
+  <% adjustment = rating_adjustments[lp.id] if defined?(rating_adjustments) %>
+  <td class="px-4 py-2 whitespace-nowrap text-sm">
+    <span id="cr-<%= index %>"
+          title="<%= lp.player ? rating_tooltip(ml_score, fac_perf, avg_rank_val, fac_rank&.dig(:avg)) : "" %>">
+      <% if lp.player %>
+        <%= lp.player.custom_rating&.round || "-" %>
+      <% elsif lp.is_new_player? %>
+        <%= NewPlayerDefaults.custom_rating %>
+      <% else %>
+        -
+      <% end %>
+    </span>
+    <span id="cr-adj-<%= index %>"><%= rating_adjustment_tag(adjustment, faction_name: lp.faction&.name) %></span>
   </td>
   <%# Overall W/L %>
   <td class="px-4 py-2 whitespace-nowrap text-sm" id="wl-<%= index %>">

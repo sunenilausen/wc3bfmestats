@@ -57,6 +57,21 @@ module MatchesHelper
     RatingUncertainty.combined_sigma(good_sigmas, evil_sigmas)
   end
 
+  # How this player's CR was adjusted for the prediction of this match, from
+  # the inputs frozen onto the appearance when it was first rated. Nil for
+  # matches predating those snapshots.
+  def appearance_rating_adjustment(appearance)
+    return nil if appearance.games_played_before_match.nil? || appearance.custom_rating.nil?
+
+    RatingAdjustment.for(
+      cr: appearance.custom_rating,
+      games: appearance.games_played_before_match,
+      faction_games: appearance.faction_games_before_match,
+      ml_score: appearance.ml_score_at_match || LobbyWinPredictor::ML_BASELINE,
+      faction_name: appearance.faction&.name
+    )
+  end
+
   # Calculate win/loss record for a player before this match
   def previous_record_for_appearance(appearance)
     match = appearance.match

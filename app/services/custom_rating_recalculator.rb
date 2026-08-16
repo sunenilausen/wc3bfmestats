@@ -1045,37 +1045,14 @@ class CustomRatingRecalculator
   # LobbyWinPredictor#faction_familiarity_adjustment, but takes raw counts so
   # it can run off frozen per-appearance snapshots).
   def faction_familiarity_from_counts(total_games, faction_games)
-    return 0 if total_games < LobbyWinPredictor::MIN_FACTION_GAMES_THRESHOLD
-
-    avg_games = total_games / 10.0
-    threshold = [ avg_games, LobbyWinPredictor::MIN_FACTION_GAMES_THRESHOLD.to_f ].max
-
-    ratio = [ faction_games / threshold.to_f, 1.0 ].min
-    eased = Math.sqrt(ratio)
-
-    -((1.0 - eased) * LobbyWinPredictor::MAX_FACTION_FAMILIARITY_PENALTY)
+    RatingAdjustment.familiarity_adjustment(total_games, faction_games)
   end
 
   # Calculate effective CR with ML score adjustment for new players
   # Only applies penalty for new players with ML score < 0 (below average)
   # No bonus for any new player - trust their CR if they perform well
   def calculate_effective_cr(cr, games, ml_score)
-    return cr.to_f if games >= GAMES_FOR_FULL_CR_TRUST
-
-    # Only apply penalty if ML score is below baseline (0)
-    # No bonus for new players at or above 0
-    return cr.to_f if ml_score >= ML_BASELINE
-
-    # ML score deviation from baseline (negative only at this point)
-    ml_deviation = ml_score - ML_BASELINE
-
-    # Penalty scales down as games increase
-    adjustment_factor = 1.0 - (games.to_f / GAMES_FOR_FULL_CR_TRUST)
-
-    # Scale deviation to CR adjustment (max -200 for ML score -50)
-    ml_cr_adjustment = (ml_deviation / 50.0) * MAX_ML_CR_ADJUSTMENT * adjustment_factor
-
-    cr + ml_cr_adjustment
+    RatingAdjustment.effective_cr(cr, games, ml_score)
   end
 
   # Update running stats for a player after processing a match appearance

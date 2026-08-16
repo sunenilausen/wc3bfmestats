@@ -283,6 +283,15 @@ penalty = -(1 - eased) × MAX_FACTION_FAMILIARITY_PENALTY  # max 80 CR
 - `MAX_FACTION_FAMILIARITY_PENALTY = 80`
 - `MIN_FACTION_GAMES_THRESHOLD = 5`
 
+**Showing the adjustment (`RatingAdjustment`):**
+
+All three adjustments — new-player penalty, faction familiarity penalty, faction impact weight — live in `RatingAdjustment`, which `LobbyWinPredictor`, `LobbyBalancer` and `CustomRatingRecalculator#store_match_prediction` all call, so they can't drift apart. `RatingAdjustment.for` returns a `Breakdown` exposing each part plus `weighted_cr` (what the player is worth to their team average) and `total` (the single delta from raw CR).
+
+The total is shown in parentheses next to the rating, e.g. `1300 (-72)`, with the parts on hover ("Counts as 1228 toward the team - new player -60, Dol Amroth impact -12"). Nothing is shown when the parts cancel to 0. Rendered by `ApplicationHelper#rating_adjustment_tag`:
+
+- **Lobby show/edit** — from `LobbyWinPredictor#player_adjustments` (current CR, games, PERF and faction games). On the edit page the prediction endpoint returns `rating_adjustments` keyed by faction id and the JS refreshes each `#cr-adj-<slot>` as slots change.
+- **Match show** — from `MatchesHelper#appearance_rating_adjustment`, built from the inputs frozen onto the appearance (`custom_rating`, `games_played_before_match`, `faction_games_before_match`, `ml_score_at_match`), so it shows what the player was worth *at the time*. Blank for appearances predating those snapshots. `match_show` fragment cache key was bumped to "v4" when this was added.
+
 **Prediction accuracy note:**
 Analysis shows the PERF-based penalty provides minimal predictive value:
 - Only changes prediction ~5% of the time
@@ -360,7 +369,7 @@ Streak data: `players.current_streak` (lobbies) and `appearances.streak_before_m
 
 Shared uncertainty maths live in `RatingUncertainty` (used by both `LobbyWinPredictor` and `MatchesHelper`). The faction-familiarity formula lives in `LobbyWinPredictor.unfamiliarity_ratio` and feeds both the CR penalty and the extra uncertainty, so they can't drift apart.
 
-Note: `match_show` fragment cache key was bumped to "v2" when this line was added.
+Note: `match_show` fragment cache key was bumped to "v2" when this line was added (it is at "v4" now).
 
 Refit and inspect both with:
 ```bash

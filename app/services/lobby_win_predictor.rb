@@ -124,6 +124,39 @@ class LobbyWinPredictor
     }
   end
 
+  # Where each lobby player's CR is adjusted before it counts toward their
+  # team, keyed by lobby_player id. Display only - predict computes its own.
+  def player_adjustments
+    lobby.lobby_players.each_with_object({}) do |lp, out|
+      breakdown = adjustment_for(lp)
+      out[lp.id] = breakdown if breakdown
+    end
+  end
+
+  # The same breakdown for a single slot, nil for an empty one
+  def adjustment_for(lobby_player)
+    faction_name = lobby_player.faction&.name
+    player = lobby_player.player
+
+    if player
+      RatingAdjustment.for(
+        cr: player.custom_rating || NewPlayerDefaults.custom_rating,
+        games: player.custom_rating_games_played.to_i,
+        faction_games: lobby_player.faction ? faction_games_played(player, lobby_player.faction) : 0,
+        ml_score: player.ml_score || ML_BASELINE,
+        faction_name: faction_name
+      )
+    elsif lobby_player.is_new_player?
+      RatingAdjustment.for(
+        cr: NewPlayerDefaults.custom_rating,
+        games: 0,
+        faction_games: 0,
+        ml_score: NewPlayerDefaults.ml_score,
+        faction_name: faction_name
+      )
+    end
+  end
+
   private
 
   def compute_team_effective_crs(lobby_players)
@@ -219,35 +252,33 @@ class LobbyWinPredictor
   end
 
   def compute_faction_familiarity_adjustment(player, faction)
-    total_games = player.custom_rating_games_played.to_i
-    return 0 if total_games < MIN_FACTION_GAMES_THRESHOLD
+    RatingAdjustment.familiarity_adjustment(
+      player.custom_rating_games_played.to_i,
+      faction_games_played(player, faction)
+    )
+  end
 
-    faction_stat = player.player_faction_stats.find_by(faction: faction)
-    faction_games = faction_stat&.games_played.to_i
+  # Games each lobby player has on each faction, in one query. Falls back to a
+  # single lookup for anyone outside the lobby (observers).
+  def faction_games_played(player, faction)
+    @faction_games_played ||= begin
+      player_ids = lobby.lobby_players.filter_map(&:player_id)
+      PlayerFactionStat.where(player_id: player_ids)
+        .pluck(:player_id, :faction_id, :games_played)
+        .each_with_object({}) { |(pid, fid, games), out| out[[ pid, fid ]] = games.to_i }
+    end
 
-    -(self.class.unfamiliarity_ratio(total_games, faction_games) * MAX_FACTION_FAMILIARITY_PENALTY)
+    return @faction_games_played[[ player.id, faction.id ]].to_i if @faction_games_played.key?([ player.id, faction.id ])
+    return 0 if lobby.lobby_players.any? { |lp| lp.player_id == player.id }
+
+    player.player_faction_stats.find_by(faction: faction)&.games_played.to_i
   end
 
   # Calculate effective CR with ML score adjustment for new players
   # Only applies penalty for new players with ML score < 0 (below average)
   # No bonus for any new player - trust their CR if they perform well
   def calculate_effective_cr(cr, games, ml_score)
-    return cr.to_f if games >= GAMES_FOR_FULL_CR_TRUST
-
-    # Only apply penalty if ML score is below baseline (0)
-    # No bonus for new players at or above 0
-    return cr.to_f if ml_score >= ML_BASELINE
-
-    # ML score deviation from baseline (negative only at this point)
-    ml_deviation = ml_score - ML_BASELINE
-
-    # Penalty scales down as games increase
-    adjustment_factor = 1.0 - (games.to_f / GAMES_FOR_FULL_CR_TRUST)
-
-    # Scale deviation to CR adjustment (max -200 for ML score -50)
-    ml_cr_adjustment = (ml_deviation / 50.0) * MAX_ML_CR_ADJUSTMENT * adjustment_factor
-
-    cr + ml_cr_adjustment
+    RatingAdjustment.effective_cr(cr, games, ml_score)
   end
 
   def compute_team_details(lobby_players)

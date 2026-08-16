@@ -48,6 +48,29 @@ class MatchesHelperTest < ActionView::TestCase
     assert streaking[:margin_pct] > settled[:margin_pct], "the band should widen"
   end
 
+  test "rating adjustment comes from the snapshot frozen onto the appearance" do
+    appearance = matches(:one).appearances.first
+    appearance.update!(
+      custom_rating: 1500,
+      games_played_before_match: 100,
+      faction_games_before_match: 0,
+      ml_score_at_match: 0
+    )
+
+    breakdown = appearance_rating_adjustment(appearance)
+
+    assert_equal 1500.0, breakdown.cr
+    assert_equal(-LobbyWinPredictor::MAX_FACTION_FAMILIARITY_PENALTY, breakdown.familiarity.round,
+      "a faction they had never played should cost the full penalty")
+  end
+
+  test "no rating adjustment for a match without the snapshot" do
+    appearance = matches(:one).appearances.first
+    appearance.update!(games_played_before_match: nil)
+
+    assert_nil appearance_rating_adjustment(appearance)
+  end
+
   test "no margin when the historical game counts were never backfilled" do
     match = matches(:one)
     match.update!(predicted_good_win_pct: 55.0)

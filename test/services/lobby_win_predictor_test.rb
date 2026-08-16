@@ -261,6 +261,39 @@ class LobbyWinPredictorTest < ActiveSupport::TestCase
                  RatingUncertainty.streak_sigma(loser.current_streak)
   end
 
+  test "player adjustments explain the same numbers the prediction is built from" do
+    veteran = Player.create!(nickname: "Vet", custom_rating: 1600, ml_score: 0, custom_rating_games_played: 100)
+    rookie = Player.create!(nickname: "Rook", custom_rating: 1400, ml_score: -20, custom_rating_games_played: 0)
+
+    @lobby.lobby_players.create!(faction: factions(:gondor), player: veteran)
+    @lobby.lobby_players.create!(faction: factions(:mordor), player: rookie)
+
+    predictor = LobbyWinPredictor.new(@lobby)
+    prediction = predictor.predict
+    adjustments = predictor.player_adjustments
+
+    good_slot, evil_slot = @lobby.lobby_players.to_a
+
+    assert_equal prediction[:good_avg_cr], adjustments[good_slot.id].weighted_cr.round
+    assert_equal prediction[:evil_avg_cr], adjustments[evil_slot.id].weighted_cr.round
+    assert adjustments[evil_slot.id].new_player.negative?, "an unproven rookie should be marked down"
+  end
+
+  test "an empty slot has no adjustment to show" do
+    @lobby.lobby_players.create!(faction: factions(:gondor), player: nil)
+
+    assert_empty LobbyWinPredictor.new(@lobby).player_adjustments
+  end
+
+  test "a new player slot is adjusted from the new player defaults" do
+    slot = @lobby.lobby_players.create!(faction: factions(:gondor), player: nil, is_new_player: true)
+
+    breakdown = LobbyWinPredictor.new(@lobby).player_adjustments[slot.id]
+
+    assert_not_nil breakdown
+    assert_equal NewPlayerDefaults.custom_rating.to_f, breakdown.cr
+  end
+
   private
 
   def build_lobby(games_played:)

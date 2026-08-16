@@ -108,8 +108,9 @@
       <% end %>
     <% end %>
   </td>
-  <td class="px-2 py-1">
+  <td class="px-2 py-1 whitespace-nowrap">
     <%= appearance.custom_rating&.round %>
+    <%= rating_adjustment_tag(appearance_rating_adjustment(appearance), faction_name: appearance.faction&.name) %>
   </td>
   <td class="px-2 py-1">
     <% if appearance.custom_rating_change %>

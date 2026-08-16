@@ -54,7 +54,7 @@
         </tr>
       </thead>
       <tbody class="bg-white divide-y divide-gray-200" data-controller="average-elo">
-        <%= render partial: "lobbies/lobby_player_row", collection: good_players, as: :lp, locals: { lobby: lobby, editable: editable, team_number: 1, lobby_player_stats: @lobby_player_stats || {}, faction_specific_stats: @faction_specific_stats || {}, recent_stats: @recent_stats || {}, event_stats: @event_stats || {}, player_scores: @player_scores || {}, player_faction_stats: @player_faction_stats || {}, faction_totals: @faction_totals || {}, overall_avg_ranks: @overall_avg_ranks || {}, faction_rank_data: @faction_rank_data || {}, faction_perf_stats: @faction_perf_stats || {}, player_form: @player_form || {}, player_recent_leaves: @player_recent_leaves || {} } %>
+        <%= render partial: "lobbies/lobby_player_row", collection: good_players, as: :lp, locals: { lobby: lobby, editable: editable, team_number: 1, lobby_player_stats: @lobby_player_stats || {}, faction_specific_stats: @faction_specific_stats || {}, recent_stats: @recent_stats || {}, event_stats: @event_stats || {}, player_scores: @player_scores || {}, player_faction_stats: @player_faction_stats || {}, faction_totals: @faction_totals || {}, overall_avg_ranks: @overall_avg_ranks || {}, faction_rank_data: @faction_rank_data || {}, faction_perf_stats: @faction_perf_stats || {}, player_form: @player_form || {}, player_recent_leaves: @player_recent_leaves || {}, rating_adjustments: @rating_adjustments || {} } %>
         <tr class="bg-gray-50">
           <td class="px-4 py-2 font-bold text-sm text-green-700">Good</td>
           <td class="px-4 py-2"></td>
@@ -71,7 +71,7 @@
         </tr>
       </tbody>
       <tbody class="bg-white divide-y divide-gray-200 border-t-2 border-gray-300" data-controller="average-elo">
-        <%= render partial: "lobbies/lobby_player_row", collection: evil_players, as: :lp, locals: { lobby: lobby, editable: editable, team_number: 2, lobby_player_stats: @lobby_player_stats || {}, faction_specific_stats: @faction_specific_stats || {}, recent_stats: @recent_stats || {}, event_stats: @event_stats || {}, player_scores: @player_scores || {}, player_faction_stats: @player_faction_stats || {}, faction_totals: @faction_totals || {}, overall_avg_ranks: @overall_avg_ranks || {}, faction_rank_data: @faction_rank_data || {}, faction_perf_stats: @faction_perf_stats || {}, player_form: @player_form || {}, player_recent_leaves: @player_recent_leaves || {} } %>
+        <%= render partial: "lobbies/lobby_player_row", collection: evil_players, as: :lp, locals: { lobby: lobby, editable: editable, team_number: 2, lobby_player_stats: @lobby_player_stats || {}, faction_specific_stats: @faction_specific_stats || {}, recent_stats: @recent_stats || {}, event_stats: @event_stats || {}, player_scores: @player_scores || {}, player_faction_stats: @player_faction_stats || {}, faction_totals: @faction_totals || {}, overall_avg_ranks: @overall_avg_ranks || {}, faction_rank_data: @faction_rank_data || {}, faction_perf_stats: @faction_perf_stats || {}, player_form: @player_form || {}, player_recent_leaves: @player_recent_leaves || {}, rating_adjustments: @rating_adjustments || {} } %>
         <tr class="bg-gray-50">
           <td class="px-4 py-2 font-bold text-sm text-red-700">Evil</td>
           <td class="px-4 py-2"></td>

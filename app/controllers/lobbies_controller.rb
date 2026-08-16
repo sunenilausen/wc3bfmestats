@@ -83,6 +83,7 @@ class LobbiesController < ApplicationController
     end
 
     preload_player_stats
+    @rating_adjustments = LobbyWinPredictor.new(@lobby).player_adjustments
     @new_player_defaults = NewPlayerDefaults.all
 
     # Get last match data for "Last Match" button (most recently uploaded non-ignored match)
@@ -200,8 +201,17 @@ class LobbiesController < ApplicationController
 
     # Add per-player effective CR details for display
     player_details = {}
+    adjustments = {}
     @lobby.lobby_players.each do |lp|
       next unless lp.player || lp.is_new_player?
+
+      breakdown = predictor.adjustment_for(lp)
+      if breakdown&.any?
+        adjustments[lp.faction_id] = {
+          text: "(#{helpers.signed_cr(breakdown.total)})",
+          title: helpers.rating_adjustment_title(breakdown, faction_name: lp.faction&.name)
+        }
+      end
 
       if lp.is_new_player? && lp.player_id.nil?
         player_details[lp.faction_id] = {
@@ -222,7 +232,8 @@ class LobbiesController < ApplicationController
 
     render json: {
       prediction: prediction,
-      player_details: player_details
+      player_details: player_details,
+      rating_adjustments: adjustments
     }
   end
 
@@ -408,6 +419,7 @@ class LobbiesController < ApplicationController
     def compute_score_prediction
       predictor = LobbyWinPredictor.new(@lobby)
       @score_prediction = predictor.predict
+      @rating_adjustments = predictor.player_adjustments
 
       # Build player_scores hash for observers display
       @player_scores = {}

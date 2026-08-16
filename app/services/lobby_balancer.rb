@@ -206,44 +206,18 @@ class LobbyBalancer
   def faction_familiarity_adjustment(player, faction)
     return 0 unless player && faction
 
-    total_games = player.custom_rating_games_played.to_i
-    return 0 if total_games < LobbyWinPredictor::MIN_FACTION_GAMES_THRESHOLD
-
     faction_stat = player.player_faction_stats.find_by(faction: faction)
-    faction_games = faction_stat&.games_played.to_i
 
-    avg_games = total_games / 10.0
-    threshold = [ avg_games, LobbyWinPredictor::MIN_FACTION_GAMES_THRESHOLD.to_f ].max
-
-    ratio = [ faction_games / threshold, 1.0 ].min
-    eased = Math.sqrt(ratio)
-
-    -((1.0 - eased) * LobbyWinPredictor::MAX_FACTION_FAMILIARITY_PENALTY)
+    RatingAdjustment.familiarity_adjustment(
+      player.custom_rating_games_played.to_i,
+      faction_stat&.games_played.to_i
+    )
   end
 
   # Calculate effective CR with ML score adjustment for new players
   def calculate_effective_cr(slot)
     return nil if slot[:cr].nil?
 
-    cr = slot[:cr]
-    games = slot[:games]
-    ml_score = slot[:ml_score] || ML_BASELINE
-
-    return cr.to_f if games >= GAMES_FOR_FULL_CR_TRUST
-
-    # Only apply penalty if ML score is below baseline (same as LobbyWinPredictor):
-    # no bonus for new players who perform well, trust their CR
-    return cr.to_f if ml_score >= ML_BASELINE
-
-    # Calculate how much of the ML adjustment to apply (decreases as games increase)
-    adjustment_factor = 1.0 - (games.to_f / GAMES_FOR_FULL_CR_TRUST)
-
-    # ML score deviation from baseline (negative only at this point)
-    ml_deviation = ml_score - ML_BASELINE
-
-    # Scale deviation to CR adjustment (-200 to +200)
-    ml_cr_adjustment = (ml_deviation / 50.0) * MAX_ML_CR_ADJUSTMENT * adjustment_factor
-
-    cr + ml_cr_adjustment
+    RatingAdjustment.effective_cr(slot[:cr], slot[:games], slot[:ml_score] || ML_BASELINE)
   end
 end

@@ -1,12 +1,31 @@
 class FactionEventStatsCalculator
   attr_reader :faction, :map_version, :map_versions, :limit
 
-  SAURON_HERO_NAME = "Sauron the Great"
-
   FACTION_RING_EVENTS = {
     "Fellowship" => "Ring Drop",
-    "Mordor" => "Sauron gets the ring"
+    "Mordor" => "Sauron gets the ring",
+    "Isengard" => "Saruman takes the ring for himself"
   }.freeze
+
+  # The form a hero takes once they have the ring. Dying in this form is what we
+  # can see afterwards - there is no event for the transformation itself, only
+  # for the death. Note Isengard's trigger only exists in 4.6+, so before that
+  # the death is the only trace of Saruman having taken the ring at all.
+  RING_HERO = {
+    "Mordor" => "Sauron the Great",
+    "Isengard" => "Saruman the Terrible"
+  }.freeze
+
+  # A ring event is rare enough for some factions that the individual games are
+  # more useful than the percentage. Listed only while there are few enough to
+  # read - Mordor's few hundred would be noise, and would bloat the cached stats.
+  RING_MATCH_LIST_MAX = 30
+
+  # Factions that also report whether they were left with no bases at all in a
+  # game where they took the ring - Isengard can end up playing solo, and those
+  # games are worth being able to pick out rather than folding into the ratings.
+  # Isengard only; Mordor's Barad-Dur/Morannon rows were not wanted.
+  RING_BASE_DEATH_FACTIONS = [ "Isengard" ].freeze
 
   # Hero first names mapped to factions (for "[Hero] uses the ring" events in 4.6+)
   # These are extracted from hero full names to match the event format
@@ -93,6 +112,13 @@ class FactionEventStatsCalculator
   # Minimum map version for ringbearer events (they were added in 4.6)
   RINGBEARER_MIN_VERSION = "4.6"
 
+  # Some ring triggers only exist from a given map version. Isengard's was added
+  # in 4.6 - before that the map fired nothing when Saruman took the ring, so
+  # counting those games in the denominator would understate the rate rather
+  # than measure it. Mordor's and Fellowship's go back to 4.0, so they count
+  # every game.
+  RING_EVENT_MIN_VERSION = { "Isengard" => "4.6" }.freeze
+
   # Extra heroes mapped to their original hero form
   EXTRA_HERO_MAPPING = {
     "Sauron the Great" => nil, # Sauron has no base form, exclude from stats
@@ -137,7 +163,21 @@ class FactionEventStatsCalculator
     end
 
     ring_occurrences = []
-    sauron_deaths_after_ring = []
+    ring_hero_deaths_after_ring = []
+    ring_losses = 0
+    ring_eligible_games = 0
+    ring_games_without_bases = 0
+    ring_last_base_deaths = []
+    ring_matches = []
+    legacy_matches = []
+
+    # Before the trigger existed, the ringbearer form dying is the only surviving
+    # evidence that the ring was ever taken. Counted separately so it is never
+    # mistaken for the real trigger rate.
+    legacy_games = 0
+    legacy_deaths = []
+    legacy_deaths_without_bases = 0
+    legacy_losses = 0
     all_bases_lost_times = []
     all_heroes_lost_times = []
     all_heroes_lost_twice_times = [] # For Minas Morgul
@@ -313,8 +353,29 @@ class FactionEventStatsCalculator
         all_heroes_lost_twice_times << core_hero_second_death_times.values.max
       end
 
+      # Games from before this faction's trigger was added to the map
+      if ring_event && RING_HERO[faction.name] && replay.map_version.present? &&
+         !ring_event_possible?(replay.map_version)
+        legacy_games += 1
+
+        death = hero_death_events
+          .select { |e| fix_encoding(replay, e["args"]&.first) == RING_HERO[faction.name] }
+          .filter_map { |e| e["time"] }.min
+
+        if death
+          legacy_deaths << death
+          legacy_matches << match_reference(replay, faction_appearance, death)
+          legacy_losses += 1 if faction_lost?(replay.match)
+          all_bases_dead = base_names.all? do |base_name|
+            base_death_events.any? { |e| fix_encoding(replay, e["args"]&.first) == base_name }
+          end
+          legacy_deaths_without_bases += 1 if all_bases_dead
+        end
+      end
+
       # Process ring events
-      if ring_event
+      if ring_event && ring_event_possible?(replay.map_version)
+        ring_eligible_games += 1
         ring_events_in_match = replay.events.select do |e|
           fix_encoding(replay, e["args"]&.first) == ring_event
         end
@@ -323,16 +384,39 @@ class FactionEventStatsCalculator
           event_time = ring_events_in_match.map { |e| e["time"] }.compact.min
           ring_occurrences << event_time if event_time
 
-          # Track Sauron death after getting ring (Mordor only)
-          if faction.name == "Mordor" && event_time
-            sauron_death_events = hero_death_events.select do |e|
-              fix_encoding(replay, e["args"]&.first) == SAURON_HERO_NAME &&
+          # Did taking the ring save them? Counted per ring event, not per game.
+          ring_matches << match_reference(replay, faction_appearance, event_time)
+          ring_losses += 1 if faction_lost?(replay.match)
+
+          # Track the ringbearer form dying after the ring was taken
+          ring_hero = RING_HERO[faction.name]
+          if ring_hero && event_time
+            ring_hero_death_events = hero_death_events.select do |e|
+              fix_encoding(replay, e["args"]&.first) == ring_hero &&
                 e["time"] && e["time"] > event_time
             end
 
-            if sauron_death_events.any?
-              sauron_death_time = sauron_death_events.map { |e| e["time"] }.compact.min
-              sauron_deaths_after_ring << (sauron_death_time - event_time)
+            if ring_hero_death_events.any?
+              death_time = ring_hero_death_events.map { |e| e["time"] }.compact.min
+              ring_hero_deaths_after_ring << (death_time - event_time)
+            end
+          end
+
+          # Were they left with nothing? Read as the state of the game, not as a
+          # consequence of the ring - a base lost before the ring was taken
+          # counts just the same, since what matters is whether they ended up
+          # with no bases at all. Unfiltered deaths for the same reason: a base
+          # that fell in the closing collapse is still gone.
+          if event_time && ring_base_deaths_reported?
+            death_times = base_names.map do |base_name|
+              base_death_events
+                .select { |e| fix_encoding(replay, e["args"]&.first) == base_name }
+                .filter_map { |e| e["time"] }.min
+            end
+
+            if death_times.all?
+              ring_games_without_bases += 1
+              ring_last_base_deaths << (death_times.max - event_time)
             end
           end
         end
@@ -342,11 +426,14 @@ class FactionEventStatsCalculator
       if version_at_least?(replay.map_version, RINGBEARER_MIN_VERSION)
         ringbearer_games += 1
 
-        # Find "[Hero] uses the ring" and "Saruman takes the ring for himself" events
+        # Find "[Hero] uses the ring" and "Saruman takes the ring for himself"
+        # events, skipping this faction's own ring trigger - Isengard's is both,
+        # and reporting it here as well would just repeat the Ring Events table.
         ringbearer_events_in_match = replay.events.select do |e|
           next false unless e["eventName"] == "eventsTriggered"
           event_text = fix_encoding(replay, e["args"]&.first)
           next false unless event_text
+          next false if event_text == ring_event
 
           # Match "[Hero] uses the ring" or "Saruman takes the ring for himself"
           event_text.match?(/uses the ring\z/i) || event_text == "Saruman takes the ring for himself"
@@ -374,7 +461,11 @@ class FactionEventStatsCalculator
       base_loss_stats: build_base_loss_results(base_names, total_games, all_bases_lost_times),
       hero_stats: build_hero_results(display_hero_names, hero_stats),
       hero_loss_stats: build_hero_loss_results(core_hero_names, total_games, all_heroes_lost_times, all_heroes_lost_twice_times),
-      ring_event_stats: build_ring_results(ring_event, total_games, ring_occurrences, sauron_deaths_after_ring),
+      ring_event_stats: build_ring_results(ring_event, ring_eligible_games, ring_occurrences,
+                                           ring_hero_deaths_after_ring, ring_losses,
+                                           ring_games_without_bases, ring_last_base_deaths, ring_matches),
+      legacy_ring_stats: build_legacy_ring_results(legacy_games, legacy_deaths, legacy_deaths_without_bases,
+                                                   legacy_losses, legacy_matches),
       ringbearer_stats: build_ringbearer_results(ringbearer_games, ringbearer_occurrences, ringbearer_heroes),
       hero_uptime: total_hero_seconds_possible > 0 ? (total_hero_seconds_alive.to_f / total_hero_seconds_possible * 100).round(1) : 0,
       base_uptime: total_base_seconds_possible > 0 ? (total_base_seconds_alive.to_f / total_base_seconds_possible * 100).round(1) : 0,
@@ -471,28 +562,114 @@ class FactionEventStatsCalculator
     result
   end
 
-  def build_ring_results(ring_event, total_games, occurrences, sauron_deaths_after_ring)
+  def build_ring_results(ring_event, eligible_games, occurrences, ring_hero_deaths_after_ring, ring_losses,
+                         ring_games_without_bases, ring_last_base_deaths, ring_matches)
     return nil unless ring_event
-    return nil if total_games == 0
+    return nil if eligible_games == 0
 
     occurrence_count = occurrences.size
     result = {
       name: ring_event,
-      total_games: total_games,
+      total_games: eligible_games,
+      min_version: RING_EVENT_MIN_VERSION[faction.name],
       occurrences: occurrence_count,
-      occurrence_rate: (occurrence_count.to_f / total_games * 100).round(1),
+      occurrence_rate: (occurrence_count.to_f / eligible_games * 100).round(1),
       avg_time: occurrences.any? ? (occurrences.sum.to_f / occurrence_count).round : nil
     }
+    return result if occurrence_count.zero?
 
-    # Add Sauron death stats for Mordor
-    if faction.name == "Mordor" && occurrence_count > 0
-      sauron_death_count = sauron_deaths_after_ring.size
-      result[:sauron_death_rate] = (sauron_death_count.to_f / occurrence_count * 100).round(1)
-      result[:sauron_deaths] = sauron_death_count
-      result[:sauron_avg_time_to_death] = sauron_deaths_after_ring.any? ? (sauron_deaths_after_ring.sum.to_f / sauron_death_count).round : nil
+    # What became of the ringbearer, for the factions whose hero transforms
+    ring_hero = RING_HERO[faction.name]
+    if ring_hero
+      death_count = ring_hero_deaths_after_ring.size
+      result[:ring_hero_name] = ring_hero.split(" ").first
+      result[:ring_hero_death_rate] = (death_count.to_f / occurrence_count * 100).round(1)
+      result[:ring_hero_deaths] = death_count
+      result[:ring_hero_avg_time_to_death] =
+        ring_hero_deaths_after_ring.any? ? (ring_hero_deaths_after_ring.sum.to_f / death_count).round : nil
     end
 
+    # Left with no bases at all - the games where Isengard ends up solo
+    if ring_base_deaths_reported?
+      result[:no_bases_label] = "#{faction.bases.join(" and ")} dies"
+      result[:no_bases_count] = ring_games_without_bases
+      result[:no_bases_rate] = (ring_games_without_bases.to_f / occurrence_count * 100).round(1)
+      result[:no_bases_avg_time] =
+        ring_last_base_deaths.any? ? (ring_last_base_deaths.sum.to_f / ring_last_base_deaths.size).round : nil
+    end
+
+    # And whether taking the ring actually won the game
+    result[:loss_label] = faction.good? ? "Good loses" : "Evil loses"
+    result[:loss_rate] = (ring_losses.to_f / occurrence_count * 100).round(1)
+    result[:losses] = ring_losses
+    result[:matches] = listable_matches(ring_matches)
+
     result
+  end
+
+  # The games themselves, when there are few enough to be worth reading
+  def listable_matches(matches)
+    return nil if matches.empty? || matches.size > RING_MATCH_LIST_MAX
+
+    matches.sort_by { |m| m[:played_at] || Time.at(0) }.reverse
+  end
+
+  def match_reference(replay, faction_appearance, event_time)
+    match = replay.match
+    {
+      id: match.id,
+      param: replay.replay_hash || match.id.to_s,
+      played_at: match.played_at || match.uploaded_at,
+      map_version: replay.map_version,
+      player_id: faction_appearance&.player_id,
+      won: !faction_lost?(match) && !match.is_draw?,
+      draw: match.is_draw?,
+      event_time: event_time,
+      seconds: match.seconds
+    }
+  end
+
+  # What we can still see of the ring in games played before the trigger existed:
+  # the ringbearer form dying proves he took it, and the bases being gone as well
+  # says he took it and lost anyway.
+  def build_legacy_ring_results(games, deaths, deaths_without_bases, losses, matches)
+    return nil if games.zero? || deaths.empty?
+
+    death_count = deaths.size
+    {
+      hero_name: RING_HERO[faction.name],
+      before_version: RING_EVENT_MIN_VERSION[faction.name],
+      total_games: games,
+      deaths: death_count,
+      death_rate: (death_count.to_f / games * 100).round(1),
+      avg_time: (deaths.sum.to_f / death_count).round,
+      bases_label: "#{faction.bases.join(" and ")} dies",
+      bases_count: deaths_without_bases,
+      bases_rate: (deaths_without_bases.to_f / death_count * 100).round(1),
+      loss_label: faction.good? ? "Good loses" : "Evil loses",
+      losses: losses,
+      loss_rate: (losses.to_f / death_count * 100).round(1),
+      matches: listable_matches(matches)
+    }
+  end
+
+  def ring_base_deaths_reported?
+    RING_BASE_DEATH_FACTIONS.include?(faction.name)
+  end
+
+  # Whether the map fired this faction's ring trigger at all in this version
+  def ring_event_possible?(map_version)
+    minimum = RING_EVENT_MIN_VERSION[faction.name]
+    return true if minimum.nil?
+
+    version_at_least?(map_version, minimum)
+  end
+
+  # Did the side this faction plays for lose the match?
+  def faction_lost?(match)
+    return false if match.nil? || match.is_draw?
+
+    faction.good? ? !match.good_victory? : match.good_victory?
   end
 
   def filter_end_game_deaths(events, match_length)

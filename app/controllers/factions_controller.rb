@@ -92,7 +92,9 @@ class FactionsController < ApplicationController
     # Use faction-specific cache key - only invalidate when this faction's matches change
     faction_last_match = @faction.appearances.joins(:match).maximum("matches.updated_at")
     faction_cache_version = faction_last_match&.to_i || 0
-    cache_key = [ "faction_stats", @faction.id, @version_filter, faction_cache_version ]
+    # "v4": ring event stats gained the ringbearer-death, match-outcome and
+    # pre-trigger rows, plus the list of games behind a rare ring event
+    cache_key = [ "faction_stats", "v4", @faction.id, @version_filter, faction_cache_version ]
 
     # Determine map_versions parameter for calculators
     calculator_map_versions = (@map_version.present? || @map_version_until.present?) ? @filtered_map_versions : nil
@@ -111,6 +113,7 @@ class FactionsController < ApplicationController
     @base_stats = event_stats[:base_stats]
     @base_loss_stats = event_stats[:base_loss_stats]
     @ring_event_stats = event_stats[:ring_event_stats]
+    @legacy_ring_stats = event_stats[:legacy_ring_stats]
     @ringbearer_stats = event_stats[:ringbearer_stats]
     @hero_uptime = event_stats[:hero_uptime]
     @base_uptime = event_stats[:base_uptime]

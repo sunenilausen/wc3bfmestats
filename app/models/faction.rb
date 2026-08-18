@@ -33,7 +33,9 @@ class Faction < ApplicationRecord
   BASE_TO_FACTION = BASES.flat_map { |faction, bases| bases.map { |base| [ base, faction ] } }.to_h.freeze
 
   # Ring-related events (not base deaths)
-  RING_EVENTS = [ "Ring Drop", "Sauron gets the ring" ].freeze
+  # Trigger events for the ring changing hands. Listed here so the base-death
+  # detection elsewhere does not mistake them for a building falling.
+  RING_EVENTS = [ "Ring Drop", "Sauron gets the ring", "Saruman takes the ring for himself" ].freeze
 
   # Heroes for each faction (from game events)
   HEROES = {

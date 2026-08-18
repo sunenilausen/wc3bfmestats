@@ -449,6 +449,40 @@ Test maps (containing "test" in filename) are automatically marked as `ignored: 
 - **FactionStatsCalculator**: Calculates per-faction stats across all players, supports optional `map_version` filter
 - **FactionEventStatsCalculator**: Calculates event-based stats from replay data (hero uptime, base uptime, hero K/D), supports optional `map_version` filter
 
+### Ring Events (faction show page)
+
+For the three factions the ring can pass to, the faction page reports the trigger and everything that followed it:
+
+| faction | trigger event | available from |
+|---|---|---|
+| Mordor | `Sauron gets the ring` | 4.0 |
+| Fellowship | `Ring Drop` | 4.0 |
+| Isengard | `Saruman takes the ring for himself` | **4.6 only** |
+
+Under the trigger, each follow-on is measured **as a share of the times the ring was taken**, not of all games:
+
+- **↳ [hero] dies after** — the ringbearer form dying (`RING_HERO`: Mordor → "Sauron the Great", Isengard → "Saruman the Terrible"). Only deaths *after* the trigger count. There is no event for the transformation itself, only for the death.
+- **↳ "Orthanc and Dunland dies"** (label built from the faction's base names) — **Isengard only** (`RING_BASE_DEATH_FACTIONS`): games where Orthanc *and* Dunland were both gone, so Isengard played on solo. Read as a state, not a consequence — a base lost *before* the ring counts the same, and unfiltered deaths are used, since a base that fell in the closing collapse is still gone. Mordor deliberately has no base row.
+- **↳ Evil loses / Good loses** — how often the side that took the ring still lost the match. Draws don't count as losses.
+
+**Isengard's denominator is 4.6+ games only** (`RING_EVENT_MIN_VERSION`). The map fired nothing when Saruman took the ring before 4.6, so counting those ~1,600 games would understate the rate rather than measure it — it reads 1.5% of 272 games instead of 0.2% of 1,879. The heading is labelled "(4.6+)" when this applies.
+
+Note the asymmetry in the raw data: **"Saruman the Terrible" deaths appear in every version** (25 of them, back to 4.1f) while the trigger only exists in 4.6+. So for pre-4.6 games the death is the only surviving trace that Saruman ever took the ring. Those games are deliberately not back-filled from the death, because that would only ever find the cases where he died and would force "dies after" to 100%.
+
+Isengard's sample is tiny — 4 ring events in non-ignored matches, all won by Isengard. Treat every Isengard ring percentage as anecdote: the single "Orthanc dies after" data point is Orthanc falling 5 seconds before the end of a game Isengard *won*.
+
+**Pre-4.6 section.** Because the trigger did not exist before 4.6, Isengard gets a second block headed "Ring Events (before 4.6)", built from the only evidence those games left behind — `Saruman the Terrible` dying proves he took the ring at some point. It reports the death rate over pre-4.6 games, then, **as a share of the games he died in**, how often Orthanc and Dunland were gone as well and how often Evil lost. Currently 11 deaths in 1,607 pre-4.6 games (0.7%); of those 11, both bases fell in 6 (54.5%) and Evil lost 3 (27.3%).
+
+This block is deliberately kept apart from the 4.6+ table rather than merged: the death rate is not the trigger rate, it is a lower bound on it (it can only find the games where he died), and merging the two would present that lower bound as if it were the real frequency. `build_legacy_ring_results` returns nil once a faction's trigger exists, and for factions like Mordor whose trigger always existed.
+
+**The solo-Isengard case is not visible in the recorded ring games.** In three of the four, neither base ever died; in the fourth both fell but at the very end (Dunland 173s and Orthanc 716s after the ring, in a 3362s game Isengard won). Separately, both Isengard bases die in **52.8% of all their games** (992 of 1878), and 440 of those continued 300s+ afterwards — so "playing on without bases" is ordinary, not a marker of the ring mechanic. If a game where the ring genuinely makes Isengard solo ever gets recorded, this row is where it will show up.
+
+**Expandable game list.** When a ring stat rests on few enough games to read one by one (`RING_MATCH_LIST_MAX = 30`), both blocks render a `<details>` expander listing each game — date, map version, the player, whether they won, and how far into the match the event fired — linked to the match page. Mordor's few hundred are over the cap, so it lists nothing and shows only the percentage; the cap also keeps the cached stats payload small. Player nicknames are resolved for both lists in a single query by `FactionsHelper#ring_match_players`.
+
+Note the ringbearer section skips a faction's own ring trigger, so Isengard's "Saruman takes the ring for himself" is reported once (in Ring Events) rather than twice. Fellowship and Gondor keep their ringbearer rows, since "Gandalf uses the ring" is a different event from "Ring Drop".
+
+`Faction::RING_EVENTS` lists all three triggers so the base-death detection elsewhere doesn't mistake them for a building falling. The faction cache key was bumped to "v2" when the ringbearer-death and outcome rows were added.
+
 Stats handle ties by sharing credit (e.g., if 2 players tie for top hero killer, each gets 0.5).
 
 The faction show page includes a map version dropdown to filter stats by specific game versions (e.g., "4.5e").

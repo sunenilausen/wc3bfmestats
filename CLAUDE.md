@@ -473,6 +473,18 @@ Recomputed by `wc3stats:sync` (step 13), `wc3stats:recalculate` (step 6), `Wc3st
 
 - **FactionEventStatsCalculator**: Calculates event-based stats from replay data (hero uptime, base uptime, hero K/D), supports optional `map_version` filter
 
+### Top Self-favourers (/statistics)
+
+Hosts ranked by how often they put themselves on the favoured side of a lobby they made. `HomeController#calculate_top_self_favourers`.
+
+- Only counts games the host **played in** — hosting a lobby you sit out of says nothing about favouring yourself.
+- "Favoured" is read from the host's own side (`MatchesHelper#team_win_pct` + `#team_prediction_role`), so it is the same 55% line as `Match.balanced` and the player pages, not the raw Good-side percentage.
+- The host is resolved with `MatchesHelper#host_players_for`, which prefers a player who actually appeared in the match — a merged battletag can otherwise resolve to a namesake who never played.
+- Ranked by **count**, not rate, since the question is who has done it most. The **Underdog** column is shown alongside for contrast: a host landing on both sides about equally is making lobbies, not favouring themselves. RedIron reads 198 favoured against 87 underdog (2.3:1) where Annihilation is 18/18.
+- Hosts who never favoured themselves are left off the list entirely.
+
+Respects the page's map-version filter, and sits outside the `statistics_stats` fragment cache with the other version-dependent blocks.
+
 ### Ring Events (faction show page)
 
 For the three factions the ring can pass to, the faction page reports the trigger and everything that followed it:

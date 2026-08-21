@@ -79,6 +79,7 @@ class HomeController < ApplicationController
     @balanced_games_stats = calculate_balanced_games_stats(@map_version, @last_n_games, @map_versions)
     @prediction_accuracy_by_confidence = calculate_prediction_accuracy_by_confidence(@map_version, @last_n_games, @map_versions)
     @top_hosters = calculate_top_hosters(@map_version, @last_n_games, @map_versions)
+    @top_self_favourers = calculate_top_self_favourers(@map_version, @last_n_games, @map_versions)
     @avg_match_time = calculate_avg_match_time(@map_version, @last_n_games, @map_versions)
     @matches_count = Match.where(ignored: false).count
     # Players who have played at least one valid (non-ignored) match
@@ -217,6 +218,53 @@ class HomeController < ApplicationController
     top = merged.values.sort_by { |entry| -entry[:hosted] }.first(top_n)
     top.each do |entry|
       entry[:balanced_pct] = entry[:predicted] > 0 ? (entry[:balanced].to_f / entry[:predicted] * 100).round(1) : nil
+    end
+    top
+  end
+
+  # Hosts who put themselves on the favoured side of the lobbies they made.
+  #
+  # Only counts games the host actually played in - hosting a lobby you sit out
+  # of says nothing about favouring yourself. "Favoured" is the same 55% line
+  # `Match.balanced` and the player pages use, read from the host's own side.
+  def calculate_top_self_favourers(map_version = nil, limit = nil, map_versions = nil, top_n: 10)
+    matches = Match.where(ignored: false)
+      .where.not(host_battletag: nil)
+      .where.not(predicted_good_win_pct: nil)
+    matches = matches.where(map_version: map_version) if map_version.present?
+    matches = matches.where(map_version: map_versions) if map_versions.present?
+    matches = matches.reverse_chronological.limit(limit) if limit.present? && limit > 0
+
+    match_list = matches.includes(appearances: [ :faction, :player ]).to_a
+    hosts = helpers.host_players_for(match_list)
+
+    stats = Hash.new { |hash, key| hash[key] = { player: nil, played: 0, favoured: 0, underdog: 0 } }
+
+    match_list.each do |match|
+      host = hosts[match.id]
+      next unless host
+
+      appearance = match.appearances.find { |a| a.player_id == host.id }
+      next unless appearance&.faction
+
+      pct = helpers.team_win_pct(appearance)
+      next if pct.nil?
+
+      entry = stats[host.id]
+      entry[:player] = host
+      entry[:played] += 1
+      case helpers.team_prediction_role(pct)
+      when :favorite then entry[:favoured] += 1
+      when :underdog then entry[:underdog] += 1
+      end
+    end
+
+    top = stats.values.select { |entry| entry[:favoured].positive? }
+                      .sort_by { |entry| [ -entry[:favoured], -entry[:played] ] }
+                      .first(top_n)
+    top.each do |entry|
+      entry[:favoured_pct] = (entry[:favoured].to_f / entry[:played] * 100).round(1)
+      entry[:underdog_pct] = (entry[:underdog].to_f / entry[:played] * 100).round(1)
     end
     top
   end

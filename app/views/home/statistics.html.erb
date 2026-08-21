@@ -214,6 +214,52 @@
   </div>
   <% end %>
 
+  <%# Top Self-favourers %>
+  <% if @top_self_favourers.any? %>
+  <div class="mt-8">
+    <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
+      <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-1">Top Self-favourers</h2>
+      <p class="text-xs text-gray-500 mb-4">
+        Hosts ranked by how often they put themselves on the favoured side of a lobby they made.
+        Only games the host played in count. The underdog column is there for contrast &mdash; a host
+        who lands on both sides about equally is making lobbies, not favouring themselves.
+      </p>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead>
+            <tr class="border-b border-gray-200">
+              <th class="text-left py-2 px-3 font-medium text-gray-600">#</th>
+              <th class="text-left py-2 px-3 font-medium text-gray-600">Player</th>
+              <th class="text-right py-2 px-3 font-medium text-gray-600" title="Lobbies they hosted and played in, with a stored prediction">Hosted &amp; Played</th>
+              <th class="text-right py-2 px-3 font-medium text-gray-600" title="Their own team was predicted above 55%">Favoured</th>
+              <th class="text-right py-2 px-3 font-medium text-gray-600" title="Their own team was predicted below 45%">Underdog</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @top_self_favourers.each_with_index do |entry, index| %>
+              <tr class="border-b border-gray-100 hover:bg-gray-50">
+                <td class="py-2 px-3 text-gray-400"><%= index + 1 %></td>
+                <td class="py-2 px-3 font-medium">
+                  <%= link_to entry[:player].nickname, player_path(entry[:player]), class: "text-blue-600 hover:underline" %>
+                </td>
+                <td class="py-2 px-3 text-right"><%= entry[:played] %></td>
+                <td class="py-2 px-3 text-right">
+                  <span class="text-orange-600 font-medium"><%= entry[:favoured] %></span>
+                  <span class="text-gray-500">(<%= entry[:favoured_pct] %>%)</span>
+                </td>
+                <td class="py-2 px-3 text-right">
+                  <span class="text-purple-600"><%= entry[:underdog] %></span>
+                  <span class="text-gray-500">(<%= entry[:underdog_pct] %>%)</span>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <% end %>
+
   <%# Top Hosters %>
   <% if @top_hosters.any? %>
   <div class="mt-8">

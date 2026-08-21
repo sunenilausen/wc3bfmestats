@@ -109,6 +109,19 @@
             <td class="py-0.5">Region</td>
             <td class="text-right py-0.5"><%= player.region || "-" %></td>
           </tr>
+          <% if player.unrated_games.to_i > 0 %>
+            <tr>
+              <td class="py-0.5" title="Games where the map saved no result, so they could not be rated. They say this player has played, not how well.">
+                Unrated games
+              </td>
+              <td class="text-right py-0.5">
+                <span class="text-gray-600 font-medium"><%= player.unrated_games %></span>
+                <% if player.custom_rating_games_played.to_i.zero? %>
+                  <span class="text-gray-500 text-xs">(nothing rated)</span>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
           <% if player.games_left.to_i > 0 %>
             <tr>
               <td class="py-0.5" title="Number of games where player left before the match ended">Early Leaves</td>

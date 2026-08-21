@@ -302,10 +302,19 @@ class MlScoreRecalculator
       scores_with_games = centered_scores.select { |pid, _| games_played[pid].to_i > 0 }
       current_avg = scores_with_games.any? ? scores_with_games.values.sum / scores_with_games.size : 0.0
 
-      # Apply shift and save normalized scores
+      # Apply shift and save normalized scores. A player with no games has no
+      # performance to report: their raw score is 0, which sigmoid turns into a
+      # dead-centre 50, and the shift would then hand them an above-average PERF
+      # they never earned - and, because the new-player penalty only bites below
+      # 0, quietly exempt them from it. They get nil instead, which reads as "-"
+      # and falls back to ML_BASELINE wherever a number is needed.
       centered_scores.each do |player_id, centered_score|
-        normalized_score = (centered_score - current_avg).round(1)
-        Player.where(id: player_id).update_all(ml_score: normalized_score)
+        if games_played[player_id].to_i.zero?
+          Player.where(id: player_id).update_all(ml_score: nil)
+        else
+          normalized_score = (centered_score - current_avg).round(1)
+          Player.where(id: player_id).update_all(ml_score: normalized_score)
+        end
       end
     end
   end

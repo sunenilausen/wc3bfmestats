@@ -43,4 +43,17 @@ module PlayersHelper
       player.nickname
     end
   end
+
+  # Games a player took part in that the rating system had to throw away, because
+  # the map never reported a result. Shown next to their match count so someone
+  # with a long unrated history does not read as a complete newcomer.
+  def unrated_games_badge(player)
+    count = player.unrated_games.to_i
+    return "".html_safe if count.zero?
+
+    content_tag(:span, "+#{count} unrated",
+      class: "ml-1 text-xs text-gray-500 cursor-help",
+      title: "#{count} #{"game".pluralize(count)} where the map saved no result, so they could not be rated. " \
+             "They count as evidence this player has played, not as evidence of how well.")
+  end
 end

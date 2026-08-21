@@ -29,6 +29,9 @@ class RatingRecalculationJob < ApplicationJob
     Rails.logger.info "RatingRecalculationJob: Recalculating stay/leave percentages"
     StayLeaveRecalculator.new.call
 
+    Rails.logger.info "RatingRecalculationJob: Counting unrated games"
+    UnratedGamesCalculator.new.call
+
     # Prebuild caches for the affected match and participants
     if match_id
       Rails.logger.info "RatingRecalculationJob: Prebuilding caches for match ##{match_id}"

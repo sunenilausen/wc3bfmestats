@@ -447,6 +447,30 @@ Test maps (containing "test" in filename) are automatically marked as `ignored: 
 
 - **PlayerStatsCalculator**: Calculates per-player stats (wins, losses, top hero killer, etc.)
 - **FactionStatsCalculator**: Calculates per-faction stats across all players, supports optional `map_version` filter
+- **UnratedGamesCalculator**: Counts the games a player took part in that the rating system had to throw away
+
+### Unrated Games
+
+A replay whose map never saved a result leaves every player with `isWinner` nil. `Wc3stats::MatchBuilder` treats a player with no win/loss status as an observer, so the match is built with **no appearances at all** and never reaches the ratings. That is 970 full 10-player games — about a third of all full games on the site.
+
+**The outcome is not recoverable.** A rule of "all of one side's bases destroyed" decides 63% of *known* games at 99.7% accuracy, but fires on only 6 of 909 dropped ones. The same thing that lost the result lost the base wipe: these games never reached a victory condition (median 3 base kills and 838s, against 12 and 1076s for completed games). A leave-based fallback covers 20% more at 82% accuracy — too noisy to rate on. And only 17 of the 970 carry any stat variable at all, so even with a winner there would be no kills, no contribution ranks, no PERF.
+
+What is recoverable is **who played**. `Player#unrated_games` records how many dropped games each player appeared in (slots 0-9, 2min+, test maps excluded), resolved through primary *and* alternative battletags so a merged player is credited once. 1,100 players have at least one; 739 have never been rated at all, 22 of those with 10+ dropped games — people who look like complete newcomers but have been playing for years.
+
+**Display only.** It never feeds a rating, a K-factor or the unproven dock: an unrated game is evidence that someone has played, not evidence of how well.
+
+Shown in three places:
+- **Lobby rows (show and edit)** — a compact `+12u` next to the NEW badge, and **only under 30 rated games**, since its job there is to qualify that badge: someone with 7 rated and 20 unrated is not an unknown. `LobbiesHelper#unrated_games_marker`.
+- **Lobby edit search cards** — shown for **anyone who has any**, since on a search card it is information about the player you are weighing up, and the established players carry the biggest holes (Finrod +316u, Ele +123u). Yellow under 30 rated games where it changes how you read them, grey above. `unratedGamesHtml()` in the edit page's JS.
+
+Note the edit page rebuilds a slot in JS when a player is dragged or clicked in, and that markup has to be kept in step with `_lobby_player_row.html.erb` by hand — `newBadgeHtml()` and `unratedGamesHtml(..., { onlyWhenNew: true })` exist for that. Before they did, the NEW badge and the marker both vanished from a slot until the next page load.
+- **Players index** — a `+N unrated` badge beside Matches Played, shown at any game count.
+- **Player page** — an "Unrated games" row, with "(nothing rated)" when they have no rated games at all.
+
+Recomputed by `wc3stats:sync` (step 13), `wc3stats:recalculate` (step 6), `Wc3statsSyncJob` and `RatingRecalculationJob`.
+
+**Related fix:** `MlScoreRecalculator` now writes `ml_score: nil` for players with no games. Their raw score is 0, which sigmoid turns into a dead-centre 50; the normalisation shift then handed all 1,635 of them **+10.5 PERF** — reading as above average, and quietly exempting them from the new-player penalty, which only bites below 0. They now show "-" and fall back to `ML_BASELINE` wherever a number is needed.
+
 - **FactionEventStatsCalculator**: Calculates event-based stats from replay data (hero uptime, base uptime, hero K/D), supports optional `map_version` filter
 
 ### Ring Events (faction show page)

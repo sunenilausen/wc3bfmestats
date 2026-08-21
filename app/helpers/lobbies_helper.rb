@@ -75,4 +75,23 @@ module LobbiesHelper
       "#{years.round}y"
     end
   end
+
+  # Games the rating system had to throw away, shown only for players it still
+  # treats as new. Someone with 7 rated games and 20 unrated has played plenty -
+  # worth knowing before you read their NEW badge as "unknown".
+  # Mirrored by unratedGamesHtml() in lobbies/edit.html.erb for the search cards.
+  UNRATED_GAMES_SHOWN_BELOW = 30
+
+  def unrated_games_marker(player)
+    return "".html_safe unless player
+
+    unrated = player.unrated_games.to_i
+    return "".html_safe if unrated.zero?
+    return "".html_safe if player.custom_rating_games_played.to_i >= UNRATED_GAMES_SHOWN_BELOW
+
+    content_tag(:span, "+#{unrated}u",
+      class: "text-xs text-yellow-600 ml-1 cursor-help",
+      title: "#{unrated} #{"game".pluralize(unrated)} the rating system could not use, because the map saved " \
+             "no result. They have played more than their record shows.")
+  end
 end

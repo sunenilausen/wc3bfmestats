@@ -442,8 +442,14 @@ namespace :wc3stats do
     end
     puts
 
-    # Step 13: Invalidate stats cache
-    puts "Step 13: Invalidating stats cache..."
+    # Step 13: Count games the rating system had to throw away
+    puts "Step 13: Counting unrated games..."
+    unrated = UnratedGamesCalculator.new.call
+    puts "  Updated #{unrated.players_updated} players with unrated game counts"
+    puts
+
+    # Step 14: Invalidate stats cache
+    puts "Step 14: Invalidating stats cache..."
     StatsCacheKey.invalidate!
     puts "  Cache invalidated"
     puts
@@ -751,8 +757,14 @@ namespace :wc3stats do
     end
     puts
 
-    # Step 6: Invalidate cache
-    puts "Step 6: Invalidating stats cache..."
+    # Step 6: Count games the rating system had to throw away
+    puts "Step 6: Counting unrated games..."
+    unrated = UnratedGamesCalculator.new.call
+    puts "  Updated #{unrated.players_updated} players with unrated game counts"
+    puts
+
+    # Step 7: Invalidate cache
+    puts "Step 7: Invalidating stats cache..."
     StatsCacheKey.invalidate!
     puts "  Cache invalidated"
     puts

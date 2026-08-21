@@ -150,6 +150,12 @@
     return `<span class="text-yellow-600 text-xs cursor-help" title="${reasons.join(', ')}">⚠</span>`;
   }
 
+  // Mirrors the NEW badge in lobbies/_lobby_player_row.html.erb
+  function newBadgeHtml(player) {
+    if (!player || (player.games || 0) >= UNRATED_GAMES_SHOWN_BELOW) return '';
+    return '<span class="text-xs bg-yellow-100 text-yellow-800 px-1 py-0.5 rounded">NEW</span>';
+  }
+
   function playerById(playerId) {
     return allPlayers.find(p => String(p.id) === String(playerId));
   }
@@ -283,6 +289,27 @@
     }
   }
 
+  // Games the rating system could not use, because the map saved no result.
+  // Mirrors LobbiesHelper#unrated_games_marker.
+  //
+  // On a search card this shows for anyone who has any: it is information about
+  // the player you are weighing up, and the established players carry the
+  // biggest holes. In a lobby slot it only shows under UNRATED_GAMES_SHOWN_BELOW
+  // rated games, where its job is to qualify the NEW badge sitting next to it.
+  const UNRATED_GAMES_SHOWN_BELOW = 30;
+
+  function unratedGamesHtml(player, { onlyWhenNew = false } = {}) {
+    if (!player) return '';
+    const unrated = player.unratedGames || 0;
+    if (!unrated) return '';
+    if (onlyWhenNew && (player.games || 0) >= UNRATED_GAMES_SHOWN_BELOW) return '';
+
+    const isNew = (player.games || 0) < UNRATED_GAMES_SHOWN_BELOW;
+    const colour = isNew ? 'text-yellow-600' : 'text-gray-400';
+    return `<span class="text-xs ${colour} whitespace-nowrap flex-shrink-0"
+                  title="${unrated} game${unrated === 1 ? '' : 's'} the rating system could not use, because the map saved no result. They have played more than their record shows.">+${unrated}u</span>`;
+  }
+
   function renderPlayerResults() {
     const searchTerm = document.getElementById('player-search-input').value.toLowerCase();
     const assignedIds = getAssignedPlayerIds();
@@ -336,6 +363,7 @@
           <span class="text-xs whitespace-nowrap flex-shrink-0">
             <span class="text-green-600">${p.wins}W</span>/<span class="text-red-600">${p.losses}L</span>
           </span>
+          ${unratedGamesHtml(p)}
           <span class="text-xs text-gray-400 whitespace-nowrap flex-shrink-0 w-8 text-right" title="games in the last 3 months">${p.recentGames ? `${p.recentGames}g` : ''}</span>
           <span class="text-xs text-gray-400 whitespace-nowrap flex-shrink-0 w-11 text-right" title="last game played">${p.lastSeen || ''}</span>
           <span class="flex-shrink-0">${formBadgesHtml(p.form)}</span>
@@ -978,6 +1006,8 @@
               ondragend="handlePlayerDragEnd(event)">
           ${playerName}
           ${leaverWarningHtml(playerById(playerId))}
+          ${newBadgeHtml(playerById(playerId))}
+          ${unratedGamesHtml(playerById(playerId), { onlyWhenNew: true })}
           <a href="/players/${playerId}" class="text-gray-400 hover:text-blue-600" title="View player" onclick="event.stopPropagation()">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />

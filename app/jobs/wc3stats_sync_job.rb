@@ -111,6 +111,7 @@ class Wc3statsSyncJob < ApplicationJob
 
     # Calculate stay/leave percentages
     recalculate_stay_leave
+    count_unrated_games
 
     # Prebuild caches for new matches
     prebuild_caches
@@ -370,6 +371,13 @@ class Wc3statsSyncJob < ApplicationJob
     if recalculator.errors.any?
       Rails.logger.warn "Wc3statsSyncJob: Stay/leave errors: #{recalculator.errors.count}"
     end
+  end
+
+  def count_unrated_games
+    Rails.logger.info "Wc3statsSyncJob: Counting unrated games"
+    calculator = UnratedGamesCalculator.new
+    calculator.call
+    Rails.logger.info "Wc3statsSyncJob: Updated #{calculator.players_updated} players with unrated game counts"
   end
 
   def backfill_apm

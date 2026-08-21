@@ -87,8 +87,10 @@ class LobbyEditStats
       }
     end
 
-    players_for_select = Player.order(:nickname).pluck(:id, :nickname, :alternative_name, :ml_score, :custom_rating, :leave_pct, :games_left)
-      .map { |id, nn, an, ml, cr, lp, gl| { id: id, nickname: nn, alternative_name: an, ml_score: ml, custom_rating: cr, leave_pct: lp, games_left: gl } }
+    players_for_select = Player.order(:nickname)
+      .pluck(:id, :nickname, :alternative_name, :ml_score, :custom_rating, :leave_pct, :games_left, :unrated_games)
+      .map { |id, nn, an, ml, cr, lp, gl, ug| { id: id, nickname: nn, alternative_name: an, ml_score: ml,
+                                                custom_rating: cr, leave_pct: lp, games_left: gl, unrated_games: ug } }
 
     # Precompute average contribution ranks for all players
     avg_ranks = Appearance.joins(:match)
@@ -152,6 +154,7 @@ class LobbyEditStats
         recentGames: games_last_3_months[player[:id]] || 0,
         form: form_by_player[player[:id]] || [],
         recentLeaves: leaves_by_player[player[:id]] || 0,
+        unratedGames: player[:unrated_games] || 0,
         lastSeen: format_last_seen(played_at),
         defaultRank: default_ranks[player[:id]]
       }

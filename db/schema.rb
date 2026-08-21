@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_13_140000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_20_000001) do
   create_table "ahoy_events", force: :cascade do |t|
     t.string "name"
     t.text "properties"
@@ -93,6 +93,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_140000) do
     t.decimal "perf_score"
     t.float "performance_score"
     t.integer "player_id", null: false
+    t.decimal "schedule_skew_multiplier"
     t.integer "self_heal"
     t.float "stay_pct"
     t.integer "streak_before_match"
@@ -218,6 +219,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_140000) do
     t.string "nickname"
     t.string "region"
     t.float "stay_pct", default: 100.0
+    t.integer "unrated_games", default: 0, null: false
     t.datetime "updated_at", null: false
   end
 

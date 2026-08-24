@@ -44,6 +44,18 @@ module PlayersHelper
     end
   end
 
+  # Admins can flag someone who trolls or ruins games. It is a warning to whoever
+  # is reading, never an input to a rating - the note is the whole point, so it
+  # rides along as the tooltip.
+  # Mirrored by flagHtml() in lobbies/edit.html.erb for the JS-rebuilt slots.
+  def player_flag_icon(player, extra_class: "")
+    return "".html_safe unless player&.flagged?
+
+    content_tag(:span, "\u{1F6A9}",
+      class: "text-xs cursor-help #{extra_class}".strip,
+      title: player.flag_reason)
+  end
+
   # Games a player took part in that the rating system had to throw away, because
   # the map never reported a result. Shown next to their match count so someone
   # with a long unrated history does not read as a complete newcomer.

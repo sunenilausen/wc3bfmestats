@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_20_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_24_000001) do
   create_table "ahoy_events", force: :cascade do |t|
     t.string "name"
     t.text "properties"
@@ -206,6 +206,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_20_000001) do
     t.float "custom_rating_seed"
     t.float "elo_rating"
     t.float "elo_rating_seed"
+    t.text "flag_note"
+    t.boolean "flagged", default: false, null: false
+    t.datetime "flagged_at"
     t.integer "games_left", default: 0
     t.integer "games_stayed", default: 0
     t.float "glicko2_rating", default: 1500.0
@@ -221,6 +224,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_20_000001) do
     t.float "stay_pct", default: 100.0
     t.integer "unrated_games", default: 0, null: false
     t.datetime "updated_at", null: false
+    t.index ["flagged"], name: "index_players_on_flagged"
   end
 
   create_table "prediction_weights", force: :cascade do |t|

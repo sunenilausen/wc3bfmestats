@@ -473,6 +473,25 @@ Recomputed by `wc3stats:sync` (step 13), `wc3stats:recalculate` (step 6), `Wc3st
 
 - **FactionEventStatsCalculator**: Calculates event-based stats from replay data (hero uptime, base uptime, hero K/D), supports optional `map_version` filter
 
+### Player Flags (troll warning)
+
+Admins can flag a player who trolls or ruins games, with a note explaining why. Set on the player edit form (`/players/:id/edit`, "Moderation" section) — `flagged`, `flag_note` and `flagged_at` on Player.
+
+**Display only.** It never touches a rating, a prediction, balancing or a K-factor. It is a warning to whoever is reading the page, nothing the maths sees.
+
+Rendered as a red flag with the note as its tooltip (`PlayersHelper#player_flag_icon`, falling back to "Flagged by an admin" when there is no note):
+- **Players index** and **player page** (the player page also gets a red "Flagged" row in Player Info showing the note in full)
+- **Match show** — next to the player's name in the team tables
+- **Lobby show and edit** — next to the name in a slot, on the search cards, and in the observer list
+
+The lobby edit page rebuilds a slot in JS when a player is dragged or clicked in, so `flagHtml()` in `lobbies/edit.html.erb` mirrors the helper and has to be kept in step with it — same as `newBadgeHtml()` and `unratedGamesHtml()`. The note is admin-written text going into a `title` attribute there, so it goes through `escapeAttr()`.
+
+**Unflagging clears the note.** The note is public — it is the tooltip everyone reads — so a withdrawn flag must not leave its judgement behind. `flagged_at` is stamped on the first flag and survives note edits.
+
+**Caching.** Flags change nothing about matches or appearances, so `StatsCacheKey.key` cannot move when one is set — the match page would keep serving a stale flag. `StatsCacheKey.moderation_key` is a digest of who is flagged and what their notes say, busted directly by a Player `after_commit`, and mixed into the two caches that render flags: the `match_show` fragment (bumped to "v5") and `LobbyEditStats.cache_key` (bumped to "v5"). A digest rather than a timestamp because two edits in the same second would hash the same. `test/integration/player_flag_display_test.rb` exercises both with a real cache store, since the test env runs a null store and would not catch a stale fragment otherwise.
+
+Only admins can set a flag: `player_params` adds `:flagged` and `:flag_note` only for `current_user&.admin?`, on top of CanCan already keeping non-admins out of `update`.
+
 ### Top Self-favourers (/statistics)
 
 Hosts ranked by how often they put themselves on the favoured side of a lobby they made. `HomeController#calculate_top_self_favourers`.

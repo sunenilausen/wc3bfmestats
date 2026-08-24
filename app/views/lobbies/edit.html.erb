@@ -150,6 +150,21 @@
     return `<span class="text-yellow-600 text-xs cursor-help" title="${reasons.join(', ')}">⚠</span>`;
   }
 
+  function escapeAttr(text) {
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  // The admin troll flag. Mirrors PlayersHelper#player_flag_icon - the note is
+  // admin-written text going into an attribute, so it has to be escaped.
+  function flagHtml(player) {
+    if (!player || !player.flagged) return '';
+    return `<span class="text-xs cursor-help flex-shrink-0" title="${escapeAttr(player.flagNote)}">\u{1F6A9}</span>`;
+  }
+
   // Mirrors the NEW badge in lobbies/_lobby_player_row.html.erb
   function newBadgeHtml(player) {
     if (!player || (player.games || 0) >= UNRATED_GAMES_SHOWN_BELOW) return '';
@@ -360,6 +375,7 @@
              ondragend="handlePlayerDragEnd(event)"
              onclick="assignPlayer(${p.id}, this)">
           <span class="font-medium text-sm truncate flex-1 min-w-0" title="${displayName}">${p.nickname}${p.alternativeName ? ` <span class="text-gray-400 font-normal">(${p.alternativeName})</span>` : ''}</span>
+          ${flagHtml(p)}
           <span class="text-xs whitespace-nowrap flex-shrink-0">
             <span class="text-green-600">${p.wins}W</span>/<span class="text-red-600">${p.losses}L</span>
           </span>
@@ -1005,6 +1021,7 @@
               ondragstart="handleSlotDragStart(event, ${playerId}, '${playerName}', ${slotIndex})"
               ondragend="handlePlayerDragEnd(event)">
           ${playerName}
+          ${flagHtml(playerById(playerId))}
           ${leaverWarningHtml(playerById(playerId))}
           ${newBadgeHtml(playerById(playerId))}
           ${unratedGamesHtml(playerById(playerId), { onlyWhenNew: true })}

@@ -5,8 +5,8 @@
 # lobby is being edited. Both LobbiesController and CachePrebuildJob read it
 # through .fetch, so the prebuilt entry is the one the page actually uses.
 class LobbyEditStats
-  # "v4": search entries gained recentGames / lastSeen / defaultRank / form / recentLeaves
-  CACHE_VERSION = "v4"
+  # "v5": search entries gained the admin troll flag and its note
+  CACHE_VERSION = "v5"
   CACHE_TTL = 1.hour
 
   # How many players each source contributes to the default search list, and
@@ -39,7 +39,9 @@ class LobbyEditStats
   end
 
   def self.cache_key
-    [ "lobby_edit_player_stats", CACHE_VERSION, StatsCacheKey.key ]
+    # Flags are admin edits on players, which move neither matches nor
+    # appearances, so the moderation token is what busts this when one changes.
+    [ "lobby_edit_player_stats", CACHE_VERSION, StatsCacheKey.key, StatsCacheKey.moderation_key ]
   end
 
   def self.fetch
@@ -88,9 +90,10 @@ class LobbyEditStats
     end
 
     players_for_select = Player.order(:nickname)
-      .pluck(:id, :nickname, :alternative_name, :ml_score, :custom_rating, :leave_pct, :games_left, :unrated_games)
-      .map { |id, nn, an, ml, cr, lp, gl, ug| { id: id, nickname: nn, alternative_name: an, ml_score: ml,
-                                                custom_rating: cr, leave_pct: lp, games_left: gl, unrated_games: ug } }
+      .pluck(:id, :nickname, :alternative_name, :ml_score, :custom_rating, :leave_pct, :games_left, :unrated_games, :flagged, :flag_note)
+      .map { |id, nn, an, ml, cr, lp, gl, ug, fl, fn| { id: id, nickname: nn, alternative_name: an, ml_score: ml,
+                                                       custom_rating: cr, leave_pct: lp, games_left: gl, unrated_games: ug,
+                                                       flagged: fl, flag_note: fn } }
 
     # Precompute average contribution ranks for all players
     avg_ranks = Appearance.joins(:match)
@@ -155,6 +158,8 @@ class LobbyEditStats
         form: form_by_player[player[:id]] || [],
         recentLeaves: leaves_by_player[player[:id]] || 0,
         unratedGames: player[:unrated_games] || 0,
+        flagged: player[:flagged] || false,
+        flagNote: player[:flagged] ? (player[:flag_note].presence || "Flagged by an admin") : nil,
         lastSeen: format_last_seen(played_at),
         defaultRank: default_ranks[player[:id]]
       }

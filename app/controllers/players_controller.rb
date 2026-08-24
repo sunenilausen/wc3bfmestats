@@ -489,9 +489,15 @@ class PlayersController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def player_params
-      params.expect(player: [
+      permitted = [
         :battletag, :nickname, :alternative_name, :region,
         :custom_rating_seed, :elo_rating_seed, :glicko2_rating_seed
-      ])
+      ]
+      # The troll flag is a moderation call, so only an admin gets to set it -
+      # CanCan already keeps everyone else out of update, this keeps the flag
+      # out of reach even if that ever loosens.
+      permitted += [ :flagged, :flag_note ] if current_user&.admin?
+
+      params.expect(player: permitted)
     end
 end

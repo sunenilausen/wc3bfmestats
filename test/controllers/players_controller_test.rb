@@ -61,6 +61,33 @@ class PlayersControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to player_url(@player)
   end
 
+  test "admin can flag a player with a note" do
+    sign_in @admin
+    patch player_url(@player), params: { player: { flagged: "1", flag_note: "Feeds heroes" } }
+
+    @player.reload
+    assert @player.flagged?
+    assert_equal "Feeds heroes", @player.flag_note
+  end
+
+  test "admin can clear a flag" do
+    @player.update!(flagged: true, flag_note: "Feeds heroes")
+    sign_in @admin
+    patch player_url(@player), params: { player: { flagged: "0" } }
+
+    @player.reload
+    assert_not @player.flagged?
+    assert_nil @player.flagged_at
+  end
+
+  test "uploader cannot flag a player" do
+    sign_in users(:uploader)
+    patch player_url(@player), params: { player: { flagged: "1", flag_note: "Feeds heroes" } }
+
+    assert_redirected_to root_path
+    assert_not @player.reload.flagged?
+  end
+
   test "should not update player when not admin" do
     patch player_url(@player), params: { player: { nickname: "hacked" } }
     assert_redirected_to root_path

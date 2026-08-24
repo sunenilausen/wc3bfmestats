@@ -4,7 +4,7 @@
       <span style="display: inline-block; width: 14px; height: 14px; background-color: <%= appearance.faction.color %>; border-radius: 3px; margin-right: 6px; vertical-align: middle;"></span>
     <% end %>
     <% if appearance.player %>
-      <%= link_to appearance.player.nickname, player_path(appearance.player) %><% if appearance.player.alternative_name.present? %> <span class="text-gray-400 font-normal">(<%= appearance.player.alternative_name %>)</span><% end %>
+      <%= link_to appearance.player.nickname, player_path(appearance.player) %><% if appearance.player.alternative_name.present? %> <span class="text-gray-400 font-normal">(<%= appearance.player.alternative_name %>)</span><% end %><%= player_flag_icon(appearance.player, extra_class: "ml-1") %>
       <% if appearance.is_early_leaver? %>
         <span class="ml-1 px-1.5 py-0.5 bg-orange-200 text-orange-800 text-xs rounded" title="Left within first 3 minutes">EARLY</span>
       <% end %>

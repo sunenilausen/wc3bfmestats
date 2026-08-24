@@ -6,6 +6,18 @@ class Player < ApplicationRecord
   has_many :player_faction_stats, dependent: :destroy
   has_many :ranked_factions, through: :player_faction_stats, source: :faction
 
+  # Admin moderation flag: someone who trolls or ruins games. Display only - it
+  # never touches a rating, a prediction or a balance decision. The note is what
+  # the flag is shown as on hover, so an empty one falls back to generic text.
+  scope :flagged, -> { where(flagged: true) }
+
+  before_save :normalize_flag
+  after_commit :invalidate_moderation_cache, if: :saved_change_to_flag?
+
+  def flag_reason
+    flag_note.presence || "Flagged by an admin"
+  end
+
   # Always use battletag as URL param for consistency
   def to_param
     battletag.presence || id.to_s
@@ -412,6 +424,28 @@ class Player < ApplicationRecord
   end
 
   private
+
+  # Unflagging drops the note with it. The note is public - it is the tooltip
+  # everyone reads - so leaving it behind on someone no longer flagged would
+  # keep publishing a judgement that has been withdrawn.
+  def normalize_flag
+    self.flag_note = flag_note.presence
+
+    if flagged?
+      self.flagged_at ||= Time.current
+    else
+      self.flagged_at = nil
+      self.flag_note = nil
+    end
+  end
+
+  def saved_change_to_flag?
+    saved_change_to_flagged? || saved_change_to_flag_note?
+  end
+
+  def invalidate_moderation_cache
+    StatsCacheKey.invalidate_moderation!
+  end
 
   def rating_differences_by_role(role)
     differences = []

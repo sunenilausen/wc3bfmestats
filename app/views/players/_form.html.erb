@@ -29,6 +29,31 @@
       </div>
     </div>
 
+    <%# Moderation Section - admins only %>
+    <% if can?(:manage, @player) %>
+      <div>
+        <h3 class="font-semibold text-gray-700 mb-2 text-lg border-b pb-2">Moderation</h3>
+        <p class="text-sm text-gray-500 mb-4">
+          Flag a player who trolls or ruins games. A red flag shows next to their name on the player list,
+          match pages and in lobbies, with the note below as its tooltip. Display only &mdash; it never
+          changes a rating, a prediction or team balancing.
+        </p>
+        <div class="space-y-4">
+          <%= f.input :flagged, as: :boolean, label: "Flag this player", label_html: { class: label_class }, wrapper_html: { class: "flex items-center gap-2" } %>
+          <%= f.input :flag_note,
+              as: :text,
+              label: "Flag note (shown on hover)",
+              label_html: { class: label_class },
+              input_html: { class: input_class, rows: 3, maxlength: 300 },
+              hint: "Why they are flagged, e.g. \"Feeds heroes and rage quits\". Everyone can read this on hover.",
+              hint_html: { class: hint_class } %>
+          <% if @player.flagged_at.present? %>
+            <p class="text-sm text-gray-500">Flagged since <%= @player.flagged_at.strftime("%Y-%m-%d") %>.</p>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+
     <%# Rating Seeds Section %>
     <div>
       <h3 class="font-semibold text-gray-700 mb-2 text-lg border-b pb-2">Rating Seeds</h3>

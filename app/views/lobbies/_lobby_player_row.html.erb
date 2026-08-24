@@ -55,6 +55,7 @@
               ondragstart="handleSlotDragStart(event, <%= lp.player_id %>, '<%= j player_display_name(lp.player) %>', <%= index %>)"
               ondragend="handlePlayerDragEnd(event)">
           <%= player_display_name_html(lp.player) %>
+          <%= player_flag_icon(lp.player) %>
           <%= leaver_warning_badge(lp.player.leave_pct, player_recent_leaves[lp.player_id]) %>
           <% if lp.player.custom_rating_games_played.to_i < 30 %>
             <span class="text-xs bg-yellow-100 text-yellow-800 px-1 py-0.5 rounded">NEW</span>
@@ -85,6 +86,7 @@
       <% end %>
     <% elsif lp.player %>
       <%= link_to player_display_name_html(lp.player), player_path(lp.player), class: "text-blue-600 hover:underline" %>
+      <%= player_flag_icon(lp.player, extra_class: "ml-1") %>
       <%= leaver_warning_badge(lp.player.leave_pct, player_recent_leaves[lp.player_id]) %>
       <% if lp.player.custom_rating_games_played.to_i < 30 %>
         <span class="text-xs bg-yellow-100 text-yellow-800 px-1 py-0.5 rounded ml-1">NEW</span>

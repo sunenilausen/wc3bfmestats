@@ -34,7 +34,7 @@ class BatchPlayerEventStatsCalculator
       next unless replay.match.present?
       next if replay.match.ignored?
 
-      match_length = replay.game_length || replay.match.seconds
+      match_length = replay.effective_length || replay.match.seconds
       next unless match_length && match_length > 0
 
       # Index appearances by player_id for fast lookup

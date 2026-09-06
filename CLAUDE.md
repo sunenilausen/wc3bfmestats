@@ -385,6 +385,60 @@ When adding an unknown player to a lobby (via "New Player" option), the defaults
 
 These values are defined in `NewPlayerDefaults` model.
 
+### Idle Tail (contested game length)
+
+wc3stats records a replay's `length` as the moment the **last** player left. A
+player who sits in the game after everyone else has gone — saving the replay, or
+just walking away — keeps the recording running, and that idle tail lands in
+every "percentage of the game" derived from it.
+
+The damage is worst in `stay_pct`, because `CustomRatingRecalculator` scales a
+**winner's** rating change by it (`custom_rating_recalculator.rb:346`). In match
+`d3a613f7e16976601173986ba6992aa8` one player stayed 3h28m after a 45-minute
+game, putting his four team mates on a 15% stayPercent and cutting their win
+from about +9 CR to +1.
+
+**Detection** (`Wc3statsReplay`): sort the slot 0-9 players by `leftAt`
+descending and walk down while the gap to the next player is at least
+`IDLE_TAIL_THRESHOLD` (120s). Where it stops is `idle_tail_started_at` — when
+the game stopped being contested.
+
+The threshold comes from the data: across 1,963 full matches the gap between the
+last leave and the second-to-last is **65s or less in all but four**, and in
+those four it is 241s, 1,774s, 5,470s and 12,483s. Nothing lands in between, so
+120s sits in a real gap rather than on a slope. The walk never takes more than
+one step anywhere in the dataset; it exists so two people idling together can't
+hide each other, and is capped at half the players so a slow trickle of leavers
+can never strip the game away.
+
+| method | |
+|---|---|
+| `game_length` | what wc3stats recorded — still used for the raw value |
+| `effective_length` | how long the game was actually contested; falls back to `game_length` when nobody idled, so it is safe anywhere `game_length` was |
+| `idle_tail?` / `idle_tail_seconds` / `idle_stragglers` | the detection itself |
+| `stay_percent_for(player_data)` | replaces the replay's own `stayPercent`, which divides by the recorded length and so is wrong for *everyone* whenever someone idled |
+
+**Where `effective_length` is used:** every `replay.game_length || match.seconds`
+site — the 12 places that compute a percentage of the game (hero uptime, base
+uptime, PERF, stay/leave, the prediction trainer). `Wc3stats::MatchBuilder` also
+writes it to `match.seconds` and uses it for `too_short?`, so a 35-second game
+that one player sat in for another four minutes is correctly ignored rather than
+rated. `UnratedGamesCalculator` deliberately still uses the raw `game_length`.
+
+**Surfacing it:** `SuspiciousMatchFinder#check_idle_tail` reports it on the admin
+suspicious-matches page, naming the straggler and the tail. It adds "and the win
+went to their team" when the straggler was on the winning side, because the map
+can hand the win to whoever is last standing — which is exactly what happened in
+`d3a613f7e16976601173986ba6992aa8`, where the same match also trips "6 forfeit
+message(s) from winning team". **The detection never flips a result**; correcting
+the winner stays a manual override.
+
+**Scale:** 5 matches in the whole database, 4 of them the same player. Fixing
+them moved the reported match's winners from +1/+1/+3/+8/+11 CR to +8/+8/+19/
++8/+61, and newly ignored one 35-second game (`92be272af06623deacedeff968feb193`,
+where 8 of 10 players left inside 35s but the recorded length was 277s). Overall
+prediction accuracy is unchanged at 66.7%.
+
 ### Stay/Leave Tracking
 
 Players have stay/leave percentages tracked based on replay data. Managed by `StayLeaveRecalculator` service.

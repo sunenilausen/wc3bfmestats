@@ -60,8 +60,91 @@ class Wc3statsReplay < ApplicationRecord
     end
   end
 
+  # The length wc3stats recorded, which is when the LAST player left.
   def game_length
     body&.dig("length")
+  end
+
+  # Time one player can sit alone in a finished game before we stop counting
+  # it as part of the game. Chosen from the data: across 1,963 full matches
+  # the gap between the last leave and the second-to-last is under 65s in all
+  # but four, and in those four it is 241s, 1774s, 5470s and 12483s. Nothing
+  # lands in between.
+  IDLE_TAIL_THRESHOLD = 120
+
+  # How long the game was actually contested.
+  #
+  # A player who stays in the lobby after everyone else has gone - saving the
+  # replay, or just walking away - keeps the recording running, and that idle
+  # tail lands in every "percentage of the game" we compute from it. In match
+  # 17366 one player sat there for 3.5 hours after a 45 minute game, which put
+  # every one of his team mates on a 15% stayPercent and, because winners have
+  # their rating change scaled by stayPercent, cut their win down to +1 CR.
+  #
+  # Returns the recorded length when nobody idled, so it is safe to use
+  # anywhere game_length was.
+  def effective_length
+    idle_tail_started_at || game_length
+  end
+
+  # When the game stopped being contested, or nil if it never did (the normal
+  # case, where the recording ends with the last player leaving).
+  def idle_tail_started_at
+    times = contested_leave_times
+    return nil if times.size < 2
+
+    # Walk down past each straggler. In practice this never takes more than
+    # one step, but two people idling together would otherwise hide each
+    # other. Never strip so many that the game itself disappears.
+    index = 0
+    max_strip = times.size / 2
+    index += 1 while index < max_strip && (times[index] - times[index + 1]) >= IDLE_TAIL_THRESHOLD
+
+    index.zero? ? nil : times[index]
+  end
+
+  # True when the recorded length overstates the game because someone idled.
+  def idle_tail?
+    idle_tail_started_at.present?
+  end
+
+  def idle_tail_seconds
+    tail_start = idle_tail_started_at
+    return nil unless tail_start && game_length
+
+    game_length - tail_start
+  end
+
+  # The players who sat in the game after it was over, longest first.
+  def idle_stragglers
+    tail_start = idle_tail_started_at
+    return [] unless tail_start
+
+    active_slot_players.select { |p| p["leftAt"].to_i > tail_start }
+      .sort_by { |p| -p["leftAt"].to_i }
+  end
+
+  # How much of the contested game a player was present for, as a percentage.
+  # Replaces the replay's own stayPercent, which divides by the recorded
+  # length and so is wrong for everyone whenever someone idled.
+  def stay_percent_for(player_data)
+    recorded = player_data["stayPercent"]
+    length = effective_length
+    return recorded unless length && length > 0 && idle_tail?
+
+    left_at = player_data["leftAt"]
+    return recorded if left_at.nil?
+
+    [ (left_at.to_f / length * 100).round(2), 100.0 ].min
+  end
+
+  # Leave times of the players who were actually playing, newest first.
+  def contested_leave_times
+    active_slot_players.filter_map { |p| p["leftAt"] }.sort.reverse
+  end
+
+  def active_slot_players
+    players.select { |p| p["slot"]&.between?(0, 9) && !p["isWinner"].nil? }
   end
 
   # Returns the best estimate of when the game was actually played

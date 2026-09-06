@@ -52,7 +52,7 @@ class StayLeaveRecalculator
     return unless game && game["players"]
 
     game_players = game["players"].reject { |p| p["isObserver"] }
-    game_length = replay.game_length || match.seconds
+    game_length = replay.effective_length || match.seconds
     return unless game_length && game_length > 0
 
     # Get all players with leave times, sorted by leave time

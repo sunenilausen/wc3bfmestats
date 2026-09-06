@@ -41,12 +41,31 @@ class SuspiciousMatchFinder
   def analyze_match(match)
     reasons = []
 
+    reasons.concat(check_idle_tail(match))
     reasons.concat(check_kill_disparity(match))
     reasons.concat(check_forfeit_messages(match))
     reasons.concat(check_base_deaths(match))
     reasons.concat(check_upset(match))
 
     reasons
+  end
+
+  # One player sitting in the game long after everyone else has left. The map
+  # can hand the win to whichever team that player is on simply because they
+  # were the last one standing, so the recorded result is worth a look.
+  def check_idle_tail(match)
+    replay = match.wc3stats_replay
+    return [] unless replay&.idle_tail?
+
+    stragglers = replay.idle_stragglers
+    names = stragglers.map { |p| p["name"] }.join(", ")
+    tail = ChronicDuration.output(replay.idle_tail_seconds, format: :short) || "#{replay.idle_tail_seconds}s"
+    reason = "#{names} stayed #{tail} after the game ended (recorded length #{replay.game_length}s, contested #{replay.effective_length}s)"
+
+    straggler_won = stragglers.any? { |p| p["isWinner"] }
+    reason += " - and the win went to their team" if straggler_won
+
+    [ reason ]
   end
 
   def check_kill_disparity(match)

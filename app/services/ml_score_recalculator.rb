@@ -334,7 +334,7 @@ class MlScoreRecalculator
       next unless replay.match.present?
       next if replay.match.ignored?
 
-      match_length = replay.game_length || replay.match.seconds
+      match_length = replay.effective_length || replay.match.seconds
       next unless match_length && match_length > 0
 
       replay.players.each do |player_data|

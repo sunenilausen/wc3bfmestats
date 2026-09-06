@@ -55,7 +55,7 @@ class PlayerEventStatsCalculator
       next if @map_version.present? && replay.match.map_version != @map_version
       next if @map_versions.present? && !@map_versions.include?(replay.match.map_version)
 
-      match_length = replay.game_length || replay.match.seconds
+      match_length = replay.effective_length || replay.match.seconds
       next unless match_length && match_length > 0
 
       # Find this player in the replay

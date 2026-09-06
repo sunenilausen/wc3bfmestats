@@ -219,7 +219,7 @@ class FactionEventStatsCalculator
     Wc3statsReplay.includes(match: { appearances: :faction }).where(id: replay_ids).find_each do |replay|
       next unless replay.match.present?
 
-      match_length = replay.game_length || replay.match.seconds
+      match_length = replay.effective_length || replay.match.seconds
       next unless match_length && match_length > 0
 
       # Get the faction appearance (we know it exists since we filtered by faction)

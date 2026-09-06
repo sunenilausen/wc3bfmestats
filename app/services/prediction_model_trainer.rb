@@ -144,7 +144,7 @@ class PredictionModelTrainer
       if replay&.events.present?
         faction = app.faction
         hero_names = faction.heroes.reject { |h| FactionEventStatsCalculator::EXTRA_HEROES.include?(h) }
-        match_length = replay.game_length || app.match.seconds || 0
+        match_length = replay.effective_length || app.match.seconds || 0
 
         hero_death_events = replay.events.select { |e| e["eventName"] == "heroDeath" && e["time"] && e["time"] <= match_length }
 

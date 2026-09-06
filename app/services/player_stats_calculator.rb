@@ -498,7 +498,7 @@ class PlayerStatsCalculator
     faction = appearance.faction
     return nil unless faction
 
-    match_length = replay.game_length || match.seconds
+    match_length = replay.effective_length || match.seconds
     return nil unless match_length && match_length > 0
 
     extra_heroes = FactionEventStatsCalculator::EXTRA_HEROES rescue []

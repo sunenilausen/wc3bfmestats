@@ -63,7 +63,7 @@ module Wc3stats
         wc3stats_replay: wc3stats_replay,
         played_at: wc3stats_replay.played_at,
         uploaded_at: wc3stats_replay.earliest_upload_at,
-        seconds: wc3stats_replay.game_length,
+        seconds: wc3stats_replay.effective_length,
         good_victory: determine_good_victory,
         is_draw: wc3stats_replay.is_draw?,
         has_early_leaver: wc3stats_replay.has_early_leaver?,
@@ -84,8 +84,10 @@ module Wc3stats
         too_short?
     end
 
+    # Measured against the contested length, so a 35 second game that one
+    # player sat in for another four minutes is still a 35 second game.
     def too_short?
-      game_length = wc3stats_replay.game_length
+      game_length = wc3stats_replay.effective_length
       game_length.present? && game_length < MIN_GAME_LENGTH
     end
 
@@ -131,7 +133,7 @@ module Wc3stats
           self_heal: self_heal,
           team_heal: team_heal,
           total_heal: total_heal,
-          stay_pct: player_data["stayPercent"],
+          stay_pct: wc3stats_replay.stay_percent_for(player_data),
           apm: player_data["apm"],
           is_early_leaver: is_early_leaver
         )

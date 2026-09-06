@@ -490,7 +490,7 @@ class CustomRatingRecalculator
     faction = appearance.faction
     return nil unless faction
 
-    match_length = replay.game_length || match.seconds
+    match_length = replay.effective_length || match.seconds
     return nil unless match_length && match_length > 0
 
     # Get core hero names (exclude extra heroes like Sauron)
@@ -652,7 +652,7 @@ class CustomRatingRecalculator
   RING_DROP_TIME_BUFFER = 2
 
   def count_evil_bases_alive_at(replay, time, match)
-    match_length = replay.game_length || match.seconds
+    match_length = replay.effective_length || match.seconds
     return 3 unless match_length && match_length > 0
 
     # Check 2 seconds before ring drop time to handle same-timestamp events
@@ -845,7 +845,7 @@ class CustomRatingRecalculator
     faction = appearance.faction
     return unless faction
 
-    match_length = replay.game_length || match.seconds
+    match_length = replay.effective_length || match.seconds
     return unless match_length && match_length > 0
 
     # Heroes lost
@@ -1238,7 +1238,7 @@ class CustomRatingRecalculator
     replay = match.wc3stats_replay
     return false unless replay&.events&.any?
 
-    match_length = replay.game_length || match.seconds
+    match_length = replay.effective_length || match.seconds
     return false unless match_length && match_length > 0
 
     stay_pct = appearance.stay_pct || 100

@@ -1,4 +1,8 @@
 module MatchesHelper
+  # Stands in for a NULL timestamp so ordering_key sorts them last, the way
+  # the NULLS LAST in Match.chronological does.
+  NULLS_LAST_TIME = Time.at(1 << 33).freeze
+
   # The player who hosted the lobby, resolved from the replay's host battletag.
   # Prefers a player already in the match and falls back to a global battletag
   # lookup for hosts who only observed. Nil when unresolvable.
@@ -250,25 +254,21 @@ module MatchesHelper
   def match_is_before?(match_a, match_b)
     return false if match_a.id == match_b.id
 
-    # Compare using the same criteria as the chronological scope
-    a_vals = [
-      match_a.major_version || 0,
-      match_a.build_version || 0,
-      match_a.row_order || 999999,
-      match_a.map_version || "",
-      match_a.uploaded_at || Time.at(0),
-      match_a.wc3stats_replay_id || match_a.id
-    ]
-    b_vals = [
-      match_b.major_version || 0,
-      match_b.build_version || 0,
-      match_b.row_order || 999999,
-      match_b.map_version || "",
-      match_b.uploaded_at || Time.at(0),
-      match_b.wc3stats_replay_id || match_b.id
-    ]
+    (ordering_key(match_a) <=> ordering_key(match_b)) < 0
+  end
 
-    (a_vals <=> b_vals) < 0
+  # Mirrors the Match.chronological scope, for comparing two loaded matches.
+  def ordering_key(match)
+    [
+      match.map_version_order || -1,
+      match.played_at || NULLS_LAST_TIME,
+      match.major_version || 0,
+      match.build_version || 0,
+      match.row_order || 999999,
+      match.map_version || "",
+      match.uploaded_at || NULLS_LAST_TIME,
+      match.wc3stats_replay_id || match.id
+    ]
   end
 
   def sort_link_for(column, label)

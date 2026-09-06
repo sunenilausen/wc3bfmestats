@@ -361,7 +361,7 @@ namespace :wc3stats do
       changes[:uploaded_at] = replay.played_at if match.uploaded_at.nil? && replay.played_at
 
       if changes.any?
-        match.update_columns(changes)
+        match.update_columns(Match.with_map_version_order(match, changes))
         backfill_count += 1
       end
     end
@@ -537,7 +537,7 @@ namespace :wc3stats do
         changes[:uploaded_at] = earliest_upload if earliest_upload && match.uploaded_at != earliest_upload
 
         if changes.any?
-          match.update_columns(changes)
+          match.update_columns(Match.with_map_version_order(match, changes))
           updated += 1
         else
           skipped += 1
@@ -1040,7 +1040,7 @@ namespace :wc3stats do
       changes[:uploaded_at] = new_uploaded_at if new_uploaded_at && match.uploaded_at != new_uploaded_at
 
       if changes.any?
-        match.update_columns(changes)
+        match.update_columns(Match.with_map_version_order(match, changes))
         matches_updated += 1
       else
         matches_skipped += 1

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_24_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_06_091637) do
   create_table "ahoy_events", force: :cascade do |t|
     t.string "name"
     t.text "properties"
@@ -93,7 +93,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_24_000001) do
     t.decimal "perf_score"
     t.float "performance_score"
     t.integer "player_id", null: false
-    t.decimal "schedule_skew_multiplier"
     t.integer "self_heal"
     t.float "stay_pct"
     t.integer "streak_before_match"
@@ -155,6 +154,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_24_000001) do
     t.boolean "is_draw", default: false, null: false
     t.integer "major_version"
     t.string "map_version"
+    t.integer "map_version_order"
     t.datetime "played_at"
     t.decimal "predicted_evil_avg_rating"
     t.decimal "predicted_evil_score"
@@ -168,6 +168,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_24_000001) do
     t.datetime "uploaded_at"
     t.integer "wc3stats_replay_id"
     t.index ["host_battletag"], name: "index_matches_on_host_battletag"
+    t.index ["map_version_order", "played_at"], name: "index_matches_on_version_ordering"
     t.index ["played_at", "major_version", "build_version", "row_order", "map_version", "uploaded_at", "wc3stats_replay_id"], name: "index_matches_on_ordering"
     t.index ["wc3stats_replay_id"], name: "index_matches_on_wc3stats_replay_id"
   end

@@ -163,7 +163,7 @@ class Wc3statsSyncJob < ApplicationJob
       changes[:uploaded_at] = replay.played_at if match.uploaded_at.nil? && replay.played_at
 
       if changes.any?
-        match.update_columns(changes)
+        match.update_columns(Match.with_map_version_order(match, changes))
         backfill_count += 1
       end
     end

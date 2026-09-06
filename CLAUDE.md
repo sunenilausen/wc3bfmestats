@@ -426,12 +426,75 @@ This means leaves are "excused" if:
 ## Match Chronological Ordering
 
 Matches are ordered for rating calculations using multiple criteria (see `Match.chronological` scope):
-1. `played_at` - Game time from replay filename (MOST IMPORTANT)
-2. WC3 game version (`major_version`, `build_version`)
-3. Manual `row_order` (for fine-tuning order of same-day matches)
-4. Map version (parsed from filename, e.g., "4.5e")
-5. `uploaded_at` (earliest upload timestamp, fallback)
-6. `wc3stats_replay_id` (final fallback)
+1. `map_version_order` - map version release order (MOST IMPORTANT, see below)
+2. `played_at` - game time from the replay filename, else the earliest upload
+3. WC3 game version (`major_version`, `build_version`)
+4. Manual `row_order` (for fine-tuning order of same-day matches)
+5. Map version string (separates the Obs builds that share a rank)
+6. `uploaded_at` (earliest upload timestamp, fallback)
+7. `wc3stats_replay_id` (final fallback)
+
+`MatchesHelper#ordering_key` mirrors this for comparing two already-loaded
+matches, and backs `#match_is_before?`.
+
+### Why map version leads
+
+1,427 of 3,320 replays (43%) carry no filename we can parse a game time out of,
+so their `played_at` is really an upload time. When someone bulk uploads a pile
+of old replays they all land on the upload date: 44 4.4e games, 22 4.4Obs games
+and a scatter of 4.5/4.5b/4.5c games were stamped 2026-08-20 and sorted in among
+that week's 4.7RC2 games. The map version is read straight off the replay and
+cannot drift, so it is the one honest era marker we have.
+
+With it leading, every version now occupies one contiguous run in the ordering.
+A bulk-uploaded 4.4e game sits at the *end* of the 4.4e era rather than at the
+top of the site — we know which patch it belongs to, just not when within it.
+
+**This is display and rating order, and it does move ratings.** Recalculating
+across the whole history shifts 455 of 916 rated players, median |ΔCR| 0, p90 5,
+with a handful of large movers (SamWiseTheB -287, bisu +181). Prediction quality
+is unchanged within noise: accuracy 67.45% → 66.89%, in-sample Brier 0.2169 →
+0.2174 over 1,963 matches (SE on accuracy ≈ 1.1pp). `PredictionCalibrator`'s
+K=1.7 still refits to 1.7, walk-forward Brier 0.2149 → 0.2097. The change was
+made because the order was wrong, not because it predicts better.
+
+### `MapVersionOrder`
+
+`matches.map_version_order` is an integer rank, a **pure function of the version
+string** — no dense index that shifts when a new version appears, so a match can
+be ranked at build time and never revisited. Rules:
+
+| | |
+|---|---|
+| `4.5` < `4.6` | major, then minor |
+| `4.5` < `4.5b` < `4.5c` | the plain release precedes its lettered patches |
+| `4.7RC` < `4.7RC2` < `4.7` | pre-releases (Beta/RC/Test) precede the release |
+| `4.4` = `4.4Obs` | "Obs" is the same version with observer slots |
+| `4.0l` = `4.0L` | letters are case-insensitive |
+| `4.1Test3` = `4.1Test3~1` | the duplicate-download suffix is ignored |
+
+Checked against the 18 versions that *do* have filename-dated matches, this
+order agrees with the observed first-appearance dates everywhere except `4.0e`
+(n=2) and `4.3g` (n=1). Semantic order was chosen over first-appearance because
+31 of the 49 versions have no filename-dated match at all — deriving their era
+from upload times would reproduce the very bug being fixed (`4.4d` would rank as
+2026-08-20, `4.0d` as 2019-07-21, ahead of `3.8Beta3`).
+
+One consequence to be aware of: a lone straggler on a plain release sorts to the
+front of its minor. `4.1` has a single match played 2021-04-24 and now precedes
+`4.1d` (Oct 2020), because the rule says the plain release comes first.
+
+A replay whose version we cannot read (the one `.w3m` map,
+`BFME7.4_GFINALFOREVERDONE.w3m`) borrows the rank of whichever version was
+current when it was played, so it interleaves by date instead of piling up at
+one end. `MapVersionOrder.rank_for` handles that fallback; `rank` alone is pure.
+
+**Keeping the column in step:** `Match#assign_map_version_order` is a
+`before_save`, so anything going through `save`/`create`/`update` is covered.
+The sync tasks write ordering fields with `update_columns`, which skips
+callbacks — they go through `Match.with_map_version_order(match, changes)`
+instead. Any new `update_columns` writer touching `map_version` or `played_at`
+must do the same.
 
 ## Map Version Parsing
 
@@ -765,9 +828,8 @@ The wc3stats API has several quirks that make accurate chronological ordering di
 3. **Batch uploads: IDs are in REVERSE order** - When someone uploads multiple replays at once, they get assigned IDs in reverse chronological order (oldest game gets highest ID).
 
 **Current mitigations:**
+- We order by **map version release order** first (`map_version_order`), which is the one field a bulk upload cannot corrupt - see "Match Chronological Ordering"
 - We use `uploaded_at` with the **earliest** upload timestamp (replays can be uploaded multiple times)
-- We order by game version (`major_version`, `build_version`) first
-- We order by map version (e.g., "4.5e") to group patches together
 - Manual `row_order` field allows fine-tuning specific matches
 - `wc3stats_replay_id` is used as final tiebreaker
 
@@ -775,7 +837,10 @@ The wc3stats API has several quirks that make accurate chronological ordering di
 - Set `row_order` on matches that need adjustment (lower = earlier)
 - Run `wc3stats:sync` to recalculate ratings with new order
 
-**There is no perfect solution** without the actual game timestamps, which wc3stats doesn't provide.
+**There is still no perfect solution** *within* a map version, since we don't
+have the game timestamps for the 43% of replays with no parseable filename.
+Those sort to the end of their era. What map version ordering fixes is the
+cross-era case - an old game no longer appears among this week's.
 
 ### ELO ratings seem wrong after changes
 - Ratings are recalculated from scratch on each match create/update
